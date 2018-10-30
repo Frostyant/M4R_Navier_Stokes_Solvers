@@ -6,8 +6,8 @@ import numpy as np
 n = 16 # number of grid points
 h = 1/n # "length" of each side
 viscosity = 1 #viscosity
-c = 10 # dark magic
-f = Constant((1,0))
+c = 10 # works
+f = Constant((10^6,-10^6))
 gamma = Constant((100.0))
 
 # Load mesh
@@ -31,7 +31,7 @@ noslip = Constant((0.0, 0.0))
 bc1 = DirichletBC(W.sub(0), noslip, (1,2,3))
 
 # Constant inflow Top
-inflow = Constant((1.0, 0.0))
+inflow = Constant((0.0, 0.0))
 bc2 = DirichletBC(W.sub(0), inflow, 4)
 
 #boundary conditions
@@ -51,29 +51,28 @@ nullspace = MixedVectorSpaceBasis(
 (v, q) = TestFunctions(W)
 
 #Assembling LHS
-f = Constant((1,0)) #currently we set force to be 0
 L = inner(f, v)*dx
 
 #dealing with viscous term
 viscous_byparts1 = inner(grad(u), grad(v))*dx #this is the term over omega from the integration by parts
 viscous_byparts2 = 2*inner(avg(outer(v,n)),avg(grad(u)))*dS #this the term over interior surfaces from integration by parts
 viscous_symetry = 2*inner(avg(outer(u,n)),avg(grad(v)))*dS #this the term ensures symetry while not changing the continuous equation
-viscous_stab = c*1/h*inner(jump(v),jump(u))*dS #stabilizes the equation, somehow
-viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs 
+viscous_stab = c*1/h*inner(jump(v),jump(u))*dS #stabilizes the equation
+viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
 viscous_ext = c/h*inner(v,u)*ds #this is a penalty term for the boundaries
 
 viscous_term = (
     viscous_byparts1
     + viscous_byparts2
-    + viscous_symetry
-    + viscous_stab
-    + viscous_byparts2_ext
-    + viscous_ext # assembles everything
+    #+ viscous_symetry
+    #+ viscous_stab
+    #+ viscous_byparts2_ext
+    #+ viscous_ext # assembles everything
     )
 
 graddiv_term = gamma*div(v)*div(u)*dx
 
-a = viscosity*viscous_term + graddiv_term + q * div(u) * dx - p * div(v) * dx
+a = viscosity*viscous_term + q * div(u) * dx - p * div(v) * dx #+ gravdiv_term
 
 #Solving problem #
 
@@ -93,7 +92,7 @@ parameters = {
 
 pmass = q*p*dx
 
-aP = viscous_term + graddiv_term  + (viscosity + gamma)*pmass
+aP = viscous_term   + (viscosity + gamma)*pmass #+gravdiv_term
 
 stokesproblem = LinearVariationalProblem(a,L, up, aP=aP,
                                          bcs=(bc1,bc2))
@@ -109,4 +108,9 @@ u.rename("Velocity")
 p.rename("Pressure")
 
  # Plot solution
+File("stokes.pvd").write(u, p)
+
+ # Plot solution
+plot(p)
+plot(u)
 File("stokes.pvd").write(u, p)
