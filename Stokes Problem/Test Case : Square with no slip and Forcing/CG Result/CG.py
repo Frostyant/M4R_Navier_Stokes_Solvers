@@ -64,10 +64,10 @@ viscous_ext = c/h*inner(v,u)*ds #this is a penalty term for the boundaries
 viscous_term = (
     viscous_byparts1
     + viscous_byparts2
-    #+ viscous_symetry
-    #+ viscous_stab
-    #+ viscous_byparts2_ext
-    #+ viscous_ext # assembles everything
+    + viscous_symetry
+    + viscous_stab
+    + viscous_byparts2_ext
+    + viscous_ext # assembles everything
     )
 
 graddiv_term = gamma*div(v)*div(u)*dx
@@ -75,7 +75,7 @@ graddiv_term = gamma*div(v)*div(u)*dx
 a = viscosity*viscous_term + q * div(u) * dx - p * div(v) * dx
 
 #Solving problem #
-
+'''
 parameters = {
     "ksp_type": "gmres",
     "ksp_monitor": True,
@@ -102,7 +102,12 @@ stokessolver = LinearVariationalSolver(stokesproblem,
                                        solver_parameters=parameters)
 
 stokessolver.solve()
-
+'''
+solve(a == L, up, bcs=(bc1,bc2), nullspace=nullspace,
+          solver_parameters={"ksp_type": "gmres",
+                             "mat_type": "aij",
+                             "pc_type": "lu",
+                             "pc_factor_mat_solver_type": "mumps"})
 u, p = up.split()
 u.rename("Velocity")
 p.rename("Pressure")
