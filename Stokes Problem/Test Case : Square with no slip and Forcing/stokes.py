@@ -7,7 +7,7 @@ n = 16 # number of grid points
 h = 1/n # "length" of each side
 viscosity = 1 #viscosity
 c = 10 # works
-f = Constant((10^6,-10^6))
+f = Constant((1,0))
 gamma = Constant((100.0))
 
 # Load mesh
@@ -62,18 +62,18 @@ viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*d
 viscous_ext = c/h*inner(v,u)*ds #this is a penalty term for the boundaries
 
 viscous_term = (
-    viscous_byparts1
+     viscous_byparts1
     + viscous_byparts2
-    #+ viscous_symetry
-    #+ viscous_stab
-    #+ viscous_byparts2_ext
-    #+ viscous_ext # assembles everything
-    )
+    + viscous_symetry
+    + viscous_stab
+    + viscous_byparts2_ext
+    + viscous_ext #Increasing importance of boundary penalty term
+    )# assembles everything
 
 graddiv_term = gamma*div(v)*div(u)*dx
 
 a = viscosity*viscous_term + q * div(u) * dx - p * div(v) * dx #+ gravdiv_term
-
+''''
 #Solving problem #
 
 parameters = {
@@ -102,6 +102,13 @@ stokessolver = LinearVariationalSolver(stokesproblem,
                                        solver_parameters=parameters)
 
 stokessolver.solve()
+'''
+
+solve(a == L, up, bcs=(bc1,bc2), nullspace=nullspace,
+          solver_parameters={"ksp_type": "gmres",
+                             "mat_type": "aij",
+                             "pc_type": "lu",
+                             "pc_factor_mat_solver_type": "mumps"})
 
 u, p = up.split()
 u.rename("Velocity")
