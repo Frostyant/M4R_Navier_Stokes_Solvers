@@ -7,7 +7,7 @@ n = 16 # number of grid points
 h = 1/n # "length" of each side
 viscosity = 1 #viscosity
 c = 10 # works
-f = Constant((10^6,-10^6))
+f = Constant((1,0))
 gamma = Constant((100.0))
 
 # Load mesh
@@ -62,17 +62,17 @@ viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*d
 viscous_ext = c/h*inner(v,u)*ds #this is a penalty term for the boundaries
 
 viscous_term = (
-    viscous_byparts1
-    + viscous_byparts2
-    + viscous_symetry
+     viscous_byparts1
+    - viscous_byparts2
+    - viscous_symetry
     + viscous_stab
-    + viscous_byparts2_ext
+    - viscous_byparts2_ext
     + viscous_ext # assembles everything
     )
 
 graddiv_term = gamma*div(v)*div(u)*dx
 
-a = viscosity*viscous_term + q * div(u) * dx - p * div(v) * dx
+a = viscosity*viscous_term - q * div(u) * dx + p * div(v) * dx
 
 #Solving problem #
 '''

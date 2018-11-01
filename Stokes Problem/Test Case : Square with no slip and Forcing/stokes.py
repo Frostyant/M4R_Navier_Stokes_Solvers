@@ -63,10 +63,10 @@ viscous_ext = c/h*inner(v,u)*ds #this is a penalty term for the boundaries
 
 viscous_term = (
      viscous_byparts1
-    + viscous_byparts2
+    - viscous_byparts2
     + viscous_symetry
     + viscous_stab
-    + viscous_byparts2_ext
+    - viscous_byparts2_ext
     + viscous_ext #Increasing importance of boundary penalty term
     )# assembles everything
 
