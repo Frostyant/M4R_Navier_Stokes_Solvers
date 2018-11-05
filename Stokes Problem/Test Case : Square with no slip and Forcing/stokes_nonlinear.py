@@ -63,8 +63,8 @@ viscous_stab = c*1/h*inner(jump(v),jump(u))*dS #stabilizes the equation
 viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
 viscous_ext = c/h*inner(v,u)*ds #this is a penalty term for the boundaries
 
-viscous_term = (
-     viscous_byparts1
+viscous_term = viscosity*(
+    viscous_byparts1
     - viscous_byparts2
     - viscous_symetry
     + viscous_stab
@@ -75,10 +75,10 @@ viscous_term = (
 graddiv_term = gamma*div(v)*div(u)*dx
 
 a = (
-    viscosity*viscous_term +
+    viscous_term +
     q * div(u) * dx + p * div(v) * dx
     + graddiv_term
-    )
+    )  - L
 
 #Solving problem #
 
@@ -98,7 +98,7 @@ parameters = {
 
 pmass = q*p*dx
 
-aP = viscous_term   + (viscosity + gamma)*pmass +graddiv_term - L
+aP = viscous_term   + (viscosity + gamma)*pmass +graddiv_term
 
 stokesproblem = NonlinearVariationalProblem(a, up, Jp=aP,
                                             bcs=(bc1,bc2))
