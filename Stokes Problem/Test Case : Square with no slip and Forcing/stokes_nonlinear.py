@@ -37,7 +37,6 @@ bc2 = DirichletBC(W.sub(0), inflow, 4)
 #boundary conditions
 bcs=(bc1,bc2)
 
-#pressure
 up = Function(W)
 
 # Removing Pressure constant
@@ -47,7 +46,7 @@ nullspace = MixedVectorSpaceBasis(
 # Define variational problem #
 
 #setting up trial and test functions
-u, p = split(w)
+u, p = TrialFunctions(W)
 (v, q) = TestFunctions(W)
 
 #Assembling LHS
@@ -74,11 +73,16 @@ viscous_term = viscosity*(
 
 graddiv_term = gamma*div(v)*div(u)*dx
 
-a = (
+a_bilinear = (
     viscous_term +
     q * div(u) * dx + p * div(v) * dx
     + graddiv_term
-    )  - L
+    )
+
+pmass = q*p*dx
+aP = viscous_term   + (viscosity + gamma)*pmass +graddiv_term
+
+F = action(a_bilinear, up) - L
 
 #Solving problem #
 
@@ -96,11 +100,8 @@ parameters = {
     "fieldsplit_1_pc_type": "lu"
 }
 
-pmass = q*p*dx
 
-aP = viscous_term   + (viscosity + gamma)*pmass +graddiv_term
-
-stokesproblem = NonlinearVariationalProblem(a, up, Jp=aP,
+stokesproblem = NonlinearVariationalProblem(F, up, Jp=aP,
                                             bcs=(bc1,bc2))
 
 stokessolver = NonlinearVariationalSolver(stokesproblem,
