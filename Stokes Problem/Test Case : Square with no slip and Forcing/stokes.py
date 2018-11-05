@@ -3,10 +3,10 @@ from matplotlib import *
 import numpy as np
 
 #Some settings
-n = 16 # number of grid points
+n = 50 # number of grid points
 h = 1/n # "length" of each side
 viscosity = 1 #viscosity
-c = 10 # works
+c = 20 # works
 f = Constant((1,0))
 gamma = Constant((100.0))
 
@@ -22,7 +22,7 @@ x,y= SpatialCoordinate(mesh)
 #defining the normal
 n = FacetNormal(mesh)
 
-
+u_0 = as_vector([conditional(y>0.999,sin(pi*x),0.0),0])
 
 # Boundary Conditions #
 
@@ -51,7 +51,9 @@ nullspace = MixedVectorSpaceBasis(
 (v, q) = TestFunctions(W)
 
 #Assembling LHS
-L = inner(f, v)*dx
+L = c/h*inner(v,u_0)*ds
+#v0 = as_vector([sin(pi*y),0])
+#L = inner(v,v0)*dx
 
 #dealing with viscous term
 viscous_byparts1 = inner(grad(u), grad(v))*dx #this is the term over omega from the integration by parts
@@ -64,7 +66,7 @@ viscous_ext = c/h*inner(v,u)*ds #this is a penalty term for the boundaries
 viscous_term = (
      viscous_byparts1
     - viscous_byparts2
-    + viscous_symetry
+    - viscous_symetry
     + viscous_stab
     - viscous_byparts2_ext
     + viscous_ext #Increasing importance of boundary penalty term
@@ -72,8 +74,12 @@ viscous_term = (
 
 graddiv_term = gamma*div(v)*div(u)*dx
 
-a = viscosity*viscous_term + q * div(u) * dx - p * div(v) * dx #+ gravdiv_term
-''''
+a = (
+    viscosity*viscous_term +
+    q * div(u) * dx + p * div(v) * dx
+    + graddiv_term
+    )
+
 #Solving problem #
 
 parameters = {
@@ -92,7 +98,7 @@ parameters = {
 
 pmass = q*p*dx
 
-aP = viscous_term   + (viscosity + gamma)*pmass #+gravdiv_term
+aP = viscous_term   + (viscosity + gamma)*pmass +graddiv_term
 
 stokesproblem = LinearVariationalProblem(a,L, up, aP=aP,
                                          bcs=(bc1,bc2))
@@ -102,13 +108,6 @@ stokessolver = LinearVariationalSolver(stokesproblem,
                                        solver_parameters=parameters)
 
 stokessolver.solve()
-'''
-
-solve(a == L, up, bcs=(bc1,bc2), nullspace=nullspace,
-          solver_parameters={"ksp_type": "gmres",
-                             "mat_type": "aij",
-                             "pc_type": "lu",
-                             "pc_factor_mat_solver_type": "mumps"})
 
 u, p = up.split()
 u.rename("Velocity")
