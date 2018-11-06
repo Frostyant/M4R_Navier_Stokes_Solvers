@@ -86,8 +86,8 @@ F = action(a_bilinear, up) - L
 
 u, p = split(up)
 
-2D = True
-if 2D:
+TwoD = True
+if TwoD:
     curl = lambda phi: as_vector([-phi.dx(1), phi.dx(0)])
     cross = lambda u, w: u[0]*w[1]-u[1]*w[0]
     perp = lambda n, phi: as_vector(n[1]*phi, -n[0]*phi)
