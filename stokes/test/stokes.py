@@ -24,7 +24,7 @@ n = FacetNormal(mesh)
 
 # boundary for penatly
 #fbc = as_vector([x^2,-2*y*x])
-u_0 = as_vector([x**2,-2*y*x])
+u_0 = as_vector([0*x**2,0*(-2)*y*x])
 
 # Boundary Conditions #
 noslip = Constant((0.0, 0.0))
@@ -55,7 +55,7 @@ nullspace = MixedVectorSpaceBasis(
 (v, q) = TestFunctions(W)
 
 #Assembling LHS
-L = inner(f,v)*dx + c/h*inner(v,u_0)*ds
+L = c/h*inner(v,u_0)*ds
 #v0 = as_vector([sin(pi*y),0])
 #L = inner(v,v0)*dx
 
