@@ -23,11 +23,7 @@ x,y= SpatialCoordinate(mesh)
 n = FacetNormal(mesh)
 
 # boundary for penatly
-#fbc = as_vector([x^2,-2*y*x])
 u_0 = as_vector([x**2,(-2)*y*x])
-
-# Boundary Conditions #
-noslip = Constant((0.0, 0.0))
 
 #Bc1
 bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u
@@ -55,9 +51,7 @@ nullspace = MixedVectorSpaceBasis(
 (v, q) = TestFunctions(W)
 
 #Assembling LHS
-L = c/h*inner(v,u_0)*ds + inner(outer(u_0,n),grad(v))*ds
-#v0 = as_vector([sin(pi*y),0])
-#L = inner(v,v0)*dx
+L = c/h*inner(v,u_0)*ds - inner(outer(u_0,n),grad(v))*ds
 
 #dealing with viscous term
 viscous_byparts1 = inner(grad(u), grad(v))*dx #this is the term over omega from the integration by parts

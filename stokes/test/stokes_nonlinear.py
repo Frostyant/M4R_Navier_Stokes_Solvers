@@ -22,20 +22,22 @@ x,y= SpatialCoordinate(mesh)
 #defining the normal
 n = FacetNormal(mesh)
 
-u_0 = as_vector([conditional(y>0.999,sin(pi*x),0.0),0])
+# boundary for penatly
+#fbc = as_vector([x^2,-2*y*x])
+u_0 = as_vector([x**2,(-2)*y*x])
 
-# Boundary Conditions #
-
-# No-slip boundary condition for velocity bottom, left and right,
-noslip = Constant((0.0, 0.0))
-bc1 = DirichletBC(W.sub(0), noslip, (1,2,3))
-
-# Constant inflow Top
-inflow = Constant((0.0, 0.0))
-bc2 = DirichletBC(W.sub(0), inflow, 4)
+#Bc1
+bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u
+#Bc2
+bc2 = DirichletBC(W.sub(0), u_0, 2)#Can only set Normal Component, here that is v
+#Bc3
+bc3 = DirichletBC(W.sub(0), u_0, 3)#Can only set Normal Component, here that is u
+#Bc4
+bc4 = DirichletBC(W.sub(0), u_0, 4)#Can only set Normal Component, here that is v
 
 #boundary conditions
-bcs=(bc1,bc2)
+bcs=(bc1,bc2,bc3,bc4)
+
 
 up = Function(W)
 
@@ -50,9 +52,7 @@ u, p = TrialFunctions(W)
 (v, q) = TestFunctions(W)
 
 #Assembling LHS
-L = c/h*inner(v,u_0)*ds
-#v0 = as_vector([sin(pi*y),0])
-#L = inner(v,v0)*dx
+L = c/h*inner(v,u_0)*ds - inner(outer(u_0,n),grad(v))*ds
 
 #dealing with viscous term
 viscous_byparts1 = inner(grad(u), grad(v))*dx #this is the term over omega from the integration by parts
@@ -125,7 +125,7 @@ parameters = {
 
 
 stokesproblem = NonlinearVariationalProblem(F, up, Jp=aP,
-                                            bcs=(bc1,bc2))
+                                            bcs=bcs)
 
 stokessolver = NonlinearVariationalSolver(stokesproblem,
                                           nullspace=nullspace,
