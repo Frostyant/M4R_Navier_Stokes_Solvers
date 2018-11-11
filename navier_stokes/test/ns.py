@@ -24,7 +24,7 @@ n = FacetNormal(mesh)
 
 # boundary for penatly
 #fbc = as_vector([x^2,-2*y*x])
-u_0 = as_vector([x**2,(-2)*y*x])
+u_0 = as_vector([y,x])
 
 #Bc1
 bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u
@@ -90,7 +90,7 @@ twoD = True
 if twoD:
     curl = lambda phi: as_vector([-phi.dx(1), phi.dx(0)])
     cross = lambda u, w: u[0]*w[1]-u[1]*w[0]
-    perp = lambda n, phi: as_vector(n[1]*phi, -n[0]*phi)
+    perp = lambda n, phi: as_vector([n[1]*phi, -n[0]*phi])
 else:
     perp = cross
 
@@ -103,9 +103,9 @@ advection_term = (
     - 0.5*div(v)*inner(u,u)*dx
     )
 
-F += advection_term
+F += -advection_term
 
-aP += derivative(advection_term, up)
+aP += derivative(-advection_term, up)
 
 #Solving problem #
 
