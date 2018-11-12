@@ -75,7 +75,7 @@ graddiv_term = gamma*div(v)*div(u)*dx
 
 a_bilinear = (
     viscous_term +
-    q * div(u) * dx + p * div(v) * dx
+    q * div(u) * dx - p * div(v) * dx
     + graddiv_term
     )
 
@@ -103,9 +103,9 @@ advection_term = (
     - 0.5*div(v)*inner(u,u)*dx
     )
 
-F += -advection_term
+F += advection_term
 
-aP += derivative(-advection_term, up)
+aP += derivative(advection_term, up)
 
 #Solving problem #
 
