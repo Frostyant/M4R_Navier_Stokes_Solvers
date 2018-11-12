@@ -120,7 +120,8 @@ parameters = {
     "fieldsplit_0_ksp_type": "preonly",
     "fieldsplit_0_pc_type": "lu",
     "fieldsplit_1_ksp_type": "preonly",
-    "fieldsplit_1_pc_type": "lu"
+    "fieldsplit_1_pc_type": "bjacobi",
+    "fieldsplit_1_pc_sub_type": "ilu"
 }
 
 
