@@ -3,7 +3,7 @@ from matplotlib import *
 import numpy as np
 
 #Some settings
-n = 100 # number of grid points
+n = 50 # number of grid points
 h = 1/n # "length" of each side
 viscosity = 1 #viscosity
 c = 20 # works
@@ -14,8 +14,8 @@ gamma = Constant((100.0))
 mesh = UnitSquareMesh(n, n)
 
 # Define function spaces
-V = FunctionSpace(mesh, "BDM", 1)
-Q = FunctionSpace(mesh, "DG", 0)
+V = FunctionSpace(mesh, "BDM", 2)
+Q = FunctionSpace(mesh, "DG", 1)
 W = V * Q
 #defining
 x,y= SpatialCoordinate(mesh)
@@ -24,16 +24,16 @@ n = FacetNormal(mesh)
 
 # boundary for penatly
 #fbc = as_vector([x^2,-2*y*x])
-u_0 = as_vector([conditional(y > 0.999,2*sin(pi*x),0.0),0.0])
+u_0 = as_vector([conditional(y>0.5,sin(pi*x)**2,0.),0.0])
 
 #Bc1
-bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u
+bc1 = DirichletBC(W.sub(0), 0, 1) #Can only set Normal Component, here that is u
 #Bc2
-bc2 = DirichletBC(W.sub(0), u_0, 2)#Can only set Normal Component, here that is v
+bc2 = DirichletBC(W.sub(0), 0, 2)#Can only set Normal Component, here that is v
 #Bc3
-bc3 = DirichletBC(W.sub(0), u_0, 3)#Can only set Normal Component, here that is u
+bc3 = DirichletBC(W.sub(0), 0, 3)#Can only set Normal Component, here that is u
 #Bc4
-bc4 = DirichletBC(W.sub(0), u_0, 4)#Can only set Normal Component, here that is v
+bc4 = DirichletBC(W.sub(0), 0, 4)#Can only set Normal Component, here that is v
 
 #boundary conditions
 bcs=(bc1,bc2,bc3,bc4)
