@@ -23,20 +23,25 @@ x,y= SpatialCoordinate(mesh)
 n = FacetNormal(mesh)
 
 # boundary for penatly
-#fbc = as_vector([x^2,-2*y*x])
-u_0 = as_vector([conditional(x<0.1,2*sin(pi*y)**2,0.),0.0])
+u_0 = as_vector([sin(pi*y)**2,0])
+p_0 = 0
+#Natural boundary for where applicable, used to turn off Bc terms if natural Bcs apply
 
 #Bc1
-bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u
+bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u left bdary
+bc1p = DirichletBC(W.sub(1), p_0, 1)
+
 #Bc2
-bc2 = DirichletBC(W.sub(0), 0, 2)#Can only set Normal Component, here that is v
+bc2 = DirichletBC(W.sub(0), u_0, 2)#Can only set Normal Component, here that is u right bdary
+
 #Bc3
-#bc3 = DirichletBC(W.sub(0), 0, 3)#Can only set Normal Component, here that is u
+bc3 = DirichletBC(W.sub(1), p_0, 3)#Can only set Normal Component, here that is v bottom bdary
+
 #Bc4
-bc4 = DirichletBC(W.sub(0), 0, 4)#Can only set Normal Component, here that is v
+bc4 = DirichletBC(W.sub(0), u_0, 4)#Can only set Normal Component, here that is v top bdary
 
 #boundary conditions
-bcs=(bc1,bc2,bc4)
+bcs=(bc1,bc1p,bc2,bc3,bc4)
 
 
 up = Function(W)
@@ -59,8 +64,9 @@ viscous_byparts1 = inner(grad(u), grad(v))*dx #this is the term over omega from 
 viscous_byparts2 = 2*inner(avg(outer(v,n)),avg(grad(u)))*dS #this the term over interior surfaces from integration by parts
 viscous_symetry = 2*inner(avg(outer(u,n)),avg(grad(v)))*dS #this the term ensures symetry while not changing the continuous equation
 viscous_stab = c*1/h*inner(jump(v),jump(u))*dS #stabilizes the equation
+#Note NatBc turns these terms off, otherwise it is 1
 viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
-viscous_ext = c/h*inner(v,u)*ds #this is a penalty term for the boundaries
+viscous_ext =c/h*inner(v,u)*ds #this is a penalty term for the boundaries
 
 #Assembling Viscous Term
 viscous_term = viscosity*(
@@ -142,7 +148,7 @@ parameters = {
 }
 
 
-#Input what we wrote efore
+#Input what we wrote before
 navierstokesproblem = NonlinearVariationalProblem(F, up, Jp=aP,
                                             bcs=bcs)
 #Solve
