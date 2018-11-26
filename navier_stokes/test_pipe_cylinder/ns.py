@@ -11,7 +11,7 @@ f = Constant((1,0))
 gamma = Constant((100.0))
 
 # Load mesh
-mesh = Mesh("NS_solverS_Rindep/navier_stokes/test_pipe_cylinder/CylinderInPipe.msh")
+mesh = Mesh("CylinderInPipe.msh")
 
 # Define function spaces
 V = FunctionSpace(mesh, "BDM", 2)
@@ -23,7 +23,7 @@ x,y= SpatialCoordinate(mesh)
 n = FacetNormal(mesh)
 
 # boundary for penatly
-u_0 = as_vector([Conditional(x <0.1,sin(pi*y)**2,0.) + Conditional(x > 0.9,sin(pi*y)**2,0.),0])
+u_0 = as_vector([conditional(x <0.1,sin(pi*y)**2,0.) + conditional(x > 0.9,sin(pi*y)**2,0.),0])
 p_0 = 0
 #Natural boundary for where applicable, used to turn off Bc terms if natural Bcs apply
 
