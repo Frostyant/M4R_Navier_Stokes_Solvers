@@ -11,7 +11,7 @@ f = Constant((1,0))
 gamma = Constant((100.0))
 
 # Load mesh
-mesh = Mesh("CylinderInPipe.msh")
+mesh = Mesh("DoubleCircle.msh")
 
 # Define function spaces
 V = FunctionSpace(mesh, "BDM", 2)
@@ -23,27 +23,22 @@ x,y= SpatialCoordinate(mesh)
 n = FacetNormal(mesh)
 
 # boundary function
-u_0 = as_vector([conditional(x <0.1,sin(pi*y)**2,0.) + conditional(x > 0.9,sin(pi*y)**2,0.),0])
-p_0 = 0
+u_0 = as_vector([
+    conditional(x**2 + y**2 < 1.1**2,-y , 0.)
+    + conditional(x**2 + y**2 > 1.1**2,-2*y , 0.) ,
+    conditional(x**2 + y**2 < 1.9**2,x , 0.)
+    + conditional(x**2 + y**2 > 1.9**2, 2*x , 0.)
+    ])
 
-#Bc1
+#Bc1, interior circle
 bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u left bdary
-bc1p = DirichletBC(W.sub(1), p_0, 1)
 
-#Bc2
+#Bc2, interior circle
 bc2 = DirichletBC(W.sub(0), u_0, 2)#Can only set Normal Component, here that is u right bdary
 
-#Bc3
-bc3 = DirichletBC(W.sub(1), p_0, 3)#Can only set Normal Component, here that is v bottom bdary
-
-#Bc4
-bc4 = DirichletBC(W.sub(0), u_0, 4)#Can only set Normal Component, here that is v top bdary
-
-#Bc5, From cylinder
-bc5 = DirichletBC(W.sub(0), u_0, 5)
 
 #boundary conditions
-bcs=(bc1,bc1p,bc2,bc3,bc4,bc5)
+bcs=(bc1,bc2)
 
 
 up = Function(W)
