@@ -23,8 +23,9 @@ x,y= SpatialCoordinate(mesh)
 n = FacetNormal(mesh)
 
 # boundary for penatly
-u_0 = as_vector([sin(pi*y)**2,0])
+u_0 = as_vector([10/(4*viscosity)*(0.5**2-(0.5-y)**2),0])#Pouseilles flow solution
 p_0 = 0
+p_1 = 10
 #Natural boundary for where applicable, used to turn off Bc terms if natural Bcs apply
 
 #Bc1
@@ -35,7 +36,7 @@ bc1p = DirichletBC(W.sub(1), p_0, 1)
 bc2 = DirichletBC(W.sub(0), u_0, 2)#Can only set Normal Component, here that is u right bdary
 
 #Bc3
-bc3 = DirichletBC(W.sub(1), p_0, 3)#Can only set Normal Component, here that is v bottom bdary
+bc3 = DirichletBC(W.sub(1), p_1, 3)#Can only set Normal Component, here that is v bottom bdary
 
 #Bc4
 bc4 = DirichletBC(W.sub(0), u_0, 4)#Can only set Normal Component, here that is v top bdary
