@@ -23,7 +23,8 @@ x,y= SpatialCoordinate(mesh)
 n = FacetNormal(mesh)
 
 # boundary function
-u_0 = as_vector([conditional(x <0.1,sin(pi*y)**2,0.) + conditional(x > 0.9,sin(pi*y)**2,0.),0])
+a= Constant(100)
+u_0 = as_vector([conditional(x <0.1,a*sin(pi*y)**2,0.) + conditional(x > 0.9,a*sin(pi*y)**2,0.),0])
 p_0 = 0
 
 #Bc1
