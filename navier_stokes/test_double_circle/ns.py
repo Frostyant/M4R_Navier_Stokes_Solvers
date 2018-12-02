@@ -3,8 +3,6 @@ from matplotlib import *
 import numpy as np
 
 #Some settings
-n = 50 # number of grid points
-h = 1/n # "length" of each side
 viscosity = Constant(1) #viscosity
 c = Constant(20) # works
 f = Constant((1,0))
@@ -54,16 +52,17 @@ u, p = TrialFunctions(W)
 (v, q) = TestFunctions(W)
 
 #Assembling LHS
-L = c/h*inner(v,u_0)*ds - inner(outer(u_0,n),grad(v))*ds
+h = avg(CellVolume(mesh))/FacetArea(mesh)
+L = c/(h)*inner(v,u_0)*ds - inner(outer(u_0,n),grad(v))*ds
 
 #Viscous Term parts
 viscous_byparts1 = inner(grad(u), grad(v))*dx #this is the term over omega from the integration by parts
 viscous_byparts2 = 2*inner(avg(outer(v,n)),avg(grad(u)))*dS #this the term over interior surfaces from integration by parts
 viscous_symetry = 2*inner(avg(outer(u,n)),avg(grad(v)))*dS #this the term ensures symetry while not changing the continuous equation
-viscous_stab = c*1/h*inner(jump(v),jump(u))*dS #stabilizes the equation
+viscous_stab = c*1/(h)*inner(jump(v),jump(u))*dS #stabilizes the equation
 #Note NatBc turns these terms off, otherwise it is 1
 viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
-viscous_ext =c/h*inner(v,u)*ds #this is a penalty term for the boundaries
+viscous_ext =c/(h)*inner(v,u)*ds #this is a penalty term for the boundaries
 
 #Assembling Viscous Term
 viscous_term = viscosity*(
