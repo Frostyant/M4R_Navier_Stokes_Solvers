@@ -9,10 +9,10 @@ gamma = Constant((100.0))
 AverageVelocity = Constant(1)
 ObjectiveViscosity = 0.001#viscosity we are aiming for
 MaxOrder = 3
-MinOrder = math.floor(math.log10(ObjectiveViscosity))
+MinOrder = np.floor(np.log10(ObjectiveViscosity))
 ScaledViscosity = ObjectiveViscosity * 10**(-MinOrder)#rescales viscosity to be of order 1
 OrderStepsize = 1
-orders = range(MaxOrder,MinOrder,-OrderStepsize)
+orders = range(MaxOrder,MinOrder.astype(int),-OrderStepsize)
 viscosities = [ScaledViscosity*10**(order) for order in orders]
 
 # Load mesh
@@ -37,6 +37,8 @@ for viscosity in viscosities:
     #In theory firedrake should automatically use the prior u values as a guess since they are stored in the variable which generates the new test fct.
 
     print(viscosity)
+
+    viscosity = Constant(viscosity)
 
     #Bc1
     bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u left bdary
@@ -176,9 +178,25 @@ for viscosity in viscosities:
 
     #If we aren't at viscosity where we are trying to solve then use newton iteration
     # to get a better estimate for next viscosity value
-    if(viscosity != MaximalViscosity){
+    if(viscosity != ObjectiveViscosity):
+        #same parameters
+        NewtonParameters = parameters
 
-    }
+        #calculate derivative of F with respect to viscosity
+        dFdviscosity = derivative(F,viscosity)
+
+        #
+        dupdviscosity = TrialFunctions(W)
+
+        #Input problem
+        NewtonProblem = NonlinearVariationalProblem(F + dFdviscosity,dupdviscosity, Jp = aP, bcs = bcs)
+
+        #solving
+        NewtonSolver = NonlinearVariationalSolver(NewtonProblem, nullspace=nulllspace, solver_parameters = NewtonParameters)
+
+        up = up + dupdviscosity
+
+
 
     #stores u and p values separetly
     u, p = up.split()
