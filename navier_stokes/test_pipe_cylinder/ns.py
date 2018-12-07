@@ -7,10 +7,13 @@ c = Constant(20) # works
 f = Constant((1,0))
 gamma = Constant((100.0))
 AverageVelocity = Constant(1)
-MinimalViscosity = 1
-MaximalViscosity = 101
-ViscosityStepsize = 10
-viscosities = range(MinimalViscosity,MaximalViscosity,ViscosityStepsize)
+ObjectiveViscosity = 0.001#viscosity we are aiming for
+MaxOrder = 3
+MinOrder = math.floor(math.log10(ObjectiveViscosity))
+ScaledViscosity = ObjectiveViscosity * 10**(-MinOrder)#rescales viscosity to be of order 1
+OrderStepsize = 1
+orders = range(MaxOrder,MinOrder,-OrderStepsize)
+viscosities = [ScaledViscosity*10**(order) for order in orders]
 
 # Load mesh
 mesh = Mesh("CylinderInPipe.msh")
@@ -32,7 +35,9 @@ for viscosity in viscosities:
     #Quick Explanation: We cannot solve for high reynolds number, so instead we solve for low viscosity and then gradually increaseself.
     #We then use the u estimated from the prior step as a guess for the next one so that the solver converges.
     #In theory firedrake should automatically use the prior u values as a guess since they are stored in the variable which generates the new test fct.
-    
+
+    print(viscosity)
+
     #Bc1
     bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u left bdary
     bc1p = DirichletBC(W.sub(1), p_0, 1)
@@ -168,6 +173,12 @@ for viscosity in viscosities:
 
     #This solves the problem
     navierstokessolver.solve()
+
+    #If we aren't at viscosity where we are trying to solve then use newton iteration
+    # to get a better estimate for next viscosity value
+    if(viscosity != MaximalViscosity){
+
+    }
 
     #stores u and p values separetly
     u, p = up.split()
