@@ -8,8 +8,9 @@ f = Constant((1,0))
 gamma = Constant((100.0))
 AverageVelocity = Constant(1)
 viscosity = Constant(1)
-AdvectionSwitches = range(0,1,100)
+AdvectionSwitches = list(np.linspace(0,1,11))
 AdvectionSwitches = [Constant(x) for x in AdvectionSwitches]
+print(list(np.linspace(0,1,11)))
 
 # Load mesh
 mesh = Mesh("CylinderInPipe.msh")
@@ -170,7 +171,7 @@ for AdvectionSwitch in AdvectionSwitches:
 
     #If we aren't at viscosity where we are trying to solve then use newton iteration
     # to get a better estimate for next viscosity value
-    if(AdvectionSwitch != AdvectionSwitches(end)):
+    if(AdvectionSwitch != AdvectionSwitches[-1]):
         #same parameters
         NewtonParameters = parameters
 
@@ -180,7 +181,10 @@ for AdvectionSwitch in AdvectionSwitches:
         #store old value of u
         up_sol = up
 
-        RHS =-dFdviscosity
+        #splitting u&p
+        u, p = up.split()
+
+        RHS =-action(dFdviscosity,AdvectionSwitch)
 
         #Input problem
         NewtonProblem = LinearVariationalProblem(F,RHS,up,aP = aP, bcs = bcs)
