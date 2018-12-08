@@ -89,7 +89,7 @@ pmass = q*p*dx
 aP = viscous_term   + (viscosity + gamma)*pmass +graddiv_term
 
 #Left hand side
-F = action(a_bilinear, up) - L
+F = action(a_bilinear, up) - viscosity*L
 
 #splitting u and p for programming purposes (unavoidable)
 u, p = split(up)

@@ -110,7 +110,7 @@ for viscosity in viscosities:
     aP = viscous_term   + (viscosity + gamma)*pmass +graddiv_term
 
     #Left hand side
-    F = action(a_bilinear, up) - L
+    F = action(a_bilinear, up) - viscosity*L
 
     #splitting u and p for programming purposes (unavoidable)
     u, p = split(up)
@@ -185,16 +185,21 @@ for viscosity in viscosities:
         #calculate derivative of F with respect to viscosity
         dFdviscosity = derivative(F,viscosity)
 
-        #
-        dupdviscosity = TrialFunctions(W)
+        #store old value of u
+        up_sol = up
+
+        #RHS =-dFdviscosity
+        #atumatic differentiation doesn't work, proceed to differentiater manually
+        RHS = viscous_term
 
         #Input problem
-        NewtonProblem = NonlinearVariationalProblem(F + dFdviscosity,dupdviscosity, Jp = aP, bcs = bcs)
+        NewtonProblem = LinearVariationalProblem(F,RHS,up,aP = aP, bcs = bcs)
 
         #solving
-        NewtonSolver = NonlinearVariationalSolver(NewtonProblem, nullspace=nulllspace, solver_parameters = NewtonParameters)
+        NewtonSolver = LinearVariationalSolver(NewtonProblem, nullspace=nulllspace, solver_parameters = NewtonParameters)
 
-        up = up + dupdviscosity
+        #newton approximation
+        up = up_sol + up
 
 
 
