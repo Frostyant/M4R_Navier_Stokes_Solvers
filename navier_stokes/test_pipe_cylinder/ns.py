@@ -7,13 +7,9 @@ c = Constant(20) # works
 f = Constant((1,0))
 gamma = Constant((100.0))
 AverageVelocity = Constant(1)
-ObjectiveViscosity = 0.001#viscosity we are aiming for
-MaxOrder = 3
-MinOrder = np.floor(np.log10(ObjectiveViscosity))
-ScaledViscosity = ObjectiveViscosity * 10**(-MinOrder)#rescales viscosity to be of order 1
-OrderStepsize = 1
-orders = range(MaxOrder,MinOrder.astype(int),-OrderStepsize)
-viscosities = [ScaledViscosity*10**(order) for order in orders]
+viscosity = Constant(1)
+AdvectionSwitches = range(0,1,100)
+AdvectionSwitches = [Constant(x) for x in AdvectionSwitches]
 
 # Load mesh
 mesh = Mesh("CylinderInPipe.msh")
@@ -31,14 +27,10 @@ n = FacetNormal(mesh)
 u_0 = as_vector([conditional(x <0.1,AverageVelocity*sin(pi*y)**2,0.) + conditional(x > 0.9,AverageVelocity*sin(pi*y)**2,0.),0])
 p_0 = 0
 
-for viscosity in viscosities:
+for AdvectionSwitch in AdvectionSwitches:
     #Quick Explanation: We cannot solve for high reynolds number, so instead we solve for low viscosity and then gradually increaseself.
     #We then use the u estimated from the prior step as a guess for the next one so that the solver converges.
     #In theory firedrake should automatically use the prior u values as a guess since they are stored in the variable which generates the new test fct.
-
-    print(viscosity)
-
-    viscosity = Constant(viscosity)
 
     #Bc1
     bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u left bdary
@@ -134,7 +126,7 @@ for viscosity in viscosities:
     adv_grad = 0.5*div(v)*inner(u,u)*dx #This is the term due to the gradient of u^2
     adv_bdc1 = inner(u_0,perp(n,cross(u_0,v)))*ds #boundary version of adv_byparts2
     adv_bdc2 = 1/2*inner(inner(u_0,u_0)*v,n)*ds #boundary term from u^2 when it is non-0
-    advection_term = (
+    advection_term = AdvectionSwitch*(
         adv_byparts1
         - adv_byparts2
         - adv_grad
@@ -146,7 +138,7 @@ for viscosity in viscosities:
     F += advection_term
 
     #Adjusting aP, the jacobian, with derivative of advection term
-    aP += derivative(advection_term, up)
+    aP += AdvectionSwitch*derivative(advection_term, up)
 
     #Solving problem #
     parameters = {
@@ -178,19 +170,17 @@ for viscosity in viscosities:
 
     #If we aren't at viscosity where we are trying to solve then use newton iteration
     # to get a better estimate for next viscosity value
-    if(viscosity != ObjectiveViscosity):
+    if(AdvectionSwitch != AdvectionSwitches(end)):
         #same parameters
         NewtonParameters = parameters
 
         #calculate derivative of F with respect to viscosity
-        dFdviscosity = derivative(F,viscosity)
+        dFdviscosity = derivative(F,AdvectionSwitch)
 
         #store old value of u
         up_sol = up
 
-        #RHS =-dFdviscosity
-        #atumatic differentiation doesn't work, proceed to differentiater manually
-        RHS = viscous_term
+        RHS =-dFdviscosity
 
         #Input problem
         NewtonProblem = LinearVariationalProblem(F,RHS,up,aP = aP, bcs = bcs)
