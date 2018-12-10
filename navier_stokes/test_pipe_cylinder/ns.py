@@ -127,7 +127,7 @@ for AdvectionSwitch in AdvectionSwitches:
     adv_grad = 0.5*div(v)*inner(u,u)*dx #This is the term due to the gradient of u^2
     adv_bdc1 = inner(u_0,perp(n,cross(u_0,v)))*ds #boundary version of adv_byparts2
     adv_bdc2 = 1/2*inner(inner(u_0,u_0)*v,n)*ds #boundary term from u^2 when it is non-0
-    advection_term = AdvectionSwitch*(
+    advection_term = (
         adv_byparts1
         - adv_byparts2
         - adv_grad
@@ -136,7 +136,7 @@ for AdvectionSwitch in AdvectionSwitches:
         )
 
     #Adjusting F with advection term
-    F += advection_term
+    F += AdvectionSwitch*advection_term
 
     #Adjusting aP, the jacobian, with derivative of advection term
     aP += AdvectionSwitch*derivative(advection_term, up)
@@ -169,30 +169,34 @@ for AdvectionSwitch in AdvectionSwitches:
     #This solves the problem
     navierstokessolver.solve()
 
+    #same parameters
+    ContinuationParameters = parameters
+    
+    #splitting u&p
+    dupdadvswitch = Function(W)
+    
+    #differentiation
+    RHS = -advection_term
+    
+    #replaces all of up in F with dupdadvswitch
+    LHS = derivative(F,up)
+    
+    #Input problem
+    ContinuationProblem = LinearVariationalProblem(LHS,RHS,dupdadvswitch,aP = aP, bcs = bcs)
+    
+    #solving
+    ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=nullspace, solver_parameters = ContinuationParameters)
+    
     #If we aren't at viscosity where we are trying to solve then use newton iteration
     # to get a better estimate for next viscosity value
     if(AdvectionSwitch != AdvectionSwitches[-1]):
-        #same parameters
-        NewtonParameters = parameters
 
-        #splitting u&p
-        dupdadvswitch = Function(W)
-
-        #differentiation
-        RHS = derivative(F,AdvectionSwitch)
-
-        #replaces all of up in F with dupdadvswitch
-        LHS = action(F,dupdadvswitch)
-
-        #Input problem
-        NewtonProblem = LinearVariationalProblem(LHS,RHS,dupdadvswitch,aP = aP, bcs = bcs)
-
-        #solving
-        NewtonSolver = LinearVariationalSolver(NewtonProblem, nullspace=nulllspace, solver_parameters = NewtonParameters)
-
+        ContinuationSolver.solve()
+        
         #newton approximation
-        up = up + dupdadvswitch
-
+        up += dupdadvswitch
+        
+        navierstokessolver.solve()
 
 
     #stores u and p values separetly
