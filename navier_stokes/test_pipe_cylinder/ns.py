@@ -175,9 +175,6 @@ for AdvectionSwitch in AdvectionSwitches:
         #same parameters
         NewtonParameters = parameters
 
-        #store old value of u
-        up_sol = up
-
         #splitting u&p
         dupdadvswitch = Function(W)
 
@@ -194,7 +191,7 @@ for AdvectionSwitch in AdvectionSwitches:
         NewtonSolver = LinearVariationalSolver(NewtonProblem, nullspace=nulllspace, solver_parameters = NewtonParameters)
 
         #newton approximation
-        up = up_sol + up
+        up = up + dupdadvswitch
 
 
 
