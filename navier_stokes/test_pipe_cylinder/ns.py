@@ -175,19 +175,20 @@ for AdvectionSwitch in AdvectionSwitches:
         #same parameters
         NewtonParameters = parameters
 
-        #calculate derivative of F with respect to viscosity
-        dFdviscosity = derivative(F,AdvectionSwitch)
-
         #store old value of u
         up_sol = up
 
         #splitting u&p
-        u, p = up.split()
+        dupdadvswitch = Function(W)
 
-        RHS =-action(dFdviscosity,AdvectionSwitch)
+        #differentiation
+        RHS = derivative(F,AdvectionSwitch)
+
+        #replaces all of up in F with dupdadvswitch
+        LHS = action(F,dupdadvswitch)
 
         #Input problem
-        NewtonProblem = LinearVariationalProblem(F,RHS,up,aP = aP, bcs = bcs)
+        NewtonProblem = LinearVariationalProblem(LHS,RHS,dupdadvswitch,aP = aP, bcs = bcs)
 
         #solving
         NewtonSolver = LinearVariationalSolver(NewtonProblem, nullspace=nulllspace, solver_parameters = NewtonParameters)
