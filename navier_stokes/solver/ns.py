@@ -7,7 +7,7 @@ c = Constant(20) # works
 f = Constant((1,0))
 gamma = Constant((100.0))
 AverageVelocity = Constant(1)
-viscosity = Constant(1)
+viscosity = Constant(0.001)
 AdvectionSwitches = list(np.linspace(0,1,11))
 
 print(list(np.linspace(0,1,11)))
@@ -178,7 +178,7 @@ RHS = -advection_term
 
 #replaces all of up in F with dupdadvswitch
 LHS = derivative(F,up)
-    
+
 #Input problem
 ContinuationProblem = LinearVariationalProblem(LHS,RHS,dupdadvswitch,aP = aP, bcs = bcs)
 
@@ -191,7 +191,7 @@ upfile = File("stokes.pvd")
 u, p = up.split()
 u.rename("Velocity")
 p.rename("Pressure")
-upfile.write(u, p)
+#upfile.write(u, p)
 
 #If we aren't at viscosity where we are trying to solve then use newton iteration
 for i, advectionswitch_value in enumerate(AdvectionSwitches):
@@ -199,7 +199,7 @@ for i, advectionswitch_value in enumerate(AdvectionSwitches):
         continue
 
     ContinuationSolver.solve()
-    
+
     #newton approximation
     up += dupdadvswitch*(AdvectionSwitches[i]-AdvectionSwitches[i-1])
 
