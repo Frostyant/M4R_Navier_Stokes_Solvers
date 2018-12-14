@@ -3,15 +3,16 @@ from matplotlib import *
 import numpy as np
 
 #Some settings
+n = 50 # number of grid points
 c = Constant(20) # works
 f = Constant((1,0))
 gamma = Constant((100.0))
 AverageVelocity = Constant(1)
-viscosity = Constant(0.1)
+viscosity = Constant(1)
 AdvectionSwitches = list(np.linspace(0,1,11))
 
 # Load mesh
-mesh = Mesh("CylinderInPipe.msh")
+mesh = UnitSquareMesh(n, n)
 
 # Define function spaces
 V = FunctionSpace(mesh, "BDM", 2)
@@ -23,13 +24,14 @@ x,y= SpatialCoordinate(mesh)
 n = FacetNormal(mesh)
 
 # boundary function, these are assumed to not change during iteration
-u_0 = as_vector([conditional(x <0.1,AverageVelocity*sin(pi*y/2)**2,0.)
-    + conditional(x > 3.9,AverageVelocity*sin(pi*y/2)**2,0.),0])
+u_0 = as_vector([conditional(x <0.1,AverageVelocity*sin(pi*y)**2,0.) + conditional(x > 0.9,AverageVelocity*sin(pi*y)**2,0.),0])
 p_0 = 0
 
-#Quick Explanation: We cannot solve for high reynolds number, so instead we solve for low viscosity and then gradually increaseself.
-#We then use the u estimated from the prior step as a guess for the next one so that the solver converges.
-#In theory firedrake should automatically use the prior u values as a guess since they are stored in the variable which generates the new test fct.
+# boundary for penalty
+u_0 = as_vector([10/(4*viscosity)*(0.5**2-(0.5-y)**2),0])#Pouseilles flow solution
+p_0 = 0
+p_1 = 10
+#Natural boundary for where applicable, used to turn off Bc terms if natural Bcs apply
 
 #Bc1
 bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u left bdary
@@ -39,16 +41,13 @@ bc1p = DirichletBC(W.sub(1), p_0, 1)
 bc2 = DirichletBC(W.sub(0), u_0, 2)#Can only set Normal Component, here that is u right bdary
 
 #Bc3
-bc3 = DirichletBC(W.sub(1), p_0, 3)#Can only set Normal Component, here that is v bottom bdary
+bc3 = DirichletBC(W.sub(1), p_1, 3)#Can only set Normal Component, here that is v bottom bdary
 
 #Bc4
 bc4 = DirichletBC(W.sub(0), u_0, 4)#Can only set Normal Component, here that is v top bdary
 
-#Bc5, From cylinder
-bc5 = DirichletBC(W.sub(0), u_0, 5)
-
 #boundary conditions
-bcs=(bc1,bc1p,bc2,bc3,bc4,bc5)
+bcs=(bc1,bc1p,bc2,bc3,bc4)
 
 
 up = Function(W)

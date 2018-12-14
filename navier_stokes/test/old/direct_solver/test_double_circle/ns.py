@@ -3,15 +3,13 @@ from matplotlib import *
 import numpy as np
 
 #Some settings
+viscosity = Constant(1) #viscosity
 c = Constant(20) # works
 f = Constant((1,0))
 gamma = Constant((100.0))
-AverageVelocity = Constant(1)
-viscosity = Constant(0.1)
-AdvectionSwitches = list(np.linspace(0,1,11))
 
 # Load mesh
-mesh = Mesh("CylinderInPipe.msh")
+mesh = Mesh("DoubleCircle.msh")
 
 # Define function spaces
 V = FunctionSpace(mesh, "BDM", 2)
@@ -22,33 +20,23 @@ x,y= SpatialCoordinate(mesh)
 #defining the normal
 n = FacetNormal(mesh)
 
-# boundary function, these are assumed to not change during iteration
-u_0 = as_vector([conditional(x <0.1,AverageVelocity*sin(pi*y/2)**2,0.)
-    + conditional(x > 3.9,AverageVelocity*sin(pi*y/2)**2,0.),0])
-p_0 = 0
+# boundary function
+u_0 = as_vector([
+    conditional(x**2 + y**2 < 1.1**2,-y , 0.)
+    + conditional(x**2 + y**2 > 1.1**2,-2*y , 0.) ,
+    conditional(x**2 + y**2 < 1.9**2,x , 0.)
+    + conditional(x**2 + y**2 > 1.9**2, 2*x , 0.)
+    ])
 
-#Quick Explanation: We cannot solve for high reynolds number, so instead we solve for low viscosity and then gradually increaseself.
-#We then use the u estimated from the prior step as a guess for the next one so that the solver converges.
-#In theory firedrake should automatically use the prior u values as a guess since they are stored in the variable which generates the new test fct.
-
-#Bc1
+#Bc1, interior circle
 bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u left bdary
-bc1p = DirichletBC(W.sub(1), p_0, 1)
 
-#Bc2
+#Bc2, interior circle
 bc2 = DirichletBC(W.sub(0), u_0, 2)#Can only set Normal Component, here that is u right bdary
 
-#Bc3
-bc3 = DirichletBC(W.sub(1), p_0, 3)#Can only set Normal Component, here that is v bottom bdary
-
-#Bc4
-bc4 = DirichletBC(W.sub(0), u_0, 4)#Can only set Normal Component, here that is v top bdary
-
-#Bc5, From cylinder
-bc5 = DirichletBC(W.sub(0), u_0, 5)
 
 #boundary conditions
-bcs=(bc1,bc1p,bc2,bc3,bc4,bc5)
+bcs=(bc1,bc2)
 
 
 up = Function(W)
@@ -84,7 +72,7 @@ viscous_term = viscosity*(
     + viscous_stab
     - viscous_byparts2_ext
     + viscous_ext
-)
+    )
 
 #Setting up bilenar form
 graddiv_term = gamma*div(v)*div(u)*dx
@@ -93,7 +81,7 @@ a_bilinear = (
     viscous_term +
     q * div(u) * dx - p * div(v) * dx
     + graddiv_term
-)
+    )
 
 pmass = q*p*dx
 
@@ -131,15 +119,13 @@ advection_term = (
     - adv_grad
     - adv_bdc1
     + adv_bdc2
-)
-
-AdvectionSwitch = Constant(AdvectionSwitches[0])
+    )
 
 #Adjusting F with advection term
-F += AdvectionSwitch*advection_term
+F += advection_term
 
 #Adjusting aP, the jacobian, with derivative of advection term
-aP += AdvectionSwitch*derivative(advection_term, up)
+aP += derivative(advection_term, up)
 
 #Solving problem #
 parameters = {
@@ -160,50 +146,22 @@ parameters = {
 
 #Input what we wrote before
 navierstokesproblem = NonlinearVariationalProblem(F, up, Jp=aP,
-                                                  bcs=bcs)
-#Solver
+                                            bcs=bcs)
+#Solve
 navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
-                                                nullspace=nullspace,
-                                                solver_parameters=parameters)
+                                          nullspace=nullspace,
+                                          solver_parameters=parameters)
 
-#same parameters
-ContinuationParameters = parameters
-
-#splitting u&p
-dupdadvswitch = Function(W)
-
-#differentiation
-RHS = -advection_term
-
-#replaces all of up in F with dupdadvswitch
-LHS = derivative(F,up)
-
-#Input problem
-ContinuationProblem = LinearVariationalProblem(LHS,RHS,dupdadvswitch,aP = aP, bcs = bcs)
-
-#solving
-ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=nullspace, solver_parameters = ContinuationParameters)
-
-#This solves the problem
 navierstokessolver.solve()
-upfile = File("stokes.pvd")
+
 u, p = up.split()
 u.rename("Velocity")
 p.rename("Pressure")
-#upfile.write(u, p)
 
-#If we aren't at viscosity where we are trying to solve then use newton iteration
-for i, advectionswitch_value in enumerate(AdvectionSwitches):
-    if i == 0:
-        continue
+ # Plot solution
+File("stokes.pvd").write(u, p)
 
-    ContinuationSolver.solve()
-
-    #newton approximation
-    up += dupdadvswitch*(AdvectionSwitches[i]-AdvectionSwitches[i-1])
-
-    AdvectionSwitch.assign(advectionswitch_value)
-    navierstokessolver.solve()
-
-    # Plot solution
-    upfile.write(u, p)
+ # Plot solution
+plot(p)
+plot(u)
+File("stokes.pvd").write(u, p)
