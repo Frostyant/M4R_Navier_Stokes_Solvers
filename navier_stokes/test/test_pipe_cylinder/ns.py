@@ -5,10 +5,10 @@ import numpy as np
 #Some settings
 c = Constant(20) # works
 f = Constant((1,0))
-gamma = Constant((100.0))
+gamma = Constant((1000.0))
 AverageVelocity = Constant(1)
-viscosity = Constant(0.1)
-AdvectionSwitches = list(np.linspace(0,1,11))
+viscosity = Constant(0.01)
+AdvectionSwitches = list(np.linspace(0,1,50))
 
 # Load mesh
 mesh = Mesh("CylinderInPipe.msh")
@@ -144,7 +144,7 @@ aP += AdvectionSwitch*derivative(advection_term, up)
 #Solving problem #
 parameters = {
     "ksp_type": "gmres",
-    "ksp_monitor": True,
+    "ksp_converged_reason": True,
     "ksp_rtol": 1e-8,
     "pc_type": "fieldsplit",
     "pc_fieldsplit_type": "schur", #use Schur preconditioner
@@ -152,6 +152,7 @@ parameters = {
     "pc_fieldsplit_off_diag_use_amat": True,
     "fieldsplit_0_ksp_type": "preonly",
     "fieldsplit_0_pc_type": "lu",#use full LU factorization, ilu fails
+    "fieldsplit_0_pc_factor_mat_solver_package": "mumps",
     "fieldsplit_1_ksp_type": "preonly",
     "fieldsplit_1_pc_type": "bjacobi",
     "fieldsplit_1_pc_sub_type": "ilu"#use incomplete LU factorization on the submatrix
@@ -190,10 +191,12 @@ upfile = File("stokes.pvd")
 u, p = up.split()
 u.rename("Velocity")
 p.rename("Pressure")
-#upfile.write(u, p)
+upfile.write(u, p)
 
 #If we aren't at viscosity where we are trying to solve then use newton iteration
 for i, advectionswitch_value in enumerate(AdvectionSwitches):
+    print(advectionswitch_value)
+    
     if i == 0:
         continue
 
