@@ -7,8 +7,8 @@ c = Constant(20) # works
 f = Constant((1,0))
 gamma = Constant((1000.0))
 AverageVelocity = Constant(1)
-viscosity = Constant(0.01)
-AdvectionSwitches = list(np.linspace(0,1,50))
+viscosity = Constant(0.001)
+AdvectionSwitchStep = 1
 
 # Load mesh
 mesh = Mesh("CylinderInPipe.msh")
@@ -133,7 +133,7 @@ advection_term = (
     + adv_bdc2
 )
 
-AdvectionSwitch = Constant(AdvectionSwitches[0])
+AdvectionSwitch = Constant(0)
 
 #Adjusting F with advection term
 F += AdvectionSwitch*advection_term
@@ -146,6 +146,7 @@ parameters = {
     "ksp_type": "gmres",
     "ksp_converged_reason": True,
     "ksp_rtol": 1e-8,
+    "ksp_max_it": 25,
     "pc_type": "fieldsplit",
     "pc_fieldsplit_type": "schur", #use Schur preconditioner
     "pc_fieldsplit_schur_fact_type": "full", #full preconditioner
@@ -193,20 +194,46 @@ u.rename("Velocity")
 p.rename("Pressure")
 upfile.write(u, p)
 
-#If we aren't at viscosity where we are trying to solve then use newton iteration
-for i, advectionswitch_value in enumerate(AdvectionSwitches):
-    print(advectionswitch_value)
-    
-    if i == 0:
-        continue
+#Continuation Method#
 
-    ContinuationSolver.solve()
+#define
+def ContinuationMethod(AdvectionSwitchValue,AdvectionSwitchStep):
+
+    global dupdadvswitch
+
+    global up
+
+    global AdvectionSwitch
+
+    global navierstokessolver
+
+    global upfile
 
     #newton approximation
-    up += dupdadvswitch*(AdvectionSwitches[i]-AdvectionSwitches[i-1])
+    up += dupdadvswitch*(AdvectionSwitchStep)
 
-    AdvectionSwitch.assign(advectionswitch_value)
+    AdvectionSwitch.assign(AdvectionSwitchValue)
     navierstokessolver.solve()
 
     # Plot solution
     upfile.write(u, p)
+
+#setup variable
+AdvectionSwitchValue = 0
+
+while AdvectionSwitchValue + AdvectionSwitchStep <= 1:
+
+    try:
+        AdvectionSwitchValue += AdvectionSwitchStep
+        print(AdvectionSwitchValue)
+        ContinuationMethod(AdvectionSwitchValue,AdvectionSwitchStep)
+
+    except ConvergenceError as ex:
+        template = "An Exception of type {0} has occurred. Reducing Step Size."
+        print(template.format(type(ex).__name__,ex.args))
+        AdvectionSwitchValue -= AdvectionSwitchStep #reset AdvectionSwitchValue
+        AdvectionSwitchStep = AdvectionSwitchStep/2
+        #IF Advection step is this low the script failed
+        if AdvectionSwitchStep <= 10**(-3):
+            Print("Too Low Step Size, Solver failed")
+            break
