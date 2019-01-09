@@ -235,5 +235,5 @@ while AdvectionSwitchValue + AdvectionSwitchStep <= 1:
         AdvectionSwitchStep = AdvectionSwitchStep/2
         #IF Advection step is this low the script failed
         if AdvectionSwitchStep <= 10**(-3):
-            Print("Too Low Step Size, Solver failed")
+            print("Too Low Step Size, Solver failed")
             break
