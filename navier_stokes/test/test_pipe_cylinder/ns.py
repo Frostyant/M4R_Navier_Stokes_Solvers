@@ -146,7 +146,7 @@ parameters = {
     "ksp_type": "gmres",
     "ksp_converged_reason": True,
     "ksp_rtol": 1e-8,
-    "ksp_max_it": 25,
+    "ksp_max_it": 100,
     "pc_type": "fieldsplit",
     "pc_fieldsplit_type": "schur", #use Schur preconditioner
     "pc_fieldsplit_schur_fact_type": "full", #full preconditioner
