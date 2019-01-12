@@ -5,7 +5,7 @@ import numpy as np
 #Some settings
 c = Constant(20) # works
 f = Constant((1,0))
-gamma = Constant((1000.0))
+gamma = Constant((100000.0))
 AverageVelocity = Constant(1)
 viscosity = Constant(0.001)
 AdvectionSwitchStep = 1

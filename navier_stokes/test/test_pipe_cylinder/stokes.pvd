@@ -15,20 +15,5 @@
 <DataSet timestep="11" file="stokes_11.vtu" />
 <DataSet timestep="12" file="stokes_12.vtu" />
 <DataSet timestep="13" file="stokes_13.vtu" />
-<DataSet timestep="14" file="stokes_14.vtu" />
-<DataSet timestep="15" file="stokes_15.vtu" />
-<DataSet timestep="16" file="stokes_16.vtu" />
-<DataSet timestep="17" file="stokes_17.vtu" />
-<DataSet timestep="18" file="stokes_18.vtu" />
-<DataSet timestep="19" file="stokes_19.vtu" />
-<DataSet timestep="20" file="stokes_20.vtu" />
-<DataSet timestep="21" file="stokes_21.vtu" />
-<DataSet timestep="22" file="stokes_22.vtu" />
-<DataSet timestep="23" file="stokes_23.vtu" />
-<DataSet timestep="24" file="stokes_24.vtu" />
-<DataSet timestep="25" file="stokes_25.vtu" />
-<DataSet timestep="26" file="stokes_26.vtu" />
-<DataSet timestep="27" file="stokes_27.vtu" />
-<DataSet timestep="28" file="stokes_28.vtu" />
 </Collection>
 </VTKFile>
