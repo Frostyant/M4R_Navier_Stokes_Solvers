@@ -5,10 +5,10 @@ import numpy as np
 #Some settings
 c = Constant(20) # works
 f = Constant((1,0))
-gamma = Constant((1000.0))
+gamma = Constant((100000.0))
 AverageVelocity = Constant(1)
-viscosity = Constant(0.001)
-AdvectionSwitchStep = 1
+viscosity = Constant(0.1)
+AdvectionSwitchStep = 0.2
 
 # Load mesh
 mesh = Mesh("CylinderInPipe.msh")
@@ -23,8 +23,11 @@ x,y= SpatialCoordinate(mesh)
 n = FacetNormal(mesh)
 
 # boundary function, these are assumed to not change during iteration
-u_0 = as_vector([conditional(x <0.1,AverageVelocity*sin(pi*y/2)**2,0.)
-    + conditional(x > 3.9,AverageVelocity*sin(pi*y/2)**2,0.),0])
+u_0 = as_vector([conditional(x <0.1,AverageVelocity,0.)
+    + conditional(x > 29.9,AverageVelocity,0.)
+    + conditional(y > 19.99,AverageVelocity,0.)
+    + conditional(y < 0.01,AverageVelocity,0.)
+    ,0])
 p_0 = 0
 
 #Quick Explanation: We cannot solve for high reynolds number, so instead we solve for low viscosity and then gradually increaseself.
@@ -146,7 +149,7 @@ parameters = {
     "ksp_type": "gmres",
     "ksp_converged_reason": True,
     "ksp_rtol": 1e-8,
-    "ksp_max_it": 25,
+    "ksp_max_it": 50,
     "pc_type": "fieldsplit",
     "pc_fieldsplit_type": "schur", #use Schur preconditioner
     "pc_fieldsplit_schur_fact_type": "full", #full preconditioner
@@ -227,6 +230,10 @@ while AdvectionSwitchValue + AdvectionSwitchStep <= 1:
         AdvectionSwitchValue += AdvectionSwitchStep
         print(AdvectionSwitchValue)
         ContinuationMethod(AdvectionSwitchValue,AdvectionSwitchStep)
+        AdvectionSwitchStep = 1.5*AdvectionSwitchStep
+        if AdvectionSwitchStep >= (1-AdvectionSwitchValue) and AdvectionSwitchValue < 1:
+            AdvectionSwitchStep = (1-AdvectionSwitchValue)
+            print("Success, Increasing Step Size")
 
     except ConvergenceError as ex:
         template = "An Exception of type {0} has occurred. Reducing Step Size."
@@ -235,5 +242,5 @@ while AdvectionSwitchValue + AdvectionSwitchStep <= 1:
         AdvectionSwitchStep = AdvectionSwitchStep/2
         #IF Advection step is this low the script failed
         if AdvectionSwitchStep <= 10**(-3):
-            Print("Too Low Step Size, Solver failed")
+            print("Too Low Step Size, Solver failed")
             break

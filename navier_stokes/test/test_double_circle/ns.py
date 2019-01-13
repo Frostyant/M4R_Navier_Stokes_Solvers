@@ -8,7 +8,7 @@ f = Constant((1,0))
 gamma = Constant((100.0))
 AverageVelocity = Constant(1)
 viscosity = Constant(0.1)
-AdvectionSwitches = list(np.linspace(0,1,11))
+AdvectionSwitchStep = 0.2
 
 # Load mesh
 mesh = Mesh("DoubleCircle.msh")
@@ -39,7 +39,6 @@ bc2 = DirichletBC(W.sub(0), u_0, 2)#Can only set Normal Component, here that is 
 
 #boundary conditions
 bcs=(bc1,bc2)
-
 
 up = Function(W)
 
@@ -123,7 +122,7 @@ advection_term = (
     + adv_bdc2
 )
 
-AdvectionSwitch = Constant(AdvectionSwitches[0])
+AdvectionSwitch = Constant(0)
 
 #Adjusting F with advection term
 F += AdvectionSwitch*advection_term
@@ -134,14 +133,16 @@ aP += AdvectionSwitch*derivative(advection_term, up)
 #Solving problem #
 parameters = {
     "ksp_type": "gmres",
-    "ksp_monitor": True,
+    "ksp_converged_reason": True,
     "ksp_rtol": 1e-8,
+    "ksp_max_it": 50,
     "pc_type": "fieldsplit",
     "pc_fieldsplit_type": "schur", #use Schur preconditioner
     "pc_fieldsplit_schur_fact_type": "full", #full preconditioner
     "pc_fieldsplit_off_diag_use_amat": True,
     "fieldsplit_0_ksp_type": "preonly",
     "fieldsplit_0_pc_type": "lu",#use full LU factorization, ilu fails
+    "fieldsplit_0_pc_factor_mat_solver_package": "mumps",
     "fieldsplit_1_ksp_type": "preonly",
     "fieldsplit_1_pc_type": "bjacobi",
     "fieldsplit_1_pc_sub_type": "ilu"#use incomplete LU factorization on the submatrix
@@ -180,20 +181,52 @@ upfile = File("stokes.pvd")
 u, p = up.split()
 u.rename("Velocity")
 p.rename("Pressure")
-#upfile.write(u, p)
+upfile.write(u, p)
 
-#If we aren't at viscosity where we are trying to solve then use newton iteration
-for i, advectionswitch_value in enumerate(AdvectionSwitches):
-    if i == 0:
-        continue
+#Continuation Method#
 
-    ContinuationSolver.solve()
+#define
+def ContinuationMethod(AdvectionSwitchValue,AdvectionSwitchStep):
+
+    global dupdadvswitch
+
+    global up
+
+    global AdvectionSwitch
+
+    global navierstokessolver
+
+    global upfile
 
     #newton approximation
-    up += dupdadvswitch*(AdvectionSwitches[i]-AdvectionSwitches[i-1])
+    up += dupdadvswitch*(AdvectionSwitchStep)
 
-    AdvectionSwitch.assign(advectionswitch_value)
+    AdvectionSwitch.assign(AdvectionSwitchValue)
     navierstokessolver.solve()
 
     # Plot solution
     upfile.write(u, p)
+
+#setup variable
+AdvectionSwitchValue = 0
+
+while AdvectionSwitchValue + AdvectionSwitchStep <= 1:
+
+    try:
+        AdvectionSwitchValue += AdvectionSwitchStep
+        print(AdvectionSwitchValue)
+        ContinuationMethod(AdvectionSwitchValue,AdvectionSwitchStep)
+        AdvectionSwitchStep = 1.5*AdvectionSwitchStep
+        if AdvectionSwitchStep >= (1-AdvectionSwitchValue) and AdvectionSwitchValue < 1:
+            AdvectionSwitchStep = (1-AdvectionSwitchValue)
+            print("Success, Increasing Step Size")
+
+    except ConvergenceError as ex:
+        template = "An Exception of type {0} has occurred. Reducing Step Size."
+        print(template.format(type(ex).__name__,ex.args))
+        AdvectionSwitchValue -= AdvectionSwitchStep #reset AdvectionSwitchValue
+        AdvectionSwitchStep = AdvectionSwitchStep/2
+        #IF Advection step is this low the script failed
+        if AdvectionSwitchStep <= 10**(-3):
+            print("Too Low Step Size, Solver failed")
+            break
