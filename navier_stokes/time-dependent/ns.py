@@ -6,6 +6,8 @@ import numpy as np
 c = Constant(20) # works
 gamma = Constant((10**10.0))
 AverageVelocity = Constant(1)
+TMax = 1
+TStep = 0.1
 viscosity = Constant(0.01)
 AdvectionSwitchStep = 1
 

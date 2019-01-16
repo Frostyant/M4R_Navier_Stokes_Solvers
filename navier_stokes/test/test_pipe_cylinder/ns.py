@@ -4,9 +4,9 @@ import numpy as np
 
 #Some settings
 c = Constant(20) # works
-gamma = Constant((10**5.0))
+gamma = Constant((10**10.0))
 AverageVelocity = Constant(1)
-viscosity = Constant(0.1)
+viscosity = Constant(0.01)
 AdvectionSwitchStep = 1
 
 # Load mesh
@@ -143,7 +143,7 @@ aP += AdvectionSwitch*derivative(advection_term, up)
 parameters = {
     "ksp_type": "gmres",
     "ksp_converged_reason": True,
-    "ksp_rtol": 1e-8,
+    "ksp_rtol": 1e-6,
     "ksp_max_it": 50,
     "pc_type": "fieldsplit",
     "pc_fieldsplit_type": "schur", #use Schur preconditioner
@@ -226,9 +226,10 @@ while AdvectionSwitchValue + AdvectionSwitchStep <= 1:
         print(AdvectionSwitchValue)
         ContinuationMethod(AdvectionSwitchValue,AdvectionSwitchStep)
         AdvectionSwitchStep = 1.5*AdvectionSwitchStep
+        print("Success, Increasing Step Size")
         if AdvectionSwitchStep >= (1-AdvectionSwitchValue) and AdvectionSwitchValue < 1:
             AdvectionSwitchStep = (1-AdvectionSwitchValue)
-            print("Success, Increasing Step Size")
+
 
     except ConvergenceError as ex:
         template = "An Exception of type {0} has occurred. Reducing Step Size."
