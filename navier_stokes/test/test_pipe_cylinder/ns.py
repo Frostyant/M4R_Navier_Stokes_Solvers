@@ -4,10 +4,9 @@ import numpy as np
 
 #Some settings
 c = Constant(20) # works
-f = Constant((1,0))
-gamma = Constant((100000.0))
+gamma = Constant((10**5.0))
 AverageVelocity = Constant(1)
-viscosity = Constant(1)
+viscosity = Constant(0.1)
 AdvectionSwitchStep = 1
 
 # Load mesh

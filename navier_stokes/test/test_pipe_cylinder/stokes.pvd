@@ -3,7 +3,5 @@
 <Collection>
 <DataSet timestep="0" file="stokes_0.vtu" />
 <DataSet timestep="1" file="stokes_1.vtu" />
-<DataSet timestep="2" file="stokes_2.vtu" />
-<DataSet timestep="3" file="stokes_3.vtu" />
 </Collection>
 </VTKFile>
