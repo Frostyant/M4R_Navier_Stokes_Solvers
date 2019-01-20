@@ -7,9 +7,11 @@ c = Constant(20) # works
 gamma = Constant((10**10.0))
 AverageVelocity = Constant(1)
 TMax = 1
-TStep = 0.1
+DeltaT = 0.1
 viscosity = Constant(0.01)
 AdvectionSwitchStep = 1
+
+ts = np.arange(0,Tmax,DeltaT)
 
 # Load mesh
 mesh = Mesh("CylinderInPipe.msh")
@@ -25,7 +27,7 @@ n = FacetNormal(mesh)
 
 # boundary function, these are assumed to not change during iteration
 u_0 = as_vector([conditional(x < 1,AverageVelocity,0.)
-    ,0])
+    -0   \ ,0])
 
 #Quick Explanation: We cannot solve for high reynolds number, so instead we solve for low viscosity and then gradually increaseself.
 #We then use the u estimated from the prior step as a guess for the next one so that the solver converges.
@@ -159,86 +161,89 @@ parameters = {
     "fieldsplit_1_pc_sub_type": "ilu"#use incomplete LU factorization on the submatrix
 }
 
+for t in ts:
 
-#Input what we wrote before
-navierstokesproblem = NonlinearVariationalProblem(F, up, Jp=aP,
-                                                  bcs=bcs)
-#Solver
-navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
-                                                nullspace=nullspace,
-                                                solver_parameters=parameters)
+    if(t != 0):
+        up0 = up
+        F += (up + up0)/DeltaT
+        aP += Constant(1/DeltatT)
 
-#same parameters
-ContinuationParameters = parameters
+    #Input what we wrote before
+    navierstokesproblem = NonlinearVariationalProblem(F, up, Jp=aP,
+                                                      bcs=bcs)
+    #Solver
+    navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
+                                                    nullspace=nullspace,
+                                                    solver_parameters=parameters)
 
-#splitting u&p
-dupdadvswitch = Function(W)
+    #same parameters
+    ContinuationParameters = parameters
 
-#differentiation
-RHS = -advection_term
+    #splitting u&p
+    dupdadvswitch = Function(W)
 
-#replaces all of up in F with dupdadvswitch
-LHS = derivative(F,up)
+    #differentiation
+    RHS = -advection_term
 
-#Input problem
-ContinuationProblem = LinearVariationalProblem(LHS,RHS,dupdadvswitch,aP = aP, bcs = bcs)
+    #replaces all of up in F with dupdadvswitch
+    LHS = derivative(F,up)
 
-#solving
-ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=nullspace, solver_parameters = ContinuationParameters)
+    #Input problem
+    ContinuationProblem = LinearVariationalProblem(LHS,RHS,dupdadvswitch,aP = aP, bcs = bcs)
 
-#This solves the problem
-navierstokessolver.solve()
-upfile = File("stokes.pvd")
-u, p = up.split()
-u.rename("Velocity")
-p.rename("Pressure")
-upfile.write(u, p)
+    #solving
+    ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=nullspace, solver_parameters = ContinuationParameters)
 
-#Continuation Method#
-
-#define
-def ContinuationMethod(AdvectionSwitchValue,AdvectionSwitchStep):
-
-    global dupdadvswitch
-
-    global up
-
-    global AdvectionSwitch
-
-    global navierstokessolver
-
-    global upfile
-
-    #newton approximation
-    up += dupdadvswitch*(AdvectionSwitchStep)
-
-    AdvectionSwitch.assign(AdvectionSwitchValue)
+    #This solves the problem
     navierstokessolver.solve()
-
-    # Plot solution
+    upfile = File("stokes.pvd")
+    u, p = up.split()
+    u.rename("Velocity")
+    p.rename("Pressure")
     upfile.write(u, p)
 
-#setup variable
-AdvectionSwitchValue = 0
+    #Continuation Method#
 
-while AdvectionSwitchValue + AdvectionSwitchStep <= 1:
+    #define
+    def ContinuationMethod(AdvectionSwitchValue,AdvectionSwitchStep):
 
-    try:
-        AdvectionSwitchValue += AdvectionSwitchStep
-        print(AdvectionSwitchValue)
-        ContinuationMethod(AdvectionSwitchValue,AdvectionSwitchStep)
-        AdvectionSwitchStep = 1.5*AdvectionSwitchStep
-        print("Success, Increasing Step Size")
-        if AdvectionSwitchStep >= (1-AdvectionSwitchValue) and AdvectionSwitchValue < 1:
-            AdvectionSwitchStep = (1-AdvectionSwitchValue)
+        global dupdadvswitch
+
+        global up
+
+        global AdvectionSwitch
+
+        global navierstokessolver
+
+        global upfile
+
+        #newton approximation
+        up += dupdadvswitch*(AdvectionSwitchStep)
+
+        AdvectionSwitch.assign(AdvectionSwitchValue)
+        navierstokessolver.solve()
+
+    #setup variable
+    AdvectionSwitchValue = 0
+
+    while AdvectionSwitchValue + AdvectionSwitchStep <= 1:
+
+        try:
+            AdvectionSwitchValue += AdvectionSwitchStep
+            print(AdvectionSwitchValue)
+            ContinuationMethod(AdvectionSwitchValue,AdvectionSwitchStep)
+            AdvectionSwitchStep = 1.5*AdvectionSwitchStep
+            print("Success, Increasing Step Size")
+            if AdvectionSwitchStep >= (1-AdvectionSwitchValue) and AdvectionSwitchValue < 1:
+                AdvectionSwitchStep = (1-AdvectionSwitchValue)
 
 
-    except ConvergenceError as ex:
-        template = "An Exception of type {0} has occurred. Reducing Step Size."
-        print(template.format(type(ex).__name__,ex.args))
-        AdvectionSwitchValue -= AdvectionSwitchStep #reset AdvectionSwitchValue
-        AdvectionSwitchStep = AdvectionSwitchStep/2
-        #IF Advection step is this low the script failed
-        if AdvectionSwitchStep <= 10**(-3):
-            print("Too Low Step Size, Solver failed")
-            break
+        except ConvergenceError as ex:
+            template = "An Exception of type {0} has occurred. Reducing Step Size."
+            print(template.format(type(ex).__name__,ex.args))
+            AdvectionSwitchValue -= AdvectionSwitchStep #reset AdvectionSwitchValue
+            AdvectionSwitchStep = AdvectionSwitchStep/2
+            #IF Advection step is this low the script failed
+            if AdvectionSwitchStep <= 10**(-3):
+                print("Too Low Step Size, Solver failed")
+                break
