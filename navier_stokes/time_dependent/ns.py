@@ -3,18 +3,20 @@ from matplotlib import *
 import numpy as np
 
 #Some settings
+n = 50
 c = Constant(20) # works
 gamma = Constant((10**10.0))
-AverageVelocity = Constant(1)
+AverageVelocity = Constant(0.1)
 TMax = 1
 DeltaT = 0.1
-viscosity = Constant(0.01)
+viscosity = Constant(1)
 AdvectionSwitchStep = 1
 
-ts = np.arange(0,Tmax,DeltaT)
+ts = np.arange(0,TMax,DeltaT)
+t = ts[0]
 
 # Load mesh
-mesh = Mesh("CylinderInPipe.msh")
+mesh = UnitSquareMesh(n, n)
 
 # Define function spaces
 V = FunctionSpace(mesh, "BDM", 2)
@@ -25,32 +27,25 @@ x,y= SpatialCoordinate(mesh)
 #defining the normal
 n = FacetNormal(mesh)
 
-# boundary function, these are assumed to not change during iteration
-u_0 = as_vector([conditional(x < 1,AverageVelocity,0.)
-    -0   \ ,0])
+def BcUpdate(x,y,t):
+    # boundary function, these are assumed to not change during iteration
+    u_0 = as_vector([conditional(y < 0.1,AverageVelocity*sin(t),0.),0])
 
-#Quick Explanation: We cannot solve for high reynolds number, so instead we solve for low viscosity and then gradually increaseself.
-#We then use the u estimated from the prior step as a guess for the next one so that the solver converges.
-#In theory firedrake should automatically use the prior u values as a guess since they are stored in the variable which generates the new test fct.
+    #Bc1
+    #bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u left bdary
 
-#Bc1
-bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u left bdary
-#bc1p = DirichletBC(W.sub(1), p_0, 1)
+    #Bc2
+    #bc2 = DirichletBC(W.sub(0), u_0, 2)#Can only set Normal Component, here that is u right bdary
 
-#Bc2
-#bc2 = DirichletBC(W.sub(0), u_0, 2)#Can only set Normal Component, here that is u right bdary
+    #Bc3
+    bc3 = DirichletBC(W.sub(0), u_0, 3)#Can only set Normal Component, here that is v bottom bdary
 
-#Bc3
-bc3 = DirichletBC(W.sub(0), u_0, 3)#Can only set Normal Component, here that is v bottom bdary
+    #Bc4
+    #bc4 = DirichletBC(W.sub(0), u_0, 4)#Can only set Normal Component, here that is v top bdary
 
-#Bc4
-bc4 = DirichletBC(W.sub(0), u_0, 4)#Can only set Normal Component, here that is v top bdary
+    return (bc3),u_0
 
-#Bc5, From cylinder
-bc5 = DirichletBC(W.sub(0), u_0, 5)
-
-#boundary conditions
-bcs=(bc1,bc3,bc4,bc5)
+bcs,u_0 = BcUpdate(x,y,t)
 
 
 up = Function(W)
@@ -67,7 +62,7 @@ u, p = TrialFunctions(W)
 
 #Assembling LHS
 h = avg(CellVolume(mesh))/FacetArea(mesh)
-L = c/(h)*inner(v,u_0)*ds((1,5)) - inner(outer(u_0,n),grad(v))*ds((1,5))
+L = c/(h)*inner(v,u_0)*ds((1)) - inner(outer(u_0,n),grad(v))*ds((1))
 
 #Viscous Term parts
 viscous_byparts1 = inner(grad(u), grad(v))*dx #this is the term over omega from the integration by parts
@@ -75,8 +70,8 @@ viscous_byparts2 = 2*inner(avg(outer(v,n)),avg(grad(u)))*dS #this the term over 
 viscous_symetry = 2*inner(avg(outer(u,n)),avg(grad(v)))*dS #this the term ensures symetry while not changing the continuous equation
 viscous_stab = c*1/(h)*inner(jump(v),jump(u))*dS #stabilizes the equation
 #Note NatBc turns these terms off, otherwise it is 1
-viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds((1,5)) #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
-viscous_ext =c/(h)*inner(v,u)*ds((1,5)) #this is a penalty term for the boundaries
+viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds((1)) #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
+viscous_ext =c/(h)*inner(v,u)*ds((1)) #this is a penalty term for the boundaries
 
 #Assembling Viscous Term
 viscous_term = viscosity*(
@@ -160,13 +155,20 @@ parameters = {
     "fieldsplit_1_pc_type": "bjacobi",
     "fieldsplit_1_pc_sub_type": "ilu"#use incomplete LU factorization on the submatrix
 }
+#save file
+upfile = File("ns.pvd")
 
 for t in ts:
 
     if(t != 0):
-        up0 = up
-        F += (up + up0)/DeltaT
-        aP += Constant(1/DeltatT)
+        #splitting u and p for programming purposes (unavoidable)
+        u, p = split(up)
+        ub = u
+        F += inner(u + ub,v)/DeltaT*dx
+
+        aP += derivative(inner(u + ub,v)/DeltaT*dx,up)
+
+        bcs , u_0 = BcUpdate(x,y,t)
 
     #Input what we wrote before
     navierstokesproblem = NonlinearVariationalProblem(F, up, Jp=aP,
@@ -196,7 +198,7 @@ for t in ts:
 
     #This solves the problem
     navierstokessolver.solve()
-    upfile = File("stokes.pvd")
+
     u, p = up.split()
     u.rename("Velocity")
     p.rename("Pressure")
