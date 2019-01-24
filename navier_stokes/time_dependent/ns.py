@@ -6,7 +6,7 @@ import numpy as np
 n = 50
 c = Constant(20) # works
 gamma = Constant((10**10.0))
-AverageVelocity = Constant(0.1)
+AverageVelocity = Constant(0.5)
 TMax = 1
 DeltaT = 0.1
 viscosity = Constant(1)
@@ -14,6 +14,9 @@ AdvectionSwitchStep = 1
 
 ts = np.arange(0,TMax,DeltaT)
 t = ts[0]
+
+Print("Reynolds Number")
+Print(AverageVelocity*1/viscosity)
 
 # Load mesh
 mesh = UnitSquareMesh(n, n)
