@@ -4,28 +4,32 @@ import numpy as np
 
 class rinsp:
     """R-independent navier-stokes problem"""
-    def __init__(self, mesh,u_0,bcs,viscosity = 0.01,AdvectionSwitchStep = 1,
-     gamma = (10**10.0),V = FunctionSpace(mesh, "BDM", 2),
-     Q = FunctionSpace(mesh, "DG", 1),AverageVelocity = 1,LengthScale = 1):
+    def __init__(self, mesh,u_0,bcs,W,x,y,viscosity = 1,AdvectionSwitchStep = 1,
+     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1):
         self.mesh = mesh
         self.u_0 = u_0
         self.bcs = bcs
         self.viscosity = Constant(viscosity)
         self.AdvectionSwitchStep = AdvectionSwitchStep
         self.gamma = Constant(gamma)
-        self.V = V
-        self.Q = Q
+        self.W = W
+        self.x = x
+        self.y = y
         self.AverageVelocity = Constant(AverageVelocity)
         self.R = LengthScale*AverageVelocity/viscosity
 
-    def solve(SaveSteps = False):
         c = Constant(20) # works
         gamma = self.gamma
         AverageVelocity = self.AverageVelocity
         viscosity =  self.viscosity
         AdvectionSwitchStep = self.AdvectionSwitchStep
 
-        x,y= SpatialCoordinate(self.mesh)
+        W = self.W
+        #defining
+        x,y= self.x,self.y
+
+        #defining the normal
+        n = FacetNormal(mesh)
 
         up = Function(W)
 
@@ -109,13 +113,13 @@ class rinsp:
             + adv_bdc2
         )
 
-        AdvectionSwitch = Constant(0)
+        self.AdvectionSwitch = Constant(0)
 
         #Adjusting F with advection term
-        F += AdvectionSwitch*advection_term
+        F += self.AdvectionSwitch*advection_term
 
         #Adjusting aP, the jacobian, with derivative of advection term
-        aP += AdvectionSwitch*derivative(advection_term, up)
+        aP += self.AdvectionSwitch*derivative(advection_term, up)
 
         #Solving problem #
         parameters = {
@@ -137,10 +141,10 @@ class rinsp:
 
 
         #Input what we wrote before
-        navierstokesproblem = NonlinearVariationalProblem(F, up, Jp=aP,
+        self.navierstokesproblem = NonlinearVariationalProblem(F, up, Jp=aP,
                                                           bcs=bcs)
         #Solver
-        navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
+        self.navierstokessolver = NonlinearVariationalSolver(self.navierstokesproblem,
                                                         nullspace=nullspace,
                                                         solver_parameters=parameters)
 
@@ -148,7 +152,7 @@ class rinsp:
         ContinuationParameters = parameters
 
         #splitting u&p
-        dupdadvswitch = Function(W)
+        self.dupdadvswitch = Function(W)
 
         #differentiation
         RHS = -advection_term
@@ -157,42 +161,46 @@ class rinsp:
         LHS = derivative(F,up)
 
         #Input problem
-        ContinuationProblem = LinearVariationalProblem(LHS,RHS,dupdadvswitch,aP = aP, bcs = bcs)
+        self.ContinuationProblem = LinearVariationalProblem(LHS,RHS,self.dupdadvswitch,aP = aP, bcs = bcs)
 
         #solving
-        ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=nullspace, solver_parameters = ContinuationParameters)
+        self.ContinuationSolver = LinearVariationalSolver(self.ContinuationProblem, nullspace=nullspace, solver_parameters = ContinuationParameters)
+
+        self.up = up
+
+    def FullSolve(self,FullOutput = False):
+
+        up = self.up
+        AdvectionSwitchStep = self.AdvectionSwitchStep
 
         #This solves the problem
-        navierstokessolver.solve()
+        self.navierstokessolver.solve()
+
         upfile = File("stokes.pvd")
+
         u, p = up.split()
+
         u.rename("Velocity")
+
         p.rename("Pressure")
+
         upfile.write(u, p)
 
         #Continuation Method#
 
         #define
-        def ContinuationMethod(AdvectionSwitchValue,AdvectionSwitchStep):
-
-            global dupdadvswitch
-
-            global up
-
-            global AdvectionSwitch
-
-            global navierstokessolver
+        def ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep):
 
             global upfile
 
             #newton approximation
-            up += dupdadvswitch*(AdvectionSwitchStep)
+            self.up += self.dupdadvswitch*(AdvectionSwitchStep)
 
-            AdvectionSwitch.assign(AdvectionSwitchValue)
-            navierstokessolver.solve()
+            self.AdvectionSwitch.assign(AdvectionSwitchValue)
+            self.navierstokessolver.solve()
 
             # Plot solution
-            if SaveSteps:
+            if FullOutput:
                 upfile.write(u, p)
 
         #setup variable
@@ -203,7 +211,7 @@ class rinsp:
             try:
                 AdvectionSwitchValue += AdvectionSwitchStep
                 print(AdvectionSwitchValue)
-                ContinuationMethod(AdvectionSwitchValue,AdvectionSwitchStep)
+                ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep)
                 AdvectionSwitchStep = 1.5*AdvectionSwitchStep
                 print("Success, Increasing Step Size")
                 if AdvectionSwitchStep >= (1-AdvectionSwitchValue) and AdvectionSwitchValue < 1:
@@ -219,3 +227,4 @@ class rinsp:
                 if AdvectionSwitchStep <= 10**(-3):
                     print("Too Low Step Size, Solver failed")
                     break
+        self.AdvectionSwitch.assign(0)
