@@ -5,7 +5,7 @@ import numpy as np
 class rinsp:
     """R-independent navier-stokes problem"""
     def __init__(self, mesh,u_0,bcs,W,x,y,viscosity = 1,AdvectionSwitchStep = 1,
-     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1):
+     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = 0):
         self.mesh = mesh
         self.u_0 = u_0
         self.bcs = bcs
@@ -41,11 +41,17 @@ class rinsp:
 
         #setting up trial and test functions
         u, p = TrialFunctions(W)
-        (v, q) = TestFunctions(W)
+        (self.v, q) = TestFunctions(W)
+        v = self.v
+
 
         #Assembling LHS
         h = avg(CellVolume(mesh))/FacetArea(mesh)
-        L = c/(h)*inner(v,u_0)*ds((1,5)) - inner(outer(u_0,n),grad(v))*ds((1,5))
+        if BcIds == 0:
+            L = c/(h)*inner(v,u_0)*ds - inner(outer(u_0,n),grad(v))*ds
+        else:
+            #apply Bcs only to relevant boundaries
+            L = c/(h)*inner(v,u_0)*ds(BcIds) - inner(outer(u_0,n),grad(v))*ds(BcIds)
 
         #Viscous Term parts
         viscous_byparts1 = inner(grad(u), grad(v))*dx #this is the term over omega from the integration by parts
@@ -53,8 +59,13 @@ class rinsp:
         viscous_symetry = 2*inner(avg(outer(u,n)),avg(grad(v)))*dS #this the term ensures symetry while not changing the continuous equation
         viscous_stab = c*1/(h)*inner(jump(v),jump(u))*dS #stabilizes the equation
         #Note NatBc turns these terms off, otherwise it is 1
-        viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds((1,5)) #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
-        viscous_ext =c/(h)*inner(v,u)*ds((1,5)) #this is a penalty term for the boundaries
+        if BcIds == 0:
+            viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
+            viscous_ext =c/(h)*inner(v,u)*ds#this is a penalty term for the boundaries
+        else:
+            viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds(BcIDs) #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
+            viscous_ext =c/(h)*inner(v,u)*ds(BcIds)#this is a penalty term for the boundaries
+
 
         #Assembling Viscous Term
         viscous_term = viscosity*(
@@ -78,7 +89,7 @@ class rinsp:
         pmass = q*p*dx
 
         #Jacobian
-        aP = viscous_term   + (viscosity + gamma)*pmass +graddiv_term
+        self.aP = viscous_term   + (viscosity + gamma)*pmass +graddiv_term
 
         #Left hand side
         F = action(a_bilinear, up) - viscosity*L
@@ -116,10 +127,10 @@ class rinsp:
         self.AdvectionSwitch = Constant(0)
 
         #Adjusting F with advection term
-        F += self.AdvectionSwitch*advection_term
+        self.F += self.AdvectionSwitch*advection_term
 
         #Adjusting aP, the jacobian, with derivative of advection term
-        aP += self.AdvectionSwitch*derivative(advection_term, up)
+        self.aP += self.AdvectionSwitch*derivative(advection_term, up)
 
         #Solving problem #
         parameters = {
@@ -141,7 +152,7 @@ class rinsp:
 
 
         #Input what we wrote before
-        self.navierstokesproblem = NonlinearVariationalProblem(F, up, Jp=aP,
+        self.navierstokesproblem = NonlinearVariationalProblem(self.F, up, Jp=self.aP,
                                                           bcs=bcs)
         #Solver
         self.navierstokessolver = NonlinearVariationalSolver(self.navierstokesproblem,
@@ -158,17 +169,19 @@ class rinsp:
         RHS = -advection_term
 
         #replaces all of up in F with dupdadvswitch
-        LHS = derivative(F,up)
+        LHS = derivative(self.F,up)
 
         #Input problem
-        self.ContinuationProblem = LinearVariationalProblem(LHS,RHS,self.dupdadvswitch,aP = aP, bcs = bcs)
+        self.ContinuationProblem = LinearVariationalProblem(LHS,RHS,self.dupdadvswitch,aP = self.aP, bcs = bcs)
 
         #solving
         self.ContinuationSolver = LinearVariationalSolver(self.ContinuationProblem, nullspace=nullspace, solver_parameters = ContinuationParameters)
 
         self.up = up
 
-    def FullSolve(self,FullOutput = False):
+    def FullSolve(self,FullOutput = False,Write = True):
+        #Fulloutput outputs at EVERY iteration for continuation method
+        #Write means that we write down the output at all
 
         up = self.up
         AdvectionSwitchStep = self.AdvectionSwitchStep
@@ -176,15 +189,19 @@ class rinsp:
         #This solves the problem
         self.navierstokessolver.solve()
 
-        upfile = File("stokes.pvd")
+        if Write:
+            upfile = File("stokes.pvd")
 
-        u, p = up.split()
+            u, p = up.split()
 
-        u.rename("Velocity")
+            u.rename("Velocity")
 
-        p.rename("Pressure")
+            p.rename("Pressure")
 
-        upfile.write(u, p)
+            upfile.write(u, p)
+        else:
+            FullOutput = False #if we don't write anything then we don't have full output anyway
+
 
         #Continuation Method#
 
@@ -228,3 +245,43 @@ class rinsp:
                     print("Too Low Step Size, Solver failed")
                     break
         self.AdvectionSwitch.assign(0)
+        self.up = up
+
+
+
+class rinspt(rinsp):
+    def __init__(self,ts, mesh,u_0,bcs,W,x,y,t,viscosity = 1,AdvectionSwitchStep = 1,
+     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1):
+        #initialize standard problem
+        #start with t = 0
+        self.t = Constant(ts[0])
+        t.assign(self.t)
+        rinsp.__init__(self, mesh,u_0,bcs,W,x,y,viscosity = 1,AdvectionSwitchStep = 1,
+         gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1)
+    def SolveInTime():
+        for tval in ts:
+
+            t.assign(self.t)
+
+            if tval != ts[0]:
+
+                #splitting u and p for programming purposes (unavoidable)
+                u, p = split(up)
+                ub = u
+                F += inner(u + ub,v)/DeltaT*dx
+
+                aP += derivative(inner(u + ub,v)/DeltaT*dx,up)
+
+                bcs , u_0 = BcUpdate(x,y,t)
+
+            rinsp.FullSolve()
+
+            upfile = File("stokes.pvd")
+
+            u, p = self.up.split()
+
+            u.rename("Velocity")
+
+            p.rename("Pressure")
+
+            upfile.write(u, p)
