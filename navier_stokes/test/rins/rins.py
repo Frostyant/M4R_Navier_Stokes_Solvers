@@ -4,6 +4,25 @@ import numpy as np
 
 class rinsp:
     """R-independent navier-stokes problem"""
+
+    #these are the default parameters
+    parameters = {
+        "ksp_type": "gmres",
+        "ksp_converged_reason": True,
+        "ksp_rtol": 1e-6,
+        "ksp_max_it": 50,
+        "pc_type": "fieldsplit",
+        "pc_fieldsplit_type": "schur", #use Schur preconditioner
+        "pc_fieldsplit_schur_fact_type": "full", #full preconditioner
+        "pc_fieldsplit_off_diag_use_amat": True,
+        "fieldsplit_0_ksp_type": "preonly",
+        "fieldsplit_0_pc_type": "lu",#use full LU factorization, ilu fails
+        "fieldsplit_0_pc_factor_mat_solver_package": "mumps",
+        "fieldsplit_1_ksp_type": "preonly",
+        "fieldsplit_1_pc_type": "bjacobi",
+        "fieldsplit_1_pc_sub_type": "ilu"#use incomplete LU factorization on the submatrix
+    }
+
     def __init__(self, mesh,u_0,bcs,W,x,y,viscosity = 1,AdvectionSwitchStep = 1,
      gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = 0):
         self.mesh = mesh
@@ -34,7 +53,7 @@ class rinsp:
         up = Function(W)
 
         # Removing Pressure constant
-        nullspace = MixedVectorSpaceBasis(
+        self.nullspace = MixedVectorSpaceBasis(
             W, [W.sub(0), VectorSpaceBasis(constant=True)])
 
         # Define variational problem #
@@ -92,7 +111,7 @@ class rinsp:
         self.aP = viscous_term   + (viscosity + gamma)*pmass +graddiv_term
 
         #Left hand side
-        F = action(a_bilinear, up) - viscosity*L
+        self.F = action(a_bilinear, up) - viscosity*L
 
         #splitting u and p for programming purposes (unavoidable)
         u, p = split(up)
@@ -133,30 +152,13 @@ class rinsp:
         self.aP += self.AdvectionSwitch*derivative(advection_term, up)
 
         #Solving problem #
-        parameters = {
-            "ksp_type": "gmres",
-            "ksp_converged_reason": True,
-            "ksp_rtol": 1e-6,
-            "ksp_max_it": 50,
-            "pc_type": "fieldsplit",
-            "pc_fieldsplit_type": "schur", #use Schur preconditioner
-            "pc_fieldsplit_schur_fact_type": "full", #full preconditioner
-            "pc_fieldsplit_off_diag_use_amat": True,
-            "fieldsplit_0_ksp_type": "preonly",
-            "fieldsplit_0_pc_type": "lu",#use full LU factorization, ilu fails
-            "fieldsplit_0_pc_factor_mat_solver_package": "mumps",
-            "fieldsplit_1_ksp_type": "preonly",
-            "fieldsplit_1_pc_type": "bjacobi",
-            "fieldsplit_1_pc_sub_type": "ilu"#use incomplete LU factorization on the submatrix
-        }
-
 
         #Input what we wrote before
-        self.navierstokesproblem = NonlinearVariationalProblem(self.F, up, Jp=self.aP,
+        navierstokesproblem = NonlinearVariationalProblem(self.F, up, Jp=self.aP,
                                                           bcs=bcs)
         #Solver
-        self.navierstokessolver = NonlinearVariationalSolver(self.navierstokesproblem,
-                                                        nullspace=nullspace,
+        self.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
+                                                        nullspace=self.nullspace,
                                                         solver_parameters=parameters)
 
         #same parameters
@@ -166,16 +168,16 @@ class rinsp:
         self.dupdadvswitch = Function(W)
 
         #differentiation
-        RHS = -advection_term
+        self.RHS = -advection_term
 
         #replaces all of up in F with dupdadvswitch
-        LHS = derivative(self.F,up)
+        self.LHS = derivative(self.F,up)
 
         #Input problem
-        self.ContinuationProblem = LinearVariationalProblem(LHS,RHS,self.dupdadvswitch,aP = self.aP, bcs = bcs)
+        ContinuationProblem = LinearVariationalProblem(self.LHS,self.RHS,self.dupdadvswitch,aP = self.aP, bcs = bcs)
 
         #solving
-        self.ContinuationSolver = LinearVariationalSolver(self.ContinuationProblem, nullspace=nullspace, solver_parameters = ContinuationParameters)
+        self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = ContinuationParameters)
 
         self.up = up
 
@@ -247,37 +249,71 @@ class rinsp:
         self.AdvectionSwitch.assign(0)
         self.up = up
 
+        def GetStandardParameters(self):
+            return parameters
+
 
 
 class rinspt(rinsp):
     def __init__(self,ts, mesh,u_0,bcs,W,x,y,t,viscosity = 1,AdvectionSwitchStep = 1,
-     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1):
+     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = 0):
         #initialize standard problem
         #start with t = 0
         self.t = Constant(ts[0])
+        self.ts = ts
         t.assign(self.t)
         rinsp.__init__(self, mesh,u_0,bcs,W,x,y,viscosity = 1,AdvectionSwitchStep = 1,
          gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1)
-    def SolveInTime():
-        for tval in ts:
 
-            t.assign(self.t)
+    def SolveInTime(self):
+        #solves problem in time
+        for it,tval in enumerate(self.ts):
 
-            if tval != ts[0]:
+            self.t.assign(tval)
 
-                #splitting u and p for programming purposes (unavoidable)
-                u, p = split(up)
-                ub = u
-                F += inner(u + ub,v)/DeltaT*dx
-
-                aP += derivative(inner(u + ub,v)/DeltaT*dx,up)
-
-                bcs , u_0 = BcUpdate(x,y,t)
-
-            rinsp.FullSolve()
+            print(tval)
 
             upfile = File("stokes.pvd")
 
+            u, p = self.up.split()
+
+            u.rename("Velocity")
+
+            p.rename("Pressure")
+
+            upfile.write(u, p)
+
+            if tval != self.ts[0]:
+
+                #splittingsolving u and p for programming purposes (unavoidable)
+                u, p = split(self.up)
+
+                ub = u
+
+                DeltaT = float(tval-self.ts[it-1])
+
+                #adding in the finite difference time term
+                self.F += inner(u + ub,self.v)/DeltaT*dx
+
+                #and its derivative
+                self.aP += derivative(inner(u + ub,self.v)/DeltaT*dx,self.up)
+
+                #Update problem
+                navierstokesproblem = NonlinearVariationalProblem(self.F, self.up, Jp=self.aP,
+                                                                  bcs=self.bcs)
+                #Update Solver
+                self.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
+                                                                nullspace=self.nullspace,
+                                                                solver_parameters=parameters)
+
+                #Update problem
+                ContinuationProblem = LinearVariationalProblem(self.LHS,self.RHS,self.dupdadvswitch,aP = self.aP, bcs = self.bcs)
+
+                #Update solver
+                self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = parameters)
+
+            rinsp.FullSolve(self)
+            
             u, p = self.up.split()
 
             u.rename("Velocity")

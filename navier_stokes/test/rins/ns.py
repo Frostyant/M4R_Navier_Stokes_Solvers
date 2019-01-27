@@ -12,14 +12,15 @@ Q = FunctionSpace(mesh, "DG", 1)
 W = V * Q
 
 #defining time
-ts = np.arange(0,10,1)
+#ts = np.arange(0,10,1)
+ts = np.array([0.0,1.0,2.0,3.0])
 t = Constant(ts[0])
 
 #defining
 x,y= SpatialCoordinate(mesh)
 
 # boundary function, these are assumed to not change during iteration
-u_0 = as_vector([conditional(y < 0.1,sin(t),0.),0])
+u_0 = as_vector([conditional(y < 0.1,0.1*t,0.),0])
 
 #Bc1
 #bc1 = DirichletBC(W.sub(0), u_0, 1) #Can only set Normal Component, here that is u left bdary
