@@ -192,7 +192,7 @@ class rinsp:
         self.navierstokessolver.solve()
 
         if Write:
-            upfile = File("stokes.pvd")
+            self.upfile = File("stokes.pvd")
 
             u, p = up.split()
 
@@ -200,7 +200,7 @@ class rinsp:
 
             p.rename("Pressure")
 
-            upfile.write(u, p)
+            self.upfile.write(u, p)
         else:
             FullOutput = False #if we don't write anything then we don't have full output anyway
 
@@ -210,8 +210,6 @@ class rinsp:
         #define
         def ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep):
 
-            global upfile
-
             #newton approximation
             self.up += self.dupdadvswitch*(AdvectionSwitchStep)
 
@@ -220,7 +218,7 @@ class rinsp:
 
             # Plot solution
             if FullOutput:
-                upfile.write(u, p)
+                self.upfile.write(u, p)
 
         #setup variable
         AdvectionSwitchValue = 0
@@ -232,9 +230,12 @@ class rinsp:
                 print(AdvectionSwitchValue)
                 ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep)
                 AdvectionSwitchStep = 1.5*AdvectionSwitchStep
-                print("Success, Increasing Step Size")
+
                 if AdvectionSwitchStep >= (1-AdvectionSwitchValue) and AdvectionSwitchValue < 1:
                     AdvectionSwitchStep = (1-AdvectionSwitchValue)
+                    print("Success, solved with full advection")
+                else:
+                    print("Success, Increasing Step Size")
 
 
             except ConvergenceError as ex:
@@ -261,42 +262,42 @@ class rinspt(rinsp):
         #start with t = 0
         self.t = Constant(ts[0])
         self.ts = ts
+        self.ub, pb = TrialFunctions(W)
         t.assign(self.t)
         rinsp.__init__(self, mesh,u_0,bcs,W,x,y,viscosity = 1,AdvectionSwitchStep = 1,
          gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1)
 
     def SolveInTime(self):
         #solves problem in time
+
+        upfile = File("stokes.pvd")
+
+        u, p = self.up.split()
+
+        u.rename("Velocity")
+
+        p.rename("Pressure")
+
         for it,tval in enumerate(self.ts):
 
             self.t.assign(tval)
 
             print(tval)
 
-            upfile = File("stokes.pvd")
-
-            u, p = self.up.split()
-
-            u.rename("Velocity")
-
-            p.rename("Pressure")
-
-            upfile.write(u, p)
-
             if tval != self.ts[0]:
 
                 #splittingsolving u and p for programming purposes (unavoidable)
                 u, p = split(self.up)
 
-                ub = u
+                self.ub.assign(u)
 
                 DeltaT = float(tval-self.ts[it-1])
 
                 #adding in the finite difference time term
-                self.F += inner(u + ub,self.v)/DeltaT*dx
+                self.F += inner(u + self.ub,self.v)/DeltaT*dx
 
                 #and its derivative
-                self.aP += derivative(inner(u + ub,self.v)/DeltaT*dx,self.up)
+                self.aP += derivative(inner(u + self.ub,self.v)/DeltaT*dx,self.up)
 
                 #Update problem
                 navierstokesproblem = NonlinearVariationalProblem(self.F, self.up, Jp=self.aP,
@@ -312,12 +313,8 @@ class rinspt(rinsp):
                 #Update solver
                 self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = parameters)
 
-            rinsp.FullSolve(self)
-            
+            rinsp.FullSolve(self,FullOutput=False,Write=False)
+
             u, p = self.up.split()
 
-            u.rename("Velocity")
-
-            p.rename("Pressure")
-
-            upfile.write(u, p)
+            upfile.write(u, p,time = tval)
