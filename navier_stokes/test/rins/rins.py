@@ -3,7 +3,7 @@ from matplotlib import *
 import numpy as np
 
 class rinsp:
-    """R-independent navier-stokes problem"""
+    """A Navier-Stokes Problem with an efficient pre-build solver using Hdiv"""
 
     #these are the default parameters
     parameters = {
@@ -23,21 +23,43 @@ class rinsp:
         "fieldsplit_1_pc_sub_type": "ilu"#use incomplete LU factorization on the submatrix
     }
 
-    def __init__(self, mesh,u_0,bcs,W,x,y,viscosity = 1,AdvectionSwitchStep = 1,
-     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = 0):
+    c = Constant(20) # works
+
+    def __init__(self, mesh,u_0,W,x,y,z = 0,viscosity = 1,AdvectionSwitchStep = 1,
+     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = 0,dbcIds = 0):
+     """ Creats rinsp object
+
+     Keyword arguments:
+     mesh -- mesh on which the problem is.
+     u_0 -- a function which defines boundary values at ALL boundaries (use conditional if need be).
+     W -- FunctionSpace we are working with, program was built with BDM 2 and DG 1.
+     x -- x Spatial coordinate.
+     y -- y Spatial coordinate.
+     z -- z Spatial coordinate, if is default 0 then this is a 2D problem.
+     viscosity -- viscosity in problem, default 1.
+     AdvectionSwitchStep -- Guess for advection stepsize default 1. If high Reynolds number may want to decrease this for effeciency.
+     gamma -- A constant, the higher it is the more effecient the linear solver becomes, default is 10**10.
+     AverageVelocity -- Average velocity for system, used for determining Reynolds number, default 1.
+     LengthScale -- Length Scale for system, used for determining Reynolds number, default 1.
+     BcIds -- Ids for Boundaries on which we apply weak conditions. At default 0 we apply to ALL boundaries. If BcIds and dbcIds are 0 then we assume this is a square.
+     dbcIds -- IDs for Boundaries on which we apply strong conditions. At default 0 we just use BcIds instead. If BcIds and dbcIds are 0 then we assume this is a square.
+     """
+
+        #setting up basic class attributes
         self.mesh = mesh
         self.u_0 = u_0
-        self.bcs = bcs
         self.viscosity = Constant(viscosity)
         self.AdvectionSwitchStep = AdvectionSwitchStep
         self.gamma = Constant(gamma)
         self.W = W
         self.x = x
         self.y = y
+        self.z = 0
         self.AverageVelocity = Constant(AverageVelocity)
         self.R = LengthScale*AverageVelocity/viscosity
 
-        c = Constant(20) # works
+        self.bcs =
+
         gamma = self.gamma
         AverageVelocity = self.AverageVelocity
         viscosity =  self.viscosity
@@ -251,7 +273,24 @@ class rinsp:
         self.up = up
 
         def GetStandardParameters(self):
+            #returns standard solve parameters
             return parameters
+
+        def dbc(Ids):
+            #sets up dirichelet boundary conditions
+            if Ids != 0:
+                bcs = (0,)*Ids
+            else:
+                #if Ids = 0 we assume this is a square where Dirichelet conditions are imposed on all boundaries
+                bcs = (0,)*4
+                Ids = (1,2,3,4)
+
+            for it,id in Enumerate(Ids):
+
+                bcs[it] = DirichletBC(self.W.sub(0), self.u_0, id)
+
+            self.bcs = bcs
+
 
 
 
@@ -270,6 +309,7 @@ class rinspt(rinsp):
     def SolveInTime(self):
         #solves problem in time
 
+        #this stes up the save file for results
         upfile = File("stokes.pvd")
 
         u, p = self.up.split()
@@ -280,6 +320,7 @@ class rinspt(rinsp):
 
         for it,tval in enumerate(self.ts):
 
+            #updates t
             self.t.assign(tval)
 
             print(tval)

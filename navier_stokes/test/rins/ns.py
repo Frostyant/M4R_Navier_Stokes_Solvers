@@ -36,6 +36,6 @@ bc3 = DirichletBC(W.sub(0), u_0, 3)#Can only set Normal Component, here that is 
 #boundary conditions
 bcs=(bc3)
 
-problem = rins.rinspt(ts,mesh,u_0,bcs,W,x,y,t,BcIds = (3))
+problem = rins.rinspt(ts,mesh,u_0,W,x,y,t,BcIds = (3))
 
 problem.SolveInTime()
