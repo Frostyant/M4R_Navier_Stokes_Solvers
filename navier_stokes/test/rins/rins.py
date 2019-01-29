@@ -5,45 +5,25 @@ import numpy as np
 class rinsp:
     """A Navier-Stokes Problem with an efficient pre-build solver using Hdiv"""
 
-    #these are the default parameters
-    parameters = {
-        "ksp_type": "gmres",
-        "ksp_converged_reason": True,
-        "ksp_rtol": 1e-6,
-        "ksp_max_it": 50,
-        "pc_type": "fieldsplit",
-        "pc_fieldsplit_type": "schur", #use Schur preconditioner
-        "pc_fieldsplit_schur_fact_type": "full", #full preconditioner
-        "pc_fieldsplit_off_diag_use_amat": True,
-        "fieldsplit_0_ksp_type": "preonly",
-        "fieldsplit_0_pc_type": "lu",#use full LU factorization, ilu fails
-        "fieldsplit_0_pc_factor_mat_solver_package": "mumps",
-        "fieldsplit_1_ksp_type": "preonly",
-        "fieldsplit_1_pc_type": "bjacobi",
-        "fieldsplit_1_pc_sub_type": "ilu"#use incomplete LU factorization on the submatrix
-    }
-
-    c = Constant(20) # works
-
     def __init__(self, mesh,u_0,W,x,y,z = 0,viscosity = 1,AdvectionSwitchStep = 1,
-     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = 0,dbcIds = 0):
-     """ Creats rinsp object
+     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False):
+        """ Creats rinsp object
 
-     Keyword arguments:
-     mesh -- mesh on which the problem is.
-     u_0 -- a function which defines boundary values at ALL boundaries (use conditional if need be).
-     W -- FunctionSpace we are working with, program was built with BDM 2 and DG 1.
-     x -- x Spatial coordinate.
-     y -- y Spatial coordinate.
-     z -- z Spatial coordinate, if is default 0 then this is a 2D problem.
-     viscosity -- viscosity in problem, default 1.
-     AdvectionSwitchStep -- Guess for advection stepsize default 1. If high Reynolds number may want to decrease this for effeciency.
-     gamma -- A constant, the higher it is the more effecient the linear solver becomes, default is 10**10.
-     AverageVelocity -- Average velocity for system, used for determining Reynolds number, default 1.
-     LengthScale -- Length Scale for system, used for determining Reynolds number, default 1.
-     BcIds -- Ids for Boundaries on which we apply weak conditions. At default 0 we apply to ALL boundaries. If BcIds and dbcIds are 0 then we assume this is a square.
-     dbcIds -- IDs for Boundaries on which we apply strong conditions. At default 0 we just use BcIds instead. If BcIds and dbcIds are 0 then we assume this is a square.
-     """
+        Keyword arguments:
+        mesh -- mesh on which the problem is.
+        u_0 -- a function which defines boundary values at ALL boundaries (use conditional if need be).
+        W -- FunctionSpace we are working with, program was built with BDM 2 and DG 1.
+        x -- x Spatial coordinate.
+        y -- y Spatial coordinate.
+        z -- z Spatial coordinate, if is default 0 then this is a 2D problem.
+        viscosity -- viscosity in problem, default 1.
+        AdvectionSwitchStep -- Guess for advection stepsize default 1. If high Reynolds number may want to decrease this for effeciency.
+        gamma -- A constant, the higher it is the more effecient the linear solver becomes, default is 10**10.
+        AverageVelocity -- Average velocity for system, used for determining Reynolds number, default 1.
+        LengthScale -- Length Scale for system, used for determining Reynolds number, default 1.
+        BcIds -- Ids for Boundaries on which we apply weak conditions. At default 0 we apply to ALL boundaries. If BcIds and dbcIds are 0 then we assume this is a square.
+        DbcIds -- IDs for Boundaries on which we apply strong conditions. At default 0 we just use BcIds instead. If BcIds and dbcIds are 0 then we assume this is a square.
+        """
 
         #setting up basic class attributes
         self.mesh = mesh
@@ -57,15 +37,38 @@ class rinsp:
         self.z = 0
         self.AverageVelocity = Constant(AverageVelocity)
         self.R = LengthScale*AverageVelocity/viscosity
-
-        self.bcs =
-
         gamma = self.gamma
         AverageVelocity = self.AverageVelocity
         viscosity =  self.viscosity
         AdvectionSwitchStep = self.AdvectionSwitchStep
-
         W = self.W
+        #these are the default solver parameters
+        self.parameters = {
+            "ksp_type": "gmres",
+            "ksp_converged_reason": True,
+            "ksp_rtol": 1e-6,
+            "ksp_max_it": 50,
+            "pc_type": "fieldsplit",
+            "pc_fieldsplit_type": "schur", #use Schur preconditioner
+            "pc_fieldsplit_schur_fact_type": "full", #full preconditioner
+            "pc_fieldsplit_off_diag_use_amat": True,
+            "fieldsplit_0_ksp_type": "preonly",
+            "fieldsplit_0_pc_type": "lu",#use full LU factorization, ilu fails
+            "fieldsplit_0_pc_factor_mat_solver_package": "mumps",
+            "fieldsplit_1_ksp_type": "preonly",
+            "fieldsplit_1_pc_type": "bjacobi",
+            "fieldsplit_1_pc_sub_type": "ilu"#use incomplete LU factorization on the submatrix
+        }
+        c = Constant(20)
+
+        #setting up dirichelet boundary conditions
+        if(DbcIds != False):
+            #using DbcIds
+            self.dbc(DbcIds)
+        else:
+            #using BcIDs, which are the IDs used for weak boundaries
+            self.dbc(BcIds)
+
         #defining
         x,y= self.x,self.y
 
@@ -88,7 +91,7 @@ class rinsp:
 
         #Assembling LHS
         h = avg(CellVolume(mesh))/FacetArea(mesh)
-        if BcIds == 0:
+        if BcIds == False:
             L = c/(h)*inner(v,u_0)*ds - inner(outer(u_0,n),grad(v))*ds
         else:
             #apply Bcs only to relevant boundaries
@@ -100,11 +103,11 @@ class rinsp:
         viscous_symetry = 2*inner(avg(outer(u,n)),avg(grad(v)))*dS #this the term ensures symetry while not changing the continuous equation
         viscous_stab = c*1/(h)*inner(jump(v),jump(u))*dS #stabilizes the equation
         #Note NatBc turns these terms off, otherwise it is 1
-        if BcIds == 0:
+        if BcIds == False:
             viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
             viscous_ext =c/(h)*inner(v,u)*ds#this is a penalty term for the boundaries
         else:
-            viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds(BcIDs) #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
+            viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds(BcIds) #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
             viscous_ext =c/(h)*inner(v,u)*ds(BcIds)#this is a penalty term for the boundaries
 
 
@@ -177,15 +180,11 @@ class rinsp:
 
         #Input what we wrote before
         navierstokesproblem = NonlinearVariationalProblem(self.F, up, Jp=self.aP,
-                                                          bcs=bcs)
+                                                          bcs=self.bcs)
         #Solver
         self.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
                                                         nullspace=self.nullspace,
-                                                        solver_parameters=parameters)
-
-        #same parameters
-        ContinuationParameters = parameters
-
+                                                        solver_parameters=self.parameters)
         #splitting u&p
         self.dupdadvswitch = Function(W)
 
@@ -196,10 +195,10 @@ class rinsp:
         self.LHS = derivative(self.F,up)
 
         #Input problem
-        ContinuationProblem = LinearVariationalProblem(self.LHS,self.RHS,self.dupdadvswitch,aP = self.aP, bcs = bcs)
+        ContinuationProblem = LinearVariationalProblem(self.LHS,self.RHS,self.dupdadvswitch,aP = self.aP, bcs = self.bcs)
 
         #solving
-        self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = ContinuationParameters)
+        self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
 
         self.up = up
 
@@ -272,39 +271,41 @@ class rinsp:
         self.AdvectionSwitch.assign(0)
         self.up = up
 
-        def GetStandardParameters(self):
-            #returns standard solve parameters
-            return parameters
+    def dbc(self,Ids):
+        #sets up dirichelet boundary conditions
 
-        def dbc(Ids):
-            #sets up dirichelet boundary conditions
-            if Ids != 0:
-                bcs = (0,)*Ids
+        if isinstance(Ids,int):
+            #this is just to avoid uneccessary bugs, can input integer instead of tuple
+            bcs = (DirichletBC(self.W.sub(0), self.u_0, Ids))
+        else:
+            if Ids != False:
+                bcs = (0,)*len(Ids)
             else:
                 #if Ids = 0 we assume this is a square where Dirichelet conditions are imposed on all boundaries
                 bcs = (0,)*4
                 Ids = (1,2,3,4)
 
-            for it,id in Enumerate(Ids):
+            for it,id in enumerate(Ids):
 
                 bcs[it] = DirichletBC(self.W.sub(0), self.u_0, id)
 
-            self.bcs = bcs
+        self.bcs = bcs
 
 
 
 
 class rinspt(rinsp):
-    def __init__(self,ts, mesh,u_0,bcs,W,x,y,t,viscosity = 1,AdvectionSwitchStep = 1,
-     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = 0):
+    def __init__(self,ts, mesh,u_0,W,x,y,t,viscosity = 1,AdvectionSwitchStep = 1,
+     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False,V = 0):
         #initialize standard problem
         #start with t = 0
         self.t = Constant(ts[0])
         self.ts = ts
-        self.ub, pb = TrialFunctions(W)
+        self.BcIds = BcIds
+        self.DbcIds = DbcIds
         t.assign(self.t)
-        rinsp.__init__(self, mesh,u_0,bcs,W,x,y,viscosity = 1,AdvectionSwitchStep = 1,
-         gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1)
+        rinsp.__init__(self, mesh,u_0,W,x,y,viscosity = viscosity,AdvectionSwitchStep = AdvectionSwitchStep,
+         gamma = gamma,AverageVelocity = AverageVelocity,LengthScale = LengthScale,BcIds = BcIds,DbcIds = DbcIds)
 
     def SolveInTime(self):
         #solves problem in time
@@ -327,11 +328,6 @@ class rinspt(rinsp):
 
             if tval != self.ts[0]:
 
-                #splittingsolving u and p for programming purposes (unavoidable)
-                u, p = split(self.up)
-
-                self.ub.assign(u)
-
                 DeltaT = float(tval-self.ts[it-1])
 
                 #adding in the finite difference time term
@@ -340,19 +336,29 @@ class rinspt(rinsp):
                 #and its derivative
                 self.aP += derivative(inner(u + self.ub,self.v)/DeltaT*dx,self.up)
 
+                if self.DbcIds != 0:
+                    rinsp.dbc(self,self.DbcIds)
+                else:
+                    rinsp.dbc(self,self.BcIds)
+
                 #Update problem
                 navierstokesproblem = NonlinearVariationalProblem(self.F, self.up, Jp=self.aP,
                                                                   bcs=self.bcs)
                 #Update Solver
                 self.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
                                                                 nullspace=self.nullspace,
-                                                                solver_parameters=parameters)
+                                                                solver_parameters=self.parameters)
 
                 #Update problem
                 ContinuationProblem = LinearVariationalProblem(self.LHS,self.RHS,self.dupdadvswitch,aP = self.aP, bcs = self.bcs)
 
                 #Update solver
-                self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = parameters)
+                self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
+
+            #splittingsolving u and p for programming purposes (unavoidable)
+            u, p = split(self.up)
+
+            self.ub = u
 
             rinsp.FullSolve(self,FullOutput=False,Write=False)
 

@@ -1,11 +1,10 @@
 class AClass():
+    b = 20
     def __init__(self):
-        self.a = 2
-        b = self.a*2
-
-    def mod(self):
-        self.a = 2*self.a
+        AClass.b += 1
+        print(AClass.b)
 
 test = AClass()
-
-test.mod()
+test = AClass()
+test = AClass()
+test = AClass()
