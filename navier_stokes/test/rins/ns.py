@@ -12,14 +12,14 @@ Q = FunctionSpace(mesh, "DG", 1)
 W = V * Q
 
 #defining time
-ts = np.arange(0.0,2.0*np.pi,0.5*np.pi)
+ts = np.arange(0.0,2.0*np.pi,0.1*np.pi)
 t = Constant(ts[0])
 
 #defining
 x,y= SpatialCoordinate(mesh)
 
 # boundary function, these are assumed to not change during iteration
-u_0 = as_vector([conditional(y < 0.1,sin(t),0.),0])
+u_0 = as_vector([conditional(y < 0.1,0.5*sin(t),0.),0])
 
 problem = rins.rinspt(mesh,u_0,W,x,y,t,BcIds = 3)
 

@@ -299,8 +299,11 @@ class rinspt(rinsp):
      gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False,V = 0):
         #initialize standard problem
         self.t=t
+        #boundary ids
         self.BcIds = BcIds
         self.DbcIds = DbcIds
+        #TimeSwitch for time terms
+        self.Timeswitch = Constant(0)
         rinsp.__init__(self, mesh,u_0,W,x,y,viscosity = viscosity,AdvectionSwitchStep = AdvectionSwitchStep,
          gamma = gamma,AverageVelocity = AverageVelocity,LengthScale = LengthScale,BcIds = BcIds,DbcIds = DbcIds)
 
@@ -308,15 +311,13 @@ class rinspt(rinsp):
         """#TODO"""
         #solves problem in time
 
-        #this stes up the save file for results
+        #this sets up the save file for results
         upfile = File("stokes.pvd")
-
         u, p = self.up.split()
-
         u.rename("Velocity")
-
         p.rename("Pressure")
 
+        #intrduciont upb to store prior value
         upb = Function(self.W)
 
         #defining DeltaT
@@ -324,7 +325,10 @@ class rinspt(rinsp):
 
         for it,tval in enumerate(ts):
 
-            ub,pb = upb.split()
+            #For coding purposes need to use split(up)
+            u,p = split(self.up)
+
+            ub,pb = split(upb)
 
             #updates t
             self.t.assign(tval)
@@ -338,10 +342,10 @@ class rinspt(rinsp):
                 #we only need to build this once
 
                 #adding in the finite difference time term
-                self.F += inner(u + self.ub,self.v)/DeltaT*dx
+                self.F += inner(u + ub,self.v)/DeltaT*dx
 
                 #and its derivative
-                self.aP += derivative(inner(u + self.ub,self.v)/DeltaT*dx,self.up)
+                self.aP += derivative(inner(u + ub,self.v)/DeltaT*dx,self.up)
 
                 if self.DbcIds != 0:
                     rinsp.dbc(self,self.DbcIds)
