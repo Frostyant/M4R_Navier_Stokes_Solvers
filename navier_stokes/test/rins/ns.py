@@ -21,9 +21,9 @@ x,y= SpatialCoordinate(mesh)
 # boundary function, these are assumed to not change during iteration
 u_0 = as_vector([conditional(y < 0.1,sin(t),0.),0])
 
-problem = rins.rinspt(ts,mesh,u_0,W,x,y,t,BcIds = 3,V=V)
+problem = rins.rinspt(mesh,u_0,W,x,y,t,BcIds = 3)
 
 print("Reynolds Number =")
 print(problem.R)
 
-problem.SolveInTime()
+problem.SolveInTime(ts)

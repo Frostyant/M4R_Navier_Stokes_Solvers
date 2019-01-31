@@ -295,19 +295,17 @@ class rinsp:
 
 
 class rinspt(rinsp):
-    def __init__(self,ts, mesh,u_0,W,x,y,t,viscosity = 1,AdvectionSwitchStep = 1,
+    def __init__(self, mesh,u_0,W,x,y,t,viscosity = 1,AdvectionSwitchStep = 1,
      gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False,V = 0):
         #initialize standard problem
-        #start with t = 0
-        self.t = Constant(ts[0])
-        self.ts = ts
+        self.t=t
         self.BcIds = BcIds
         self.DbcIds = DbcIds
-        t.assign(self.t)
         rinsp.__init__(self, mesh,u_0,W,x,y,viscosity = viscosity,AdvectionSwitchStep = AdvectionSwitchStep,
          gamma = gamma,AverageVelocity = AverageVelocity,LengthScale = LengthScale,BcIds = BcIds,DbcIds = DbcIds)
 
-    def SolveInTime(self):
+    def SolveInTime(self,ts):
+        """#TODO"""
         #solves problem in time
 
         #this stes up the save file for results
@@ -319,16 +317,25 @@ class rinspt(rinsp):
 
         p.rename("Pressure")
 
-        for it,tval in enumerate(self.ts):
+        upb = Function(self.W)
+
+        #defining DeltaT
+        DeltaT = Constant(1)
+
+        for it,tval in enumerate(ts):
+
+            ub,pb = upb.split()
 
             #updates t
             self.t.assign(tval)
 
             print(tval)
 
-            if tval != self.ts[0]:
+            DeltaT.assign(float(tval-ts[it-1]))
 
-                DeltaT = float(tval-self.ts[it-1])
+            if tval == ts[1]:
+
+                #we only need to build this once
 
                 #adding in the finite difference time term
                 self.F += inner(u + self.ub,self.v)/DeltaT*dx
@@ -356,9 +363,7 @@ class rinspt(rinsp):
                 self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
 
             #splittingsolving u and p for programming purposes (unavoidable)
-            u, p = split(self.up)
-
-            self.ub = u
+            upb.assign(self.up)
 
             rinsp.FullSolve(self,FullOutput=False,Write=False)
 
