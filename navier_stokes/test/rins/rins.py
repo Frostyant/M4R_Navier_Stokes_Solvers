@@ -303,12 +303,43 @@ class rinspt(rinsp):
         self.BcIds = BcIds
         self.DbcIds = DbcIds
         #TimeSwitch for time terms
-        self.Timeswitch = Constant(0)
+        self.TimeSwitch = Constant(0)
         rinsp.__init__(self, mesh,u_0,W,x,y,viscosity = viscosity,AdvectionSwitchStep = AdvectionSwitchStep,
          gamma = gamma,AverageVelocity = AverageVelocity,LengthScale = LengthScale,BcIds = BcIds,DbcIds = DbcIds)
 
+
+        #Adding Time terms#
+        #defining upb to store prior value
+        self.upb = Function(self.W)
+        #defining DeltaT
+        self.DeltaT = Constant(1)
+
+        #programmtically required
+        ub,pb = split(self.upb)
+        u, p = split(self.up)
+
+        #adding in the finite difference time term
+        self.F += self.TimeSwitch*inner(u + ub,self.v)/self.DeltaT*dx
+
+        #and its derivative
+        self.aP += self.TimeSwitch*derivative(inner(u + ub,self.v)/self.DeltaT*dx,self.up)
+
+        #Update problem
+        navierstokesproblem = NonlinearVariationalProblem(self.F, self.up, Jp=self.aP,
+                                                           bcs=self.bcs)
+        #Update Solver
+        self.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
+                                                        nullspace=self.nullspace,
+                                                        solver_parameters=self.parameters)
+
+        #Update problem
+        ContinuationProblem = LinearVariationalProblem(self.LHS,self.RHS,self.dupdadvswitch,aP = self.aP, bcs = self.bcs)
+
+        #Update solver
+        self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
+
     def SolveInTime(self,ts):
-        """#TODO"""
+        """#ToFinish"""
         #solves problem in time
 
         #this sets up the save file for results
@@ -317,57 +348,28 @@ class rinspt(rinsp):
         u.rename("Velocity")
         p.rename("Pressure")
 
-        #intrduciont upb to store prior value
-        upb = Function(self.W)
-
-        #defining DeltaT
-        DeltaT = Constant(1)
-
         for it,tval in enumerate(ts):
 
             #For coding purposes need to use split(up)
             u,p = split(self.up)
 
-            ub,pb = split(upb)
-
             #updates t
             self.t.assign(tval)
 
+            #print current time
             print(tval)
 
-            DeltaT.assign(float(tval-ts[it-1]))
+            self.DeltaT.assign(float(tval-ts[it-1]))
 
             if tval == ts[1]:
 
-                #we only need to build this once
+                #turn on Time terms
+                self.TimeSwitch.assign(1)
 
-                #adding in the finite difference time term
-                self.F += inner(u + ub,self.v)/DeltaT*dx
 
-                #and its derivative
-                self.aP += derivative(inner(u + ub,self.v)/DeltaT*dx,self.up)
-
-                if self.DbcIds != 0:
-                    rinsp.dbc(self,self.DbcIds)
-                else:
-                    rinsp.dbc(self,self.BcIds)
-
-                #Update problem
-                navierstokesproblem = NonlinearVariationalProblem(self.F, self.up, Jp=self.aP,
-                                                                  bcs=self.bcs)
-                #Update Solver
-                self.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
-                                                                nullspace=self.nullspace,
-                                                                solver_parameters=self.parameters)
-
-                #Update problem
-                ContinuationProblem = LinearVariationalProblem(self.LHS,self.RHS,self.dupdadvswitch,aP = self.aP, bcs = self.bcs)
-
-                #Update solver
-                self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
 
             #splittingsolving u and p for programming purposes (unavoidable)
-            upb.assign(self.up)
+            self.upb.assign(self.up)
 
             rinsp.FullSolve(self,FullOutput=False,Write=False)
 
