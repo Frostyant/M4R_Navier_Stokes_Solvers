@@ -296,7 +296,7 @@ class rinsp:
 
 class rinspt(rinsp):
     def __init__(self, mesh,u_0,W,x,y,t,viscosity = 1,AdvectionSwitchStep = 1,
-     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False,V = 0):
+     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False):
         #initialize standard problem
         self.t=t
         #boundary ids
@@ -338,8 +338,49 @@ class rinspt(rinsp):
         #Update solver
         self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
 
+    def SolveInTime(self,ts,precise = False,PicIt=2):
+        """Solves Probem in time using Picard and, if precise = True, Newton in addition
+        Keyword arguments:
+        precise -- If true will use Newton after Picards iterations at each timestep
+        PicIt -- Number of Picards Iteration
+        """
+        upfile = File("stokes.pvd")
+        u, p = self.up.split()
+        u.rename("Velocity")
+        p.rename("Pressure")
+
+        #first time step
+        self.upb.assign(self.up)
+        self.t.assign(ts[0])
+        rinsp.FullSolve(self,FullOutput=False,Write=False)
+        #splitting u and p for programming purposes (unavoidable)
+        u, p = self.up.split()
+        upfile.write(u, p,time = ts[0])
+        ts.pop(0)
+
+        for it,tval in enumerate(ts):
+            #For coding purposes need to use split(up)
+            self.t.assign(tval)
+            self.upb.assign(self.up)
+            self.DeltaT.assign(float(tval-ts[it-1]))
+            print(tval)
+            self.PicardIteration(PicIt)
+            if precise:
+                self.TimeSwitch.assign(1)
+                rinsp.FullSolve(self,FullOutput=False,Write=False)
+                self.TimeSwitch.assign(0)
+
+            #For coding purposes need to use up.split here
+            u, p = self.up.split()
+            upfile.write(u, p,time = tval)
+
+    def PicardIteration(self,PicIt=2):
+        for it in range(PicIt):
+            print(it)
+
+
+    """
     def SolveInTime(self,ts):
-        """#ToFinish"""
         #solves problem in time
 
         #this sets up the save file for results
@@ -352,21 +393,12 @@ class rinspt(rinsp):
 
             #For coding purposes need to use split(up)
             u,p = split(self.up)
-
-            #updates t
             self.t.assign(tval)
-
-            #print current time
             print(tval)
-
             self.DeltaT.assign(float(tval-ts[it-1]))
 
             if tval == ts[1]:
-
-                #turn on Time terms
                 self.TimeSwitch.assign(1)
-
-
 
             #splittingsolving u and p for programming purposes (unavoidable)
             self.upb.assign(self.up)
@@ -376,3 +408,4 @@ class rinspt(rinsp):
             u, p = self.up.split()
 
             upfile.write(u, p,time = tval)
+    """
