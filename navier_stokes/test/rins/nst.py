@@ -4,24 +4,26 @@ import numpy as np
 import rins
 
 # Load mesh
-mesh = Mesh("CylinderInPipe.msh")
-
-#defining
-x,y= SpatialCoordinate(mesh)
+mesh = UnitSquareMesh(50, 50)
 
 # Define function spaces
 V = FunctionSpace(mesh, "BDM", 2)
 Q = FunctionSpace(mesh, "DG", 1)
 W = V * Q
-AverageVelocity = 1
+
+#defining time
+ts = np.arange(0.0,2.0*np.pi,0.1*np.pi)
+t = Constant(ts[0])
+
+#defining
+x,y= SpatialCoordinate(mesh)
 
 # boundary function, these are assumed to not change during iteration
-u_0 = as_vector([conditional(x < 1,AverageVelocity,0.)
-    ,0])
+u_0 = as_vector([conditional(y < 0.1,0.5*sin(t),0.),0])
 
-problem = rins.rinsp(mesh,u_0,W,x,y,viscosity = 10**100,BcIds = (1,5),AverageVelocity = AverageVelocity,LengthScale = 50)
+problem = rins.rinspt(mesh,u_0,W,x,y,t,BcIds = 3)
 
 print("Reynolds Number =")
 print(problem.R)
 
-problem.FullSolve()
+problem.SolveInTime(ts)

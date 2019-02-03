@@ -39,7 +39,6 @@ class rinsp:
         self.R = LengthScale*AverageVelocity/viscosity
         gamma = self.gamma
         AverageVelocity = self.AverageVelocity
-        viscosity =  self.viscosity
         AdvectionSwitchStep = self.AdvectionSwitchStep
         W = self.W
         #these are the default solver parameters
@@ -75,7 +74,8 @@ class rinsp:
         #defining the normal
         n = FacetNormal(mesh)
 
-        up = Function(W)
+        self.up = Function(W)
+        up = self.up
 
         # Removing Pressure constant
         self.nullspace = MixedVectorSpaceBasis(
@@ -109,10 +109,8 @@ class rinsp:
         else:
             viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds(BcIds) #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
             viscous_ext =c/(h)*inner(v,u)*ds(BcIds)#this is a penalty term for the boundaries
-
-
         #Assembling Viscous Term
-        viscous_term = viscosity*(
+        viscous_term = self.viscosity*(
             viscous_byparts1
             - viscous_byparts2
             - viscous_symetry
@@ -120,63 +118,25 @@ class rinsp:
             - viscous_byparts2_ext
             + viscous_ext
         )
-
         #Setting up bilenar form
         graddiv_term = gamma*div(v)*div(u)*dx
-
         a_bilinear = (
             viscous_term +
             q * div(u) * dx - p * div(v) * dx
             + graddiv_term
         )
-
         pmass = q*p*dx
-
-        #Jacobian
-        self.aP = viscous_term   + (viscosity + gamma)*pmass +graddiv_term
-
+        self.aP = viscous_term   + (self.viscosity + gamma)*pmass +graddiv_term
         #Left hand side
-        self.F = action(a_bilinear, up) - viscosity*L
+        self.F = action(a_bilinear, up) - self.viscosity*L
 
-        #splitting u and p for programming purposes (unavoidable)
-        u, p = split(up)
 
-        #Re-Defining functions for use in Advection term
-        twoD = True
-        if twoD:
-            curl = lambda phi: as_vector([-phi.dx(1), phi.dx(0)])
-            cross = lambda u, w: u[0]*w[1]-u[1]*w[0]
-            perp = lambda n, phi: as_vector([n[1]*phi, -n[0]*phi])
-        else:
-            perp = cross
-
-        #Defining upwind and U_upwind for us in advection
-        Upwind = 0.5*(sign(dot(u, n))+1)
-        U_upwind = Upwind('+')*u('+') + Upwind('-')*u('-')
-
-        #Assembling Advection Term
-        adv_byparts1 = inner(u, curl(cross(u, v)))*dx #This is the term from integration by parts of double curl
-        adv_byparts2 = inner(U_upwind, 2*avg( perp(n, cross(u, v))))*dS #Second term over surface
-        adv_grad = 0.5*div(v)*inner(u,u)*dx #This is the term due to the gradient of u^2
-        adv_bdc1 = inner(u_0,perp(n,cross(u_0,v)))*ds #boundary version of adv_byparts2
-        adv_bdc2 = 1/2*inner(inner(u_0,u_0)*v,n)*ds #boundary term from u^2 when it is non-0
-        advection_term = (
-            adv_byparts1
-            - adv_byparts2
-            - adv_grad
-            - adv_bdc1
-            + adv_bdc2
-        )
-
-        self.AdvectionSwitch = Constant(0)
-
-        #Adjusting F with advection term
+        advection_term = self.GetAdvectionTerm(self.up)
+        self.AdvectionSwitch = Constant(0) #initially we neglect advection
         self.F += self.AdvectionSwitch*advection_term
-
-        #Adjusting aP, the jacobian, with derivative of advection term
         self.aP += self.AdvectionSwitch*derivative(advection_term, up)
 
-        #Solving problem #
+        #Creating Solvers #
 
         #Input what we wrote before
         navierstokesproblem = NonlinearVariationalProblem(self.F, up, Jp=self.aP,
@@ -185,15 +145,9 @@ class rinsp:
         self.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
                                                         nullspace=self.nullspace,
                                                         solver_parameters=self.parameters)
-        #splitting u&p
         self.dupdadvswitch = Function(W)
-
-        #differentiation
         self.RHS = -advection_term
-
-        #replaces all of up in F with dupdadvswitch
         self.LHS = derivative(self.F,up)
-
         #Input problem
         ContinuationProblem = LinearVariationalProblem(self.LHS,self.RHS,self.dupdadvswitch,aP = self.aP, bcs = self.bcs)
 
@@ -254,7 +208,7 @@ class rinsp:
 
                 if AdvectionSwitchStep >= (1-AdvectionSwitchValue) and AdvectionSwitchValue < 1:
                     AdvectionSwitchStep = (1-AdvectionSwitchValue)
-                    print("Success, solved with full advection")
+                    print("Success, solving with full advection")
                 else:
                     print("Success, Increasing Step Size")
 
@@ -279,17 +233,52 @@ class rinsp:
             bcs = (DirichletBC(self.W.sub(0), self.u_0, Ids))
         else:
             if Ids != False:
-                bcs = (0,)*len(Ids)
+                bcs = [0,]*len(Ids)
             else:
                 #if Ids = 0 we assume this is a square where Dirichelet conditions are imposed on all boundaries
-                bcs = (0,)*4
+                bcs = [0,]*4
                 Ids = (1,2,3,4)
 
             for it,id in enumerate(Ids):
-
                 bcs[it] = DirichletBC(self.W.sub(0), self.u_0, id)
 
-        self.bcs = bcs
+        self.bcs = tuple(bcs)
+
+    def GetAdvectionTerm(self,up):
+        #defining the normal
+        n = FacetNormal(self.mesh)
+
+        #splitting u and p for programming purposes (unavoidable)
+        u, p = split(up)
+
+        #Re-Defining functions for use in Advection term
+        twoD = True
+        if twoD:
+            curl = lambda phi: as_vector([-phi.dx(1), phi.dx(0)])
+            cross = lambda u, w: u[0]*w[1]-u[1]*w[0]
+            perp = lambda n, phi: as_vector([n[1]*phi, -n[0]*phi])
+        else:
+            perp = cross
+
+        #Defining upwind and U_upwind for us in advection
+        Upwind = 0.5*(sign(dot(u, n))+1)
+        U_upwind = Upwind('+')*u('+') + Upwind('-')*u('-')
+
+        #Assembling Advection Term
+        adv_byparts1 = inner(u, curl(cross(u, self.v)))*dx #This is the term from integration by parts of double curl
+        adv_byparts2 = inner(U_upwind, 2*avg( perp(n, cross(u, self.v))))*dS #Second term over surface
+        adv_grad = 0.5*div(self.v)*inner(u,u)*dx #This is the term due to the gradient of u^2
+        adv_bdc1 = inner(self.u_0,perp(n,cross(self.u_0,self.v)))*ds #boundary version of adv_byparts2
+        adv_bdc2 = 1/2*inner(inner(self.u_0,self.u_0)*self.v,n)*ds #boundary term from u^2 when it is non-0
+        advection_term = (
+            adv_byparts1
+            - adv_byparts2
+            - adv_grad
+            - adv_bdc1
+            + adv_bdc2
+        )
+
+        return advection_term
 
 
 
@@ -377,6 +366,8 @@ class rinspt(rinsp):
     def PicardIteration(self,PicIt=2):
         for it in range(PicIt):
             print(it)
+            #turning off advection term
+            self.AdvectionSwitch.assign(0)
 
 
     """
