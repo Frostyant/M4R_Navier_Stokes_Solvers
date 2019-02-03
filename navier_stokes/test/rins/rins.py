@@ -6,9 +6,8 @@ class rinsp:
     """A Navier-Stokes Problem with an efficient pre-build solver using Hdiv"""
 
     def __init__(self, mesh,u_0,W,x,y,z = 0,viscosity = 1,AdvectionSwitchStep = 1,
-     gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False):
+    gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False,twoD=True):
         """ Creats rinsp object
-
         Keyword arguments:
         mesh -- mesh on which the problem is.
         u_0 -- a function which defines boundary values at ALL boundaries (use conditional if need be).
@@ -37,10 +36,15 @@ class rinsp:
         self.z = 0
         self.AverageVelocity = Constant(AverageVelocity)
         self.R = LengthScale*AverageVelocity/viscosity
-        gamma = self.gamma
+        self.BcIds = BcIds
+        self.DbcIds = DbcIds
+        self.twoD = twoD
         AverageVelocity = self.AverageVelocity
         AdvectionSwitchStep = self.AdvectionSwitchStep
         W = self.W
+        x,y= self.x,self.y
+        self.up = Function(W)
+        up = self.up
         #these are the default solver parameters
         self.parameters = {
             "ksp_type": "gmres",
@@ -58,8 +62,6 @@ class rinsp:
             "fieldsplit_1_pc_type": "bjacobi",
             "fieldsplit_1_pc_sub_type": "ilu"#use incomplete LU factorization on the submatrix
         }
-        c = Constant(20)
-
         #setting up dirichelet boundary conditions
         if(DbcIds != False):
             #using DbcIds
@@ -67,79 +69,32 @@ class rinsp:
         else:
             #using BcIDs, which are the IDs used for weak boundaries
             self.dbc(BcIds)
-
-        #defining
-        x,y= self.x,self.y
-
-        #defining the normal
         n = FacetNormal(mesh)
-
-        self.up = Function(W)
-        up = self.up
-
         # Removing Pressure constant
         self.nullspace = MixedVectorSpaceBasis(
             W, [W.sub(0), VectorSpaceBasis(constant=True)])
 
         # Define variational problem #
-
-        #setting up trial and test functions
         u, p = TrialFunctions(W)
-        (self.v, q) = TestFunctions(W)
+        (self.v, self.q) = TestFunctions(W)
         v = self.v
 
+        #These terms create the viscous and numerical stability part of the equation
+        viscous_term,L = self.GetViscousTerm(u,p)
+        a_bilinear,graddiv_term = self.GetBilinear(u,p,viscous_term)
+        self.aP = self.GetApV(u,p,viscous_term,graddiv_term)
+        self.F = action(a_bilinear, self.up) - self.viscosity*L
 
-        #Assembling LHS
-        h = avg(CellVolume(mesh))/FacetArea(mesh)
-        if BcIds == False:
-            L = c/(h)*inner(v,u_0)*ds - inner(outer(u_0,n),grad(v))*ds
-        else:
-            #apply Bcs only to relevant boundaries
-            L = c/(h)*inner(v,u_0)*ds(BcIds) - inner(outer(u_0,n),grad(v))*ds(BcIds)
-
-        #Viscous Term parts
-        viscous_byparts1 = inner(grad(u), grad(v))*dx #this is the term over omega from the integration by parts
-        viscous_byparts2 = 2*inner(avg(outer(v,n)),avg(grad(u)))*dS #this the term over interior surfaces from integration by parts
-        viscous_symetry = 2*inner(avg(outer(u,n)),avg(grad(v)))*dS #this the term ensures symetry while not changing the continuous equation
-        viscous_stab = c*1/(h)*inner(jump(v),jump(u))*dS #stabilizes the equation
-        #Note NatBc turns these terms off, otherwise it is 1
-        if BcIds == False:
-            viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
-            viscous_ext =c/(h)*inner(v,u)*ds#this is a penalty term for the boundaries
-        else:
-            viscous_byparts2_ext = (inner(outer(v,n),grad(u)) + inner(outer(u,n),grad(v)))*ds(BcIds) #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
-            viscous_ext =c/(h)*inner(v,u)*ds(BcIds)#this is a penalty term for the boundaries
-        #Assembling Viscous Term
-        viscous_term = self.viscosity*(
-            viscous_byparts1
-            - viscous_byparts2
-            - viscous_symetry
-            + viscous_stab
-            - viscous_byparts2_ext
-            + viscous_ext
-        )
-        #Setting up bilenar form
-        graddiv_term = gamma*div(v)*div(u)*dx
-        a_bilinear = (
-            viscous_term +
-            q * div(u) * dx - p * div(v) * dx
-            + graddiv_term
-        )
-        pmass = q*p*dx
-        self.aP = viscous_term   + (self.viscosity + gamma)*pmass +graddiv_term
-        #Left hand side
-        self.F = action(a_bilinear, up) - self.viscosity*L
-
-
+        #These terms are the advective parts of the equation
         advection_term = self.GetAdvectionTerm(self.up)
         self.AdvectionSwitch = Constant(0) #initially we neglect advection
         self.F += self.AdvectionSwitch*advection_term
-        self.aP += self.AdvectionSwitch*derivative(advection_term, up)
+        self.aP += self.AdvectionSwitch*derivative(advection_term, self.up)
 
         #Creating Solvers #
 
         #Input what we wrote before
-        navierstokesproblem = NonlinearVariationalProblem(self.F, up, Jp=self.aP,
+        navierstokesproblem = NonlinearVariationalProblem(self.F, self.up, Jp=self.aP,
                                                           bcs=self.bcs)
         #Solver
         self.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
@@ -147,7 +102,7 @@ class rinsp:
                                                         solver_parameters=self.parameters)
         self.dupdadvswitch = Function(W)
         self.RHS = -advection_term
-        self.LHS = derivative(self.F,up)
+        self.LHS = derivative(self.F,self.up)
         #Input problem
         ContinuationProblem = LinearVariationalProblem(self.LHS,self.RHS,self.dupdadvswitch,aP = self.aP, bcs = self.bcs)
 
@@ -230,7 +185,7 @@ class rinsp:
 
         if isinstance(Ids,int):
             #this is just to avoid uneccessary bugs, can input integer instead of tuple
-            bcs = (DirichletBC(self.W.sub(0), self.u_0, Ids))
+            bcs = [DirichletBC(self.W.sub(0), self.u_0, Ids)]
         else:
             if Ids != False:
                 bcs = [0,]*len(Ids)
@@ -245,15 +200,13 @@ class rinsp:
         self.bcs = tuple(bcs)
 
     def GetAdvectionTerm(self,up):
-        #defining the normal
-        n = FacetNormal(self.mesh)
 
+        n = FacetNormal(self.mesh)
         #splitting u and p for programming purposes (unavoidable)
         u, p = split(up)
 
         #Re-Defining functions for use in Advection term
-        twoD = True
-        if twoD:
+        if self.twoD:
             curl = lambda phi: as_vector([-phi.dx(1), phi.dx(0)])
             cross = lambda u, w: u[0]*w[1]-u[1]*w[0]
             perp = lambda n, phi: as_vector([n[1]*phi, -n[0]*phi])
@@ -280,6 +233,62 @@ class rinsp:
 
         return advection_term
 
+    def GetViscousTerm(self,u,p):
+        """Gets Main Viscous Terms
+        Keyword arguments:
+        u -- velocity
+        p -- pressure
+
+        Outputs :
+        viscous_term -- RHS Viscous terms (ie they depend on up)
+        L -- LHS Viscous Terms (They do not depend on up)
+        """
+        c = Constant(20)
+        n= FacetNormal(self.mesh)
+        h = avg(CellVolume(self.mesh))/FacetArea(self.mesh)
+        if self.BcIds == False:
+            L = c/(h)*inner(self.v,self.u_0)*ds - inner(outer(self.u_0,n),grad(v))*ds
+        else:
+            #apply Bcs only to relevant boundaries
+            L = c/(h)*inner(self.v,self.u_0)*ds(self.BcIds) - inner(outer(self.u_0,n),grad(self.v))*ds(self.BcIds)
+
+        #Viscous Term parts
+        viscous_byparts1 = inner(grad(u), grad(self.v))*dx #this is the term over omega from the integration by parts
+        viscous_byparts2 = 2*inner(avg(outer(self.v,n)),avg(grad(u)))*dS #this the term over interior surfaces from integration by parts
+        viscous_symetry = 2*inner(avg(outer(u,n)),avg(grad(self.v)))*dS #this the term ensures symetry while not changing the continuous equation
+        viscous_stab = c*1/(h)*inner(jump(self.v),jump(u))*dS #stabilizes the equation
+        #Note NatBc turns these terms off, otherwise it is 1
+        if self.BcIds == False:
+            viscous_byparts2_ext = (inner(outer(self.v,n),grad(u)) + inner(outer(u,n),grad(self.v)))*ds #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
+            viscous_ext =c/(h)*inner(self.v,u)*ds#this is a penalty term for the boundaries
+        else:
+            viscous_byparts2_ext = (inner(outer(self.v,n),grad(u)) + inner(outer(u,n),grad(self.v)))*ds(self.BcIds) #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
+            viscous_ext =c/(h)*inner(self.v,u)*ds(self.BcIds)#this is a penalty term for the boundaries
+        #Assembling Viscous Term
+        viscous_term = self.viscosity*(
+            viscous_byparts1
+            - viscous_byparts2
+            - viscous_symetry
+            + viscous_stab
+            - viscous_byparts2_ext
+            + viscous_ext
+        )
+        return viscous_term,L
+
+    def GetBilinear(self,u,p,viscous_term):
+
+        #Setting up bilenar form
+        graddiv_term = self.gamma*div(self.v)*div(u)*dx
+        a_bilinear = (
+            viscous_term +
+            self.q * div(u) * dx - p * div(self.v) * dx
+            + graddiv_term
+        )
+        return a_bilinear,graddiv_term
+
+    def GetApV(self,u,p,viscous_term,graddiv_term):
+        pmass = self.q*p*dx
+        return viscous_term + (self.viscosity + self.gamma)*pmass + graddiv_term
 
 
 
@@ -300,7 +309,6 @@ class rinspt(rinsp):
         #Adding Time terms#
         #defining upb to store prior value
         self.upb = Function(self.W)
-        #defining DeltaT
         self.DeltaT = Constant(1)
 
         #programmtically required
@@ -309,7 +317,6 @@ class rinspt(rinsp):
 
         #adding in the finite difference time term
         self.F += self.TimeSwitch*inner(u + ub,self.v)/self.DeltaT*dx
-
         #and its derivative
         self.aP += self.TimeSwitch*derivative(inner(u + ub,self.v)/self.DeltaT*dx,self.up)
 
@@ -320,12 +327,14 @@ class rinspt(rinsp):
         self.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
                                                         nullspace=self.nullspace,
                                                         solver_parameters=self.parameters)
-
         #Update problem
         ContinuationProblem = LinearVariationalProblem(self.LHS,self.RHS,self.dupdadvswitch,aP = self.aP, bcs = self.bcs)
 
         #Update solver
         self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
+
+        #setup Picards Solver
+        self.PicardIterationSetup()
 
     def SolveInTime(self,ts,precise = False,PicIt=2):
         """Solves Probem in time using Picard and, if precise = True, Newton in addition
@@ -353,7 +362,7 @@ class rinspt(rinsp):
             self.upb.assign(self.up)
             self.DeltaT.assign(float(tval-ts[it-1]))
             print(tval)
-            self.PicardIteration(PicIt)
+            self.PicardsSolver.solve()
             if precise:
                 self.TimeSwitch.assign(1)
                 rinsp.FullSolve(self,FullOutput=False,Write=False)
@@ -363,40 +372,19 @@ class rinspt(rinsp):
             u, p = self.up.split()
             upfile.write(u, p,time = tval)
 
-    def PicardIteration(self,PicIt=2):
-        for it in range(PicIt):
-            print(it)
-            #turning off advection term
-            self.AdvectionSwitch.assign(0)
-
-
-    """
-    def SolveInTime(self,ts):
-        #solves problem in time
-
-        #this sets up the save file for results
-        upfile = File("stokes.pvd")
-        u, p = self.up.split()
-        u.rename("Velocity")
-        p.rename("Pressure")
-
-        for it,tval in enumerate(ts):
-
-            #For coding purposes need to use split(up)
-            u,p = split(self.up)
-            self.t.assign(tval)
-            print(tval)
-            self.DeltaT.assign(float(tval-ts[it-1]))
-
-            if tval == ts[1]:
-                self.TimeSwitch.assign(1)
-
-            #splittingsolving u and p for programming purposes (unavoidable)
-            self.upb.assign(self.up)
-
-            rinsp.FullSolve(self,FullOutput=False,Write=False)
-
-            u, p = self.up.split()
-
-            upfile.write(u, p,time = tval)
-    """
+    def PicardIterationSetup(self,MidNotB = False):
+        """Does Picards iterations on the navier stokes solution
+        Keyword arguments:
+        PicIt -- Number of Picards Iteration
+        MidNotB -- If True use Midpoint rule, otherwise use Backwards Euler
+        """
+        if not MidNotB:
+            #We are using advection term from previous step (nonlinear term)
+            advection_term = self.GetAdvectionTerm(self.upb)
+            u, p = split(self.up)
+            viscous_term,L = self.GetViscousTerm(u,p)
+            a_bilinear,graddiv_term = self.GetBilinear(u,p,viscous_term)
+            self.AdvectionSwitch = Constant(0) #initially we neglect advection
+            PicardsProblem = LinearVariationalProblem(a_bilinear,L + advection_term, self.up,
+                                                        aP=self.GetApV(u,p,viscous_term,graddiv_term), bcs=self.bcs)
+            self.PicardsSolver = LinearVariationalSolver(PicardsProblem, nullspace=self.nullspace, solver_parameters = self.parameters)

@@ -19,7 +19,7 @@ AverageVelocity = 1
 u_0 = as_vector([conditional(x < 1,AverageVelocity,0.)
     ,0])
 
-problem = rins.rinsp(mesh,u_0,W,x,y,viscosity = 10**100,BcIds = (1,5),AverageVelocity = AverageVelocity,LengthScale = 50)
+problem = rins.rinsp(mesh,u_0,W,x,y,viscosity = 1000,BcIds = (1,5),AverageVelocity = AverageVelocity,LengthScale = 50)
 
 print("Reynolds Number =")
 print(problem.R)
