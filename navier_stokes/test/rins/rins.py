@@ -101,6 +101,8 @@ class rinsp:
                                                         nullspace=self.nullspace,
                                                         solver_parameters=self.parameters)
         self.dupdadvswitch = Function(W)
+        #this is newton approximation term
+        self.up += self.dupdadvswitch*(AdvectionSwitchStep)
         self.RHS = -advection_term
         self.LHS = derivative(self.F,self.up)
 
@@ -111,16 +113,12 @@ class rinsp:
         #solving
         self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
 
-        #newton approximation
-        self.up += self.dupdadvswitch*(AdvectionSwitchStep)
 
     def FullSolve(self,FullOutput = False,Write = True):
         #Fulloutput outputs at EVERY iteration for continuation method
         #Write means that we write down the output at all
 
         AdvectionSwitchStep = self.AdvectionSwitchStep
-
-        #This solves the problem
         self.navierstokessolver.solve()
 
         if Write:
@@ -142,6 +140,7 @@ class rinsp:
 
             self.AdvectionSwitch.assign(AdvectionSwitchValue)
             self.ContinuationSolver.solve()
+            self.navierstokessolver.solve()
 
             # Plot solution
             if FullOutput:
