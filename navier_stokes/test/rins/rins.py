@@ -354,7 +354,7 @@ class rinspt(rinsp):
         #splitting u and p for programming purposes (unavoidable)
         u, p = self.up.split()
         upfile.write(u, p,time = ts[0])
-        ts.pop(0)
+        ts = np.delete(ts,0)
 
         for it,tval in enumerate(ts):
             #For coding purposes need to use split(up)
@@ -381,7 +381,7 @@ class rinspt(rinsp):
         if not MidNotB:
             #We are using advection term from previous step (nonlinear term)
             advection_term = self.GetAdvectionTerm(self.upb)
-            u, p = split(self.up)
+            u, p = TrialFunctions(self.W)
             viscous_term,L = self.GetViscousTerm(u,p)
             a_bilinear,graddiv_term = self.GetBilinear(u,p,viscous_term)
             self.AdvectionSwitch = Constant(0) #initially we neglect advection
