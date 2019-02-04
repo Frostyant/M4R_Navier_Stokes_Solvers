@@ -103,19 +103,21 @@ class rinsp:
         self.dupdadvswitch = Function(W)
         self.RHS = -advection_term
         self.LHS = derivative(self.F,self.up)
+
+
         #Input problem
         ContinuationProblem = LinearVariationalProblem(self.LHS,self.RHS,self.dupdadvswitch,aP = self.aP, bcs = self.bcs)
 
         #solving
         self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
 
-        self.up = up
+        #newton approximation
+        self.up += self.dupdadvswitch*(AdvectionSwitchStep)
 
     def FullSolve(self,FullOutput = False,Write = True):
         #Fulloutput outputs at EVERY iteration for continuation method
         #Write means that we write down the output at all
 
-        up = self.up
         AdvectionSwitchStep = self.AdvectionSwitchStep
 
         #This solves the problem
@@ -124,7 +126,7 @@ class rinsp:
         if Write:
             self.upfile = File("stokes.pvd")
 
-            u, p = up.split()
+            u, p = self.up.split()
 
             u.rename("Velocity")
 
@@ -136,15 +138,10 @@ class rinsp:
 
 
         #Continuation Method#
-
-        #define
         def ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep):
 
-            #newton approximation
-            self.up += self.dupdadvswitch*(AdvectionSwitchStep)
-
             self.AdvectionSwitch.assign(AdvectionSwitchValue)
-            self.navierstokessolver.solve()
+            self.ContinuationSolver.solve()
 
             # Plot solution
             if FullOutput:
@@ -164,8 +161,10 @@ class rinsp:
                 if AdvectionSwitchStep >= (1-AdvectionSwitchValue) and AdvectionSwitchValue < 1:
                     AdvectionSwitchStep = (1-AdvectionSwitchValue)
                     print("Success, solving with full advection")
+                elif AdvectionSwitchValue + AdvectionSwitchStep <= 1:
+                    print("Success, increasing step size")
                 else:
-                    print("Success, Increasing Step Size")
+                    print("Success, solve complete")
 
 
             except ConvergenceError as ex:
@@ -175,10 +174,9 @@ class rinsp:
                 AdvectionSwitchStep = AdvectionSwitchStep/2
                 #IF Advection step is this low the script failed
                 if AdvectionSwitchStep <= 10**(-3):
-                    print("Too Low Step Size, Solver failed")
+                    print("Too low step size, solver failed")
                     break
         self.AdvectionSwitch.assign(0)
-        self.up = up
 
     def dbc(self,Ids):
         #sets up dirichelet boundary conditions
