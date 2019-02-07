@@ -381,7 +381,25 @@ class rinspt(rinsp):
             u, p = TrialFunctions(self.W)
             viscous_term,L = self.GetViscousTerm(u,p)
             a_bilinear,graddiv_term = self.GetBilinear(u,p,viscous_term)
-            self.AdvectionSwitch = Constant(0) #initially we neglect advection
-            PicardsProblem = LinearVariationalProblem(a_bilinear,L + advection_term, self.up,
-                                                        aP=self.GetApV(u,p,viscous_term,graddiv_term), bcs=self.bcs)
+            self.AdvectionSwitch = Constant(0) #advection term is on previous time step
+            PicardsProblem = LinearVariationalProblem(-u+a_bilinear,L + advection_term, self.up,
+                                                        aP=Constant(-1)+self.GetApV(u,p,viscous_term,graddiv_term), bcs=self.bcs)
+            self.PicardsSolver = LinearVariationalSolver(PicardsProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
+        else:
+            advection_term = self.GetAdvectionTerm(self.upb)
+            u, p = TrialFunctions(self.W)
+            viscous_term,L = self.GetViscousTerm(u,p)
+            a_bilinear,graddiv_term = self.GetBilinear(u,p,viscous_term)
+            self.AdvectionSwitch = Constant(0) #advection term is on previous time step
+            LHS = -u + 1/2*(a_bilinear) #terms depending on up on next step
+            RHS = 1/2*(L)+advection_term
+
+            #
+            ub,pb = self.upb.Split()
+            viscous_term_b,Lb = self.GetViscousTerm(ub,pb)
+            a_bilinear_b,graddiv_term_b = self.GetBilinear(ub,pb,viscous_term_b)
+            RHS += -1/2*(Lb)
+
+            PicardsProblem = LinearVariationalProblem(LHS,RHS, self.up,
+                                                        aP=Constant(-1)+1/2*self.GetApV(u,p,viscous_term,graddiv_term), bcs=self.bcs)
             self.PicardsSolver = LinearVariationalSolver(PicardsProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
