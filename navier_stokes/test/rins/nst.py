@@ -19,7 +19,7 @@ W = V * Q
 AverageVelocity = 1
 
 #defining time
-ts = np.arange(0.0,2.0,0.05)
+ts = np.arange(0.0,1.0,0.01)
 t = Constant(ts[0])
 
 # boundary function, these are assumed to not change during iteration
@@ -27,7 +27,7 @@ u_0 = as_vector([conditional(x < 3,AverageVelocity,0.)
     ,0])
 
 
-problem = rins.rinspt(mesh,u_0,W,x,y,t,BcIds = 3,AverageVelocity = AverageVelocity,LengthScale = 50)
+problem = rins.rinspt(mesh,u_0,W,x,y,t,BcIds = (1,5),AverageVelocity = AverageVelocity,LengthScale = 50)
 
 print("Reynolds Number =")
 print(problem.R)
