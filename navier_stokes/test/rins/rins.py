@@ -313,9 +313,9 @@ class rinspt(rinsp):
         u, p = split(self.up)
 
         #adding in the finite difference time term
-        self.F += self.TimeSwitch*inner(u + ub,self.v)/self.DeltaT*dx
+        self.F += self.TimeSwitch*inner(u - ub,self.v)/self.DeltaT*dx
         #and its derivative
-        self.aP += self.TimeSwitch*derivative(inner(u + ub,self.v)/self.DeltaT*dx,self.up)
+        self.aP += self.TimeSwitch*derivative(inner(u - ub,self.v)/self.DeltaT*dx,self.up)
 
         #Update problem
         navierstokesproblem = NonlinearVariationalProblem(self.F, self.up, Jp=self.aP,
@@ -374,13 +374,13 @@ class rinspt(rinsp):
             u, p = self.up.split()
             upfile.write(u, p,time = tval)
 
-    def PicardIterationSetup(self,MidNotB = True):
+    def PicardIterationSetup(self,UseEuler):
         """Does Picards iterations on the navier stokes solution
         Keyword arguments:
         PicIt -- Number of Picards Iteration
-        MidNotB -- If True use Midpoint rule, otherwise use Backwards Euler
+        UseEuler -- If True use Backwards Euler, otherwise use Midpoint rule
         """
-        if not MidNotB:
+        if UseEuler:
             #We are using advection term from previous step (nonlinear term)
             advection_term = self.GetAdvectionTerm(self.upb)
             u, p = TrialFunctions(self.W)
