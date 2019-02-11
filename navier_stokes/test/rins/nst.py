@@ -3,11 +3,9 @@ from matplotlib import *
 import numpy as np
 import rins
 
-# Load mesh
-mesh = UnitSquareMesh(50, 50)
 
 # Load mesh
-mesh = Mesh("CylinderInPipe.msh")
+mesh = Mesh("DoubleCircle.msh")
 
 #defining
 x,y= SpatialCoordinate(mesh)
@@ -23,11 +21,11 @@ ts = np.arange(0.0,1.0,0.01)
 t = Constant(ts[0])
 
 # boundary function, these are assumed to not change during iteration
-u_0 = as_vector([conditional(x < 3,AverageVelocity,0.)
+u_0 = as_vector([conditional(x**2 + y**2 < 1.1,t*AverageVelocity,0.)
     ,0])
 
 
-problem = rins.rinspt(mesh,u_0,W,x,y,t,BcIds = (1,5),AverageVelocity = AverageVelocity,LengthScale = 50)
+problem = rins.rinspt(mesh,u_0,W,x,y,t,BcIds = (1),AverageVelocity = AverageVelocity,LengthScale = 4)
 
 print("Reynolds Number =")
 print(problem.R)
