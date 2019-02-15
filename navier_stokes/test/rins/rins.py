@@ -305,17 +305,17 @@ class rinspt(rinsp):
 
         #Adding Time terms#
         #defining upb to store prior value
-        self.upb = Function(self.W)
+        self.upPrior = Function(self.W)
         self.DeltaT = Constant(1)
 
         #programmtically required
-        ub,pb = split(self.upb)
+        ubPrior,pbPrior = split(self.upPrior)
         u, p = split(self.up)
 
         #adding in the finite difference time term
-        self.F += self.TimeSwitch*inner(u - ub,self.v)/self.DeltaT*dx
+        self.F += self.TimeSwitch*inner(u - ubPrior,self.v)/self.DeltaT*dx
         #and its derivative
-        self.aP += self.TimeSwitch*derivative(inner(u - ub,self.v)/self.DeltaT*dx,self.up)
+        self.aP += self.TimeSwitch*derivative(inner(u - ubPrior,self.v)/self.DeltaT*dx,self.up)
 
         #Update problem
         navierstokesproblem = NonlinearVariationalProblem(self.F, self.up, Jp=self.aP,
@@ -345,7 +345,7 @@ class rinspt(rinsp):
         p.rename("Pressure")
 
         #first time step
-        self.upb.assign(self.up)
+        self.upPrior.assign(self.up)
         self.t.assign(ts[0])
         rinsp.FullSolve(self,FullOutput=False,Write=False)
         #splitting u and p for programming purposes (unavoidable)
@@ -356,7 +356,7 @@ class rinspt(rinsp):
         for it,tval in enumerate(ts):
             #For coding purposes need to use split(up)
             self.t.assign(tval)
-            self.upb.assign(self.up)
+            self.upPrior.assign(self.up)
             if it == 0:
                 print(float(ts[it]))
                 self.DeltaT.assign(float(ts[it]))
@@ -364,7 +364,9 @@ class rinspt(rinsp):
                 print(float(ts[it]-ts[it-1]))
                 self.DeltaT.assign(float(ts[it]-ts[it-1]))
             print(tval)
-            self.PicardsSolver.solve()
+            for it1 in range(3):
+                self.upPicardsPrior.assign(self.up)
+                self.PicardsSolver.solve()
             if precise:
                 self.TimeSwitch.assign(1)
                 rinsp.FullSolve(self,FullOutput=False,Write=False)
@@ -374,19 +376,24 @@ class rinspt(rinsp):
             u, p = self.up.split()
             upfile.write(u, p,time = tval)
 
-    def PicardIterationSetup(self,UseEuler):
+    def PicardIterationSetup(self,UseEuler = True):
         """Does Picards iterations on the navier stokes solution
         Keyword arguments:
         PicIt -- Number of Picards Iteration
         UseEuler -- If True use Backwards Euler, otherwise use Midpoint rule
         """
+        self.upPicardsPrior = Function(self.W)
         if UseEuler:
             #We are using advection term from previous step (nonlinear term)
-            advection_term = self.GetAdvectionTerm(self.upb)
+            advection_term = self.GetAdvectionTerm(self.upPicardsPrior)
+
             u, p = TrialFunctions(self.W)
             viscous_term,L = self.GetViscousTerm(u,p)
             a_bilinear,graddiv_term = self.GetBilinear(u,p,viscous_term)
-            PicardsProblem = LinearVariationalProblem(-inner(u,self.v)*dx+self.DeltaT*(a_bilinear,L + advection_term), self.up,
+
+            LHS = -inner(u,self.v)*dx + self.DeltaT*(a_bilinear)
+
+            PicardsProblem = LinearVariationalProblem(LHS,L + advection_term, self.up,
                                                         aP=self.GetApV(u,p,viscous_term,graddiv_term), bcs=self.bcs)
             self.PicardsSolver = LinearVariationalSolver(PicardsProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
         else:
@@ -395,17 +402,17 @@ class rinspt(rinsp):
             viscous_term,L = self.GetViscousTerm(u,p)
             a_bilinear,graddiv_term = self.GetBilinear(u,p,viscous_term)
             LHS = -inner(u,self.v)*dx + 1/2*self.DeltaT*a_bilinear#terms depending on up on next step
-            RHS = self.DeltaT*(1/2*L +advection_term)
+            RHS = self.DeltaT*(1/2*L*self.viscosity +advection_term)
 
             #RHS terms
-            ub,pb = split(self.upb)
-            viscous_term_b,Lb = self.GetViscousTerm(ub,pb)
-            a_bilinear_b,graddiv_term_b = self.GetBilinear(ub,pb,viscous_term_b)
+            ubPrior,pbPrior = split(self.upPrior)
+            viscous_term_b,Lb = self.GetViscousTerm(ubPrior,pbPrior)
+            a_bilinear_b,graddiv_term_b = self.GetBilinear(ubPrior,pbPrior,viscous_term_b)
             RHS += -1/2*self.DeltaT*Lb
 
             #Jacobian
             Jp= derivative(LHS,self.up)
 
             PicardsProblem = LinearVariationalProblem(LHS,RHS, self.up,
-                                                        aP=self.GetApV(u,p,viscous_term,graddiv_term), bcs=self.bcs)
+                                                        aP=-inner(Constant(1),self.v)*dx + self.GetApV(u,p,viscous_term,graddiv_term), bcs=self.bcs)
             self.PicardsSolver = LinearVariationalSolver(PicardsProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
