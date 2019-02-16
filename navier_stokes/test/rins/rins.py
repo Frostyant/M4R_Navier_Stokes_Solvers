@@ -395,15 +395,15 @@ class rinspt(rinsp):
             viscous_term,L = self.GetViscousTerm(u,p)
             a_bilinear,graddiv_term = self.GetBilinear(u,p,viscous_term)
 
-            LHS = inner(u,self.v)*dx + self.DeltaT*(a_bilinear)
+            RHS = -inner(u,self.v)*dx + self.DeltaT*(a_bilinear)
 
-            RHS = inner(uPicardsPrior,self.v)*dx  + self.DeltaT*(L + advection_term)
+            LHS = -inner(uPicardsPrior,self.v)*dx  + self.DeltaT*(L + advection_term)
 
             u = variable(u)
 
-            aP = inner(u,self.v)*dx + self.DeltaT*self.GetApV(u,p,viscous_term,graddiv_term)
+            aP = -inner(u,self.v)*dx + self.DeltaT*self.GetApV(u,p,viscous_term,graddiv_term)
 
-            PicardsProblem = LinearVariationalProblem(LHS,L + advection_term, self.up,
+            PicardsProblem = LinearVariationalProblem(RHS,LHS, self.up,
                                                         aP=aP, bcs=self.bcs)
             self.PicardsSolver = LinearVariationalSolver(PicardsProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
         else:
