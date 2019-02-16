@@ -21,7 +21,7 @@ ts = np.arange(0.0,1.0,0.01)
 t = Constant(ts[0])
 
 # boundary function, these are assumed to not change during iteration
-u_0 = as_vector([conditional(x**2 + y**2 < 1.1,t*AverageVelocity,0.)
+u_0 = as_vector([conditional(x**2 + y**2 < 1.1,AverageVelocity,0.)
     ,0])
 
 
