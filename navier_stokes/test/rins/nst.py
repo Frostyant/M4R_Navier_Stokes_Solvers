@@ -20,12 +20,15 @@ AverageVelocity = 1
 ts = np.arange(0.0,1.0,0.01)
 t = Constant(ts[0])
 
-# boundary function, these are assumed to not change during iteration
-u_0 = as_vector([conditional(x**2 + y**2 < 1.1,AverageVelocity,0.)
-    ,0])
+# boundary function
+u_0 = AverageVelocity*as_vector([
+    conditional(x**2 + y**2 < 1.1**2,-y , 0.)
+    + conditional(x**2 + y**2 > 1.1**2,-t*y , 0.) ,
+    conditional(x**2 + y**2 < 1.9**2,x , 0.)
+    + conditional(x**2 + y**2 > 1.9**2, t*x , 0.)
+    ])
 
-
-problem = rins.rinspt(mesh,u_0,W,x,y,t,BcIds = (1),AverageVelocity = AverageVelocity,LengthScale = 4)
+problem = rins.rinspt(mesh,u_0,W,x,y,t,BcIds = (1,2),AverageVelocity = AverageVelocity,LengthScale = 4)
 
 print("Reynolds Number =")
 print(problem.R)
