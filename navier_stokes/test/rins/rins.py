@@ -370,7 +370,8 @@ class rinspt(rinsp):
             print(tval)
 
             for it1 in range(3):
-                self.upPicardsPrior.assign(self.up)
+                #wr are the Picards Iterates
+                self.wr.assign(self.up)
                 self.PicardsSolver.solve()
 
             if precise:
@@ -382,54 +383,73 @@ class rinspt(rinsp):
             u, p = self.up.split()
             upfile.write(u, p,time = tval)
 
-    def PicardIterationSetup(self,UseEuler = False):
+    def PicardIterationSetup(self):
         """Does Picards iterations on the navier stokes solution
         Keyword arguments:
         PicIt -- Number of Picards Iteration
-        UseEuler -- If True use Backwards Euler, otherwise use Midpoint rule
         """
-        self.upPicardsPrior = Function(self.W)
-        uPicardsPrior,pPicardsPrior = split(self.upPrior)
-        if UseEuler:
-            #We are using advection term from previous step (nonlinear term)
-            advection_term = self.GetAdvectionTerm(self.upPicardsPrior)
+        def GetAdvectionTermPicards(self,up,w):
+            """
+            Keyword arguments:
+            up -- advected velocity
+            w -- advecting velocity
+            """
 
-            u, p = TrialFunctions(self.W)
-            viscous_term,L = self.GetViscousTerm(u,p)
-            a_bilinear,graddiv_term = self.GetBilinear(u,p,viscous_term)
+            n = FacetNormal(self.mesh)
+            u,p = split(up)
 
-            RHS = inner(u,self.v)*dx + self.DeltaT*a_bilinear
+            #Re-Defining functions for use in Advection term
+            if self.twoD:
+                curl = lambda phi: as_vector([-phi.dx(1), phi.dx(0)])
+                cross = lambda u, w: u[0]*w[1]-u[1]*w[0]
+                perp = lambda n, phi: as_vector([n[1]*phi, -n[0]*phi])
+            else:
+                perp = cross
 
-            LHS = inner(uPicardsPrior,self.v)*dx  + self.DeltaT*(L + advection_term)
+            #Defining upwind and U_upwind for us in advection
+            Upwind = 0.5*(sign(dot(u, n))+1)
+            U_upwind = Upwind('+')*u('+') + Upwind('-')*u('-')
 
-            u = variable(u)
+            #Assembling Advection Term
+            adv_byparts1 = inner(u, curl(cross(u, self.v)))*dx #This is the term from integration by parts of double curl
+            adv_byparts2 = inner(U_upwind, 2*avg( perp(n, cross(u, self.v))))*dS #Second term over surface
+            adv_grad = 0.5*div(self.v)*inner(u,u)*dx #This is the term due to the gradient of u^2
+            adv_bdc1 = inner(self.u_0,perp(n,cross(self.u_0,self.v)))*ds #boundary version of adv_byparts2
+            adv_bdc2 = 1/2*inner(inner(self.u_0,self.u_0)*self.v,n)*ds #boundary term from u^2 when it is non-0
+            advection_term = (
+                adv_byparts1
+                - adv_byparts2
+                - adv_grad
+                - adv_bdc1
+                + adv_bdc2
+            )
 
-            aP = inner(u,self.v)*dx + self.DeltaT*self.GetApV(u,p,viscous_term,graddiv_term)
+            return advection_term
 
-            PicardsProblem = LinearVariationalProblem(RHS,LHS, self.up,
-                                                        aP=aP, bcs=self.bcs)
-            self.PicardsSolver = LinearVariationalSolver(PicardsProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
-        else:
-            #We are using advection term from previous step (nonlinear term)
-            advection_term = self.GetAdvectionTerm(self.upPicardsPrior)
+        self.wr = Function(self.W)
+        w,r = split(self.wr)
+        u, p = TrialFunctions(self.W)
 
-            u, p = TrialFunctions(self.W)
-            viscous_term,L = self.GetViscousTerm(u,p)
-            a_bilinear,graddiv_term = self.GetBilinear(u,p,viscous_term)
+        #We are using advection term from previous step (nonlinear term)
+        advection_term = GetAdvectionTermPicards(self,self.up,w)
 
-            RHS = inner(u,self.v)*dx + 1/2*self.DeltaT*a_bilinear
+        viscous_term,L = self.GetViscousTerm(u,p)
+        a_bilinear,graddiv_term = self.GetBilinear(u,p,viscous_term)
 
-            LHS = inner(uPicardsPrior,self.v)*dx  + self.DeltaT*(1/2*L + advection_term)
+        RHS = inner(u,self.v)*dx + 1/2*self.DeltaT*a_bilinear
 
-            u = variable(u)
+        LHS = inner(w,self.v)*dx  + self.DeltaT*(1/2*L + advection_term)
 
-            aP = inner(u,self.v)*dx + self.DeltaT*1/2*self.GetApV(u,p,viscous_term,graddiv_term)
+        u = variable(u)
 
-            #RHS terms from prior picard iteration
-            viscous_term_prior,LPrior = self.GetViscousTerm(uPicardsPrior,pPicardsPrior)
-            a_bilinear_prior,graddiv_term_prior = self.GetBilinear(uPicardsPrior,pPicardsPrior,viscous_term_prior)
-            LHS += 1/2*self.DeltaT*(LPrior - a_bilinear_prior)
+        aP = inner(u,self.v)*dx + self.DeltaT*1/2*self.GetApV(u,p,viscous_term,graddiv_term)
 
-            PicardsProblem = LinearVariationalProblem(RHS,LHS, self.up,
-                                                        aP=aP, bcs=self.bcs)
-            self.PicardsSolver = LinearVariationalSolver(PicardsProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
+        #RHS terms from prior picard iteration
+        viscous_term_prior,LPrior = self.GetViscousTerm(w,r)
+        a_bilinear_prior,graddiv_term_prior = self.GetBilinear(w,r,viscous_term_prior)
+        LHS += 1/2*self.DeltaT*(LPrior - a_bilinear_prior)
+
+        PicardsProblem = LinearVariationalProblem(RHS,LHS, self.up,
+         aP=aP, bcs=self.bcs)
+        self.PicardsSolver = LinearVariationalSolver(PicardsProblem, nullspace=self.nullspace,
+         solver_parameters = self.parameters)
