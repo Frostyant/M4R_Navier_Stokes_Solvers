@@ -408,17 +408,23 @@ class rinspt(rinsp):
 
             #Defining upwind and U_upwind for us in advection
             Upwind = 0.5*(sign(dot(u, n))+1)
+            Wpwind = 0.5*(sign(dot(w, n))+1)
             U_upwind = Upwind('+')*u('+') + Upwind('-')*u('-')
+            W_upwind = Wpwind('+')*w('+') + Wpwind('-')*w('-')
 
             #Assembling Advection Term
-            adv_byparts1 = inner(u, curl(cross(u, self.v)))*dx #This is the term from integration by parts of double curl
-            adv_byparts2 = inner(U_upwind, 2*avg( perp(n, cross(u, self.v))))*dS #Second term over surface
-            adv_grad = 0.5*div(self.v)*inner(u,u)*dx #This is the term due to the gradient of u^2
+            adv_byparts1_u = inner(u, curl(cross(w, self.v)))*dx #This is the term from integration by parts of double curl
+            adv_byparts2_u = inner(U_upwind, 2*avg( perp(n, cross(w, self.v))))*dS #Second term over surface
+            adv_byparts1_w = inner(w, curl(cross(u, self.v)))*dx #This is the term from integration by parts of double curl
+            adv_byparts2_w = inner(W_upwind, 2*avg( perp(n, cross(u, self.v))))*dS #Second term over surface
+            adv_grad = 0.5*div(self.v)*inner(u,w)*dx #This is the term due to the gradient of u^2
             adv_bdc1 = inner(self.u_0,perp(n,cross(self.u_0,self.v)))*ds #boundary version of adv_byparts2
             adv_bdc2 = 1/2*inner(inner(self.u_0,self.u_0)*self.v,n)*ds #boundary term from u^2 when it is non-0
             advection_term = (
-                adv_byparts1
-                - adv_byparts2
+                1/2 * adv_byparts1_u
+                - 1/2 * adv_byparts2_u
+                + 1/2 * adv_byparts1_w
+                - 1/2 * adv_byparts2_w
                 - adv_grad
                 - adv_bdc1
                 + adv_bdc2
