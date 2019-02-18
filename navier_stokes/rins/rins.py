@@ -153,7 +153,7 @@ class rinsp:
 
             try:
                 AdvectionSwitchValue += AdvectionSwitchStep
-                print(AdvectionSwitchValue)
+                print("Advection term is at "+ str(100*AdvectionSwitchValue) + "%")
                 ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep)
                 AdvectionSwitchStep = 1.5*AdvectionSwitchStep
 
@@ -367,7 +367,7 @@ class rinspt(rinsp):
             else:
                 self.DeltaT.assign(float(ts[it]-ts[it-1]))
 
-            print(tval)
+            print("time = " + str(tval))
 
             for it1 in range(3):
                 #wr are the Picards Iterates

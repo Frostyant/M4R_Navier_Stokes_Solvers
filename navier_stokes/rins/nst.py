@@ -17,7 +17,7 @@ W = V * Q
 AverageVelocity = 1
 
 #defining time
-ts = np.arange(0.0,1.0,0.01)
+ts = np.arange(0.0,10.0,0.1)
 t = Constant(ts[0])
 
 # boundary function
