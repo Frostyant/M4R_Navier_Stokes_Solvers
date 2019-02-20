@@ -1,7 +1,9 @@
 from firedrake import *
 from matplotlib import *
 import numpy as np
-import rins
+import sys
+sys.path.append('../')
+from rins import rins
 
 
 # Load mesh
