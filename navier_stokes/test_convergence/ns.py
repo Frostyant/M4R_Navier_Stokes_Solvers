@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 AverageVelocity = 1
 mu = 1
 
-Ns = [10**n for n in range(2)]
+Ns = [10**n for n in range(5)]
 errors = [0]*len(Ns)
 
 for it,n in enumerate(Ns):
@@ -29,16 +29,10 @@ for it,n in enumerate(Ns):
     u, p = problem.up.split()
     uexact = Function(V)
     uexact.project(u_0)
-    errors[it] = rins.norm(u-u_0)
+    errors[it] = norm(u-u_0)
 
 plt.xlabel('nodes')
 plt.ylabel('Hdiv error')
 plt.plot(Ns,errors)
 plt.title('Mesh Convergence Graph')
-plt.show()
-
-"""
-for it,n in enumerate(Ns):
-    print("For n = " + str(n))
-    print("Error = " + str(errors[it]))
-"""
+plt.savefig('Convergence.png')
