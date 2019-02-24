@@ -6,7 +6,7 @@ sys.path.append('../')
 from rins import rins
 
 # Load mesh
-mesh = Mesh("CylinderInPipe.msh")
+mesh = Mesh("Cyl1.msh")
 
 #defining
 x,y= SpatialCoordinate(mesh)
@@ -18,10 +18,10 @@ W = V * Q
 AverageVelocity = 1
 
 # boundary function, these are assumed to not change during iteration
-u_0 = as_vector([conditional(x < 1,AverageVelocity,0.)
+u_0 = as_vector([conditional(x < 5,AverageVelocity,0.)
     ,0])
 
-problem = rins.rinsp(mesh,u_0,W,x,y,viscosity = 0.025,BcIds = (1,5),AverageVelocity = AverageVelocity,LengthScale = 1)
+problem = rins.rinsp(mesh,u_0,W,x,y,viscosity = 0.024,BcIds = (1,5),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
 
 print("Reynolds Number =")
 print(problem.R)
