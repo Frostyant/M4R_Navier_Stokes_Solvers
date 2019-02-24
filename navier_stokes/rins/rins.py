@@ -114,9 +114,13 @@ class rinsp:
         self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
 
 
-    def FullSolve(self,FullOutput = False,Write = True):
+    def FullSolve(self,FullOutput = False,Write = True,DisplayInfo = True):
         #Fulloutput outputs at EVERY iteration for continuation method
         #Write means that we write down the output at all
+        #DisplayInfo is if we want to display any info
+
+        if not DisplayInfo:
+            self.parameters["ksp_converged_reason"] = False
 
         AdvectionSwitchStep = self.AdvectionSwitchStep
         self.navierstokessolver.solve()
@@ -153,16 +157,18 @@ class rinsp:
 
             try:
                 AdvectionSwitchValue += AdvectionSwitchStep
-                print("Advection term is at "+ str(100*AdvectionSwitchValue) + "%")
+                if DisplayInfo:
+                    print("Advection term is at "+ str(100*AdvectionSwitchValue) + "%")
                 ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep)
                 AdvectionSwitchStep = 1.5*AdvectionSwitchStep
 
                 if AdvectionSwitchStep >= (1-AdvectionSwitchValue) and AdvectionSwitchValue < 1:
                     AdvectionSwitchStep = (1-AdvectionSwitchValue)
-                    print("Success, solving with full advection")
-                elif AdvectionSwitchValue + AdvectionSwitchStep <= 1:
+                    if DisplayInfo:
+                        print("Success, solving with full advection")
+                elif AdvectionSwitchValue + AdvectionSwitchStep <= 1 and DisplayInfo:
                     print("Success, increasing step size")
-                else:
+                elif DisplayInfo:
                     print("Success, solve complete")
 
 
@@ -176,6 +182,11 @@ class rinsp:
                     print("Too low step size, solver failed")
                     break
         self.AdvectionSwitch.assign(0)
+
+        #Reseting Info for potential future use where it might be required
+        if not DisplayInfo:
+            self.parameters["ksp_converged_reason"] = True
+
 
     def dbc(self,Ids):
         #sets up dirichelet boundary conditions
@@ -459,3 +470,11 @@ class rinspt(rinsp):
          aP=aP, bcs=self.bcs)
         self.PicardsSolver = LinearVariationalSolver(PicardsProblem, nullspace=self.nullspace,
          solver_parameters = self.parameters)
+
+def norm(u):
+    """
+    Returns the Hdiv norm
+    Keyword arguments:
+    u -- a function
+    """
+    return assemble(inner(u,u)*dx + div(u)*div(u)*dx)
