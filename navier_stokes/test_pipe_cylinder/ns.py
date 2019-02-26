@@ -6,7 +6,7 @@ sys.path.append('../')
 from rins import rins
 
 # Load mesh
-mesh = Mesh("Cyl1.msh")
+mesh = Mesh("Cyl05.msh")
 
 #defining
 x,y= SpatialCoordinate(mesh)
