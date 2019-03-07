@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 AverageVelocity = 1
 mu = 1
 
-Ns = [10**n for n in range(3)]
+Ns = [10**(n+2) for n in range(3)]
 errors = [0]*len(Ns)
 
 for it,n in enumerate(Ns):
