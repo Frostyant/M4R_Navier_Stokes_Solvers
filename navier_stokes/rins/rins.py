@@ -44,7 +44,6 @@ class rinsp:
         W = self.W
         x,y= self.x,self.y
         self.up = Function(W)
-        self.stokesup = Function(W)
         up = self.up
         #these are the default solver parameters
         self.parameters = {
@@ -115,18 +114,16 @@ class rinsp:
         self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
 
 
-    def FullSolve(self,FullOutput = False,Write = True,DisplayInfo = True):
-        #Fulloutput outputs at EVERY iteration for continuation method
-        #Write means that we write down the output at all
-        #DisplayInfo is if we want to display any info
+    def FullSolve(self,FullOutput = False,Write = True,DisplayInfo = True,stokes = False):
+        #Fulloutput outputs at EVERY iteration for continuation method into a file
+        #Write means that we write down the output at all into a file
+        #DisplayInfo is if we want to display any info in command line
 
         if not DisplayInfo:
             self.parameters["ksp_converged_reason"] = False
 
         AdvectionSwitchStep = self.AdvectionSwitchStep
         self.navierstokessolver.solve()
-
-        self.stokesup.assign(self.up)
 
         if Write:
             self.upfile = File("stokes.pvd")
@@ -141,49 +138,50 @@ class rinsp:
         else:
             FullOutput = False #if we don't write anything then we don't have full output anyway
 
+        if not stokes:
+            #Continuation Method#
+            def ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep):
 
-        #Continuation Method#
-        def ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep):
+                self.AdvectionSwitch.assign(AdvectionSwitchValue)
+                self.ContinuationSolver.solve()
+                self.navierstokessolver.solve()
 
-            self.AdvectionSwitch.assign(AdvectionSwitchValue)
-            self.ContinuationSolver.solve()
-            self.navierstokessolver.solve()
+                # Plot solution
+                if FullOutput:
+                    self.upfile.write(u, p)
 
-            # Plot solution
-            if FullOutput:
-                self.upfile.write(u, p)
+            #setup variable
+            AdvectionSwitchValue = 0
 
-        #setup variable
-        AdvectionSwitchValue = 0
+            while AdvectionSwitchValue + AdvectionSwitchStep <= 1:
 
-        while AdvectionSwitchValue + AdvectionSwitchStep <= 1:
-
-            try:
-                AdvectionSwitchValue += AdvectionSwitchStep
-                if DisplayInfo:
-                    print("Advection term is at "+ str(100*AdvectionSwitchValue) + "%")
-                ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep)
-                AdvectionSwitchStep = 1.5*AdvectionSwitchStep
-
-                if AdvectionSwitchStep >= (1-AdvectionSwitchValue) and AdvectionSwitchValue < 1:
-                    AdvectionSwitchStep = (1-AdvectionSwitchValue)
+                try:
+                    AdvectionSwitchValue += AdvectionSwitchStep
                     if DisplayInfo:
-                        print("Success, solving with full advection")
-                elif AdvectionSwitchValue + AdvectionSwitchStep <= 1 and DisplayInfo:
-                    print("Success, increasing step size")
-                elif DisplayInfo:
-                    print("Success, solve complete")
+                        print("Advection term is at "+ str(100*AdvectionSwitchValue) + "%")
+                    ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep)
+                    AdvectionSwitchStep = 1.5*AdvectionSwitchStep
+
+                    if AdvectionSwitchStep >= (1-AdvectionSwitchValue) and AdvectionSwitchValue < 1:
+                        AdvectionSwitchStep = (1-AdvectionSwitchValue)
+                        if DisplayInfo:
+                            print("Success, solving with full advection")
+                    elif AdvectionSwitchValue + AdvectionSwitchStep <= 1 and DisplayInfo:
+                        print("Success, increasing step size")
+                    elif DisplayInfo:
+                        print("Success, solve complete")
 
 
-            except ConvergenceError as ex:
-                template = "An Exception of type {0} has occurred. Reducing Step Size."
-                print(template.format(type(ex).__name__,ex.args))
-                AdvectionSwitchValue -= AdvectionSwitchStep #reset AdvectionSwitchValue
-                AdvectionSwitchStep = AdvectionSwitchStep/2
-                #IF Advection step is this low the script failed
-                if AdvectionSwitchStep <= 10**(-3):
-                    print("Too low step size, solver failed")
-                    break
+                except ConvergenceError as ex:
+                    template = "An Exception of type {0} has occurred. Reducing Step Size."
+                    print(template.format(type(ex).__name__,ex.args))
+                    AdvectionSwitchValue -= AdvectionSwitchStep #reset AdvectionSwitchValue
+                    AdvectionSwitchStep = AdvectionSwitchStep/2
+                    #IF Advection step is this low the script failed
+                    if AdvectionSwitchStep <= 10**(-3):
+                        print("Too low step size, solver failed")
+                        break
+
         self.AdvectionSwitch.assign(0)
 
         #Reseting Info for potential future use where it might be required
