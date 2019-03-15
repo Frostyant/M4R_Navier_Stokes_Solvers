@@ -44,6 +44,7 @@ class rinsp:
         W = self.W
         x,y= self.x,self.y
         self.up = Function(W)
+        self.stokesup = Function(W)
         up = self.up
         #these are the default solver parameters
         self.parameters = {
@@ -124,6 +125,8 @@ class rinsp:
 
         AdvectionSwitchStep = self.AdvectionSwitchStep
         self.navierstokessolver.solve()
+
+        self.stokesup.assign(self.up)
 
         if Write:
             self.upfile = File("stokes.pvd")

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 AverageVelocity = 1
 mu = 1
 
-Ns = [10**(n+2) for n in range(3)]
+Ns = [10**(n) for n in range(5)]
 errors = [0]*len(Ns)
 
 for it,n in enumerate(Ns):
@@ -25,8 +25,8 @@ for it,n in enumerate(Ns):
     print("Reynolds Number =")
     print(problem.R)
 
-    #dealing with error
-    u, p = problem.up.split()
+    #dealing with stokes error
+    u, p = problem.stokesup.split()
     uexact = Function(V)
     uexact.project(u_0)
     errors[it] = norm(u-u_0)
