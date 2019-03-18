@@ -18,54 +18,20 @@ We seek to create an efficient solver of the steady Navier stokes equations in a
 u \cdot \nabla u &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
 \end{align}
-Since we are working in an arbitrary domain we will be using finite element. Hence we will be approximating $u$ by a function in a different space. In our case we will use Brezzi-Douglas-Marini element (BDM) for $u$ and discontinuous galerkin (DG) for $p$. BDM2 is continuous at the boundary in the normal but not necessarily otherwise. Hence some operations (especially in the viscosity and convective part) will be ill defined if we just attempted to find a weak form. While this does make the discretisation harder we in exchange have a number of advantages, such as being exactly divergence free.\\
-We will first quickly introduce some general concepts and methods which students and professors not directly familiar with finite elements may find usefull to follow the remainder of the project. Then we will show how discretized the equations and built different parts of our solvers. Lastly we will consider some example cases and deduce that the algorithm converges to the right result at satisfactory rates.\\
+Since we are working in an arbitrary domain we will be using finite element. Hence we will be approximating $u$ by a function in a different space. In our case we will use Brezzi-Douglas-Marini element (BDM) for $u$ and discontinuous galerkin (DG) for $p$. BDM2 is continuous at the boundary in the normal but not necessarily otherwise. Hence some operations (especially in the viscosity and convective part) will be ill defined if we just attempted to find a weak form. While this does make the discretisation harder we in exchange have a number of advantages, such as being globally exactly divergence free due to using the $H(div)$ space.\\
+We will first quickly introduce some general concepts and methods which students and professors not directly familiar with finite elements may find usefull to follow the remainder of the project as well as a description of how this project would be tackled utilising a more conventional finite element. Then we will show how discretized the equations and built different parts of our solvers. Lastly we will consider some example cases and deduce that the algorithm converges to the right result at satisfactory rates.\\
 
 \section{Tools and Definitions}
 \subsection{Finite Elements Method}
-The finite element method (FEM) is a numerical method which approximates the solution to an exact partial differential equation. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research and industry.\\
-The FEM works on arbitrary domains thanks to triangulation, that is a mesh which cuts up the domain into triangles (other geometric forms are possible). These triangles may irregular allowing you to work on very complex shapes.
-Triangulations do have 3 conditions, no overlap, covering the entire closure of $\Omega$ and no vertex inside a triangle is located inside another.\\ 
-In order to illustrate the FEM approach we will consider the Dirichelet problem for the Poisson's equation.
-\begin{align}
--\Delta u = f 
-\end{align}
-with $u = 0$ on $\partial \Omega$.\\
-Consider a linear finite function space $V_{T_h}$ (for us this would be the BDM and DG spaces) defined on a triangulation $T_h$ of the domain $\Omega$. Define the average distance of a side of a triangle as $h$. The aim of the FEM method is to find solution $u_T$ in $V_{T_h}$ closest to the real solution $u$.\\
-There are various properties which $V_{T_h}$  requires in order to be a valid and usefull finite element, for instance that as $h$ tends to $0$ then $u_T - u$ also tends to $0$.\\
-
-We will now describe how to obtain a weak formulation of equation (3). First consiver $w_T$ an arbitrary function belonging to $V_{T_h} '$. Here $V_{T_h} '$ is $V_{T_h}$ restricted such that $u = 0$ on $\partial \Omega$. This additional conditions is required due to the boundary conditions. However until after we found the weak form we will instead consider some function $w$ which will later be replaced by $w_T$.\\
-We multiply both sides of (3) by $w$ and integrate over the whole domain $\Omega$. We thus obtain the following :
-\begin{align}
-\int_\Omega w \Delta u dx= \int_\Omega w f dx
-\end{align}
- Depending on $V_{T_h}$ however the operator $\Delta$ may not be defined. Commonly finite element spaces are just continous and have a special "weak" derivative which is only defined in the context of integration by part on each individual element in $T_h$. Hence we need to modify the equation  such that once we use $u_T$ and $w_T$ replace $u$ and $w$ we do not perform illegal operations.\\
-Integrating by parts (or using Green's formula) and applying the fact that $w_T$ will vanish on the boundaries we obtain : 
-\begin{align}
-\int_\Omega \nabla w_T \nabla u_T dx= \int_\Omega w_T f dx
-\end{align}
-Which is our final weak, or variational, equation.\\
-$V_{T_h}$ is a finite function space. Hence every function in $V_{T_h}$ can be written as linear combination of a finite number of basis functions $\phi_i$, for $0 \leq i \leq n$.\\
-Hence we can write $u_T$ and $w_T$ in terms of $\phi_i$ and constant coefficients $c_i$ and $c_i'$  as follows :
-\begin{align}
-u_T &= \sum_{i=0}^n c_i \phi_i \\
-w_T &= \sum_{i=0}^n c_i' \phi_i
-\end{align}
-Plugging this into (5) we get :
-\begin{align}
-\int_\Omega \sum_{i=0}^n c_i' \nabla \phi_i c_i \nabla \phi_i dx&= \int_\Omega \sum_{i=0}^n c_i' \phi_i f dx
-\end{align}
-Since $c_i'$ is a constant we therefore obtain :
-\begin{align}
-\sum_{i=0}^n\int_\Omega c_i  \nabla \phi_i \nabla \phi_i dx&= \sum_{i=0}^n \int_\Omega \phi_i f dx
-\end{align}
-Utilising properties of vector spaces and numerical approximation schemes of integrals we then turn (9) into a system of equations :
-\begin{align}
-Mc=b
-\end{align}
-Where $M$ is the discretisation of the left-hand operators in (5), $b$ the discretisation of the right hand side of (5) and $c$ the vector of coefficients of $u_T$.\\
+The finite element method (FEM) is a numerical method which approximates the solution to an exact partial differential equation. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and this project.\\
 \\
-A lot of care has to be taken for choosing $V_{T_h}$ as to ensure that $M$ is as well-behaved as possible and operations can be parallelized. For instance commonly most basis functions are defined on only one "node" on the boundary or interior of a triangle, making it $0$ in almost every triangle. Similarly, depending on the space, some operations cannot be directly performed or are innefficiently performed. In these cases finding an appropriate variational form may be much more involved.
+We will now consider the case of applying the FEM to the navier stokes equations using the more classic lagrange finite element.\\
+As seen in Common and Unusual Finite Elements [7], the lagrange finite element approximates a function using polynomials of degree q defined by their pointwise values at an array of points (such as a uniform lattice).\\
+For instance take a $q=1$ on a 1D problem cut into $3$ cells. This is effectively a linear interpolation, we approximate the function on each of the three cells by a linear function. This linear function is defined on each cell using two points whithin it, such as the two edge points. This concept can be extended to 2D.\\
+\\
+First we cut our computatinal domain into an arbitrary mesh of triangles.\\
+Then we will find the weak form of the navier stokes equation. We do so by integrating (1) and multiplying by an arbitrary function $v$.
+
 
 \subsection{Brezzi-Douglas-Marini Element}
 The paper Common and Unusual Finite Elements [7] states that the BDM space on one triangle $K$ is composed by polynomials of order $q$ defined by the normal component on each edge. If $q > 1$ it is also defined using the integration against gradients of the polynomials on the triangle. If $q > 2$ we then also use the integration  against curls of $b_K P_{q-2}(K)$ where $b_{q-2}$ is the  cubic bubble function associated with $K$ and $P_{q}(K)$ is the set of polynomials defined on $K$.
