@@ -348,7 +348,7 @@ class rinspt(rinsp):
         #setup Picards Solver
         self.PicardIterationSetup()
 
-    def SolveInTime(self,ts,precise = False,PicIt=2):
+    def SolveInTime(self,ts,precise = False,PicIt=2,PerturbationOrder = False):
         """Solves Probem in time using Picard and, if precise = True, Newton in addition
         Keyword arguments:
         precise -- If true will use Newton after Picards iterations at each timestep
@@ -368,6 +368,15 @@ class rinspt(rinsp):
         u, p = self.up.split()
         upfile.write(u, p,time = ts[0])
         ts = np.delete(ts,0)
+
+        if PerturbationOrder != False:
+            up_ = Function(W)
+            u_,p_ = up_.split()
+            valu = as_vector([1,1])* norm(u) * ( math.exp(PerturbationOrder * (self.x + self.y)) )
+            valp = norm(p) * ( math.exp(PerturbationOrder * (self.x + self.y)) )
+            u_.project(valu)
+            p_.project(valp)
+            self.up += up_
 
         #time iterations
         for it,tval in enumerate(ts):
