@@ -373,7 +373,7 @@ class rinspt(rinsp):
         if PerturbationOrder != False:
             up_ = Function(self.W)
             u_,p_ = up_.split()
-            valu = as_vector([1,1])* norm(u) * ( math.exp(PerturbationOrder * (self.x + self.y)) )
+            valu = as_vector([1,1])* norm(u) * ( np.exp(PerturbationOrder * (self.x + self.y)) )
             valp = norm(p) * ( np.exp(PerturbationOrder * (self.x + self.y)) )
             u_.project(valu)
             p_.project(valp)
