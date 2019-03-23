@@ -1,6 +1,7 @@
 from firedrake import *
 from matplotlib import *
 import numpy as np
+import math
 
 class rinsp:
     """A Navier-Stokes Problem with an efficient pre-build solver using Hdiv"""
@@ -373,7 +374,7 @@ class rinspt(rinsp):
             up_ = Function(self.W)
             u_,p_ = up_.split()
             valu = as_vector([1,1])* norm(u) * ( math.exp(PerturbationOrder * (self.x + self.y)) )
-            valp = norm(p) * ( math.exp(PerturbationOrder * (self.x + self.y)) )
+            valp = norm(p) * ( np.exp(PerturbationOrder * (self.x + self.y)) )
             u_.project(valu)
             p_.project(valp)
             self.up += up_

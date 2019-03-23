@@ -29,7 +29,7 @@ for it,n in enumerate(Ns):
     u, p = problem.up.split()
     uexact = Function(V)
     uexact.project(u_0)
-    errors[it] = norm(log(u-u_0))
+    errors[it] = norm(np.log(u-u_0))
 
 plt.xlabel('h')
 plt.ylabel('Hdiv error')
