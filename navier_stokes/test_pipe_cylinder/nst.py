@@ -29,4 +29,4 @@ problem = rins.rinspt(mesh,u_0,W,x,y,t,viscosity = 0.024,BcIds = (1,3,4,5), DbcI
 print("Reynolds Number =")
 print(problem.R)
 
-problem.SolveInTime(ts,FullOutput =True,PerturbationOrder = -3)
+problem.SolveInTime(ts,PerturbationOrder = -3)
