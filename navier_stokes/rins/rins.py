@@ -370,7 +370,7 @@ class rinspt(rinsp):
         ts = np.delete(ts,0)
 
         if PerturbationOrder != False:
-            up_ = Function(W)
+            up_ = Function(self.W)
             u_,p_ = up_.split()
             valu = as_vector([1,1])* norm(u) * ( math.exp(PerturbationOrder * (self.x + self.y)) )
             valp = norm(p) * ( math.exp(PerturbationOrder * (self.x + self.y)) )
