@@ -29,10 +29,10 @@ for it,n in enumerate(Ns):
     u, p = problem.up.split()
     uexact = Function(V)
     uexact.project(u_0)
-    errors[it] = norm(np.log(u-u_0))
+    errors[it] = np.log(u-u_0))
 
 plt.xlabel('h')
 plt.ylabel('Hdiv error')
-plt.plot([-log(n) for n in Ns],errors)
+plt.plot([-np.log(n) for n in Ns],errors)
 plt.title('Mesh Convergence Graph')
 plt.savefig('Convergence.png')
