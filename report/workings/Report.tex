@@ -19,20 +19,52 @@ u \cdot \nabla u &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
 \end{align}
 Since we are working in an arbitrary domain we will be using finite element. Hence we will be approximating $u$ by a function in a different space. In our case we will use Brezzi-Douglas-Marini element (BDM) for $u$ and discontinuous galerkin (DG) for $p$. BDM2 is continuous at the boundary in the normal but not necessarily otherwise. Hence some operations (especially in the viscosity and convective part) will be ill defined if we just attempted to find a weak form. While this does make the discretisation harder we in exchange have a number of advantages, such as being globally exactly divergence free due to using the $H(div)$ space.\\
-We will first quickly introduce some general concepts and methods which students and professors not directly familiar with finite elements may find usefull to follow the remainder of the project as well as a description of how this project would be tackled utilising a more conventional finite element. Then we will show how discretized the equations and built different parts of our solvers. Lastly we will consider some example cases and deduce that the algorithm converges to the right result at satisfactory rates.\\
+\\
+First we will describe the classic Finite Element Method, its advantages and disadvantages, hence explaining why we are using a modified method. Secondly we will explain a number of definitions and tools used in the project and which may be unfamiliar to some readers. Then we will show how to find the weak form of the equations and built different parts of our solvers. Lastly we will consider some example cases and deduce that the algorithm converges to the right result at satisfactory rates.\\
 
-\section{Tools and Definitions}
-\subsection{Finite Elements Method}
+
+\section{Classic Finite Elements Method}
 The finite element method (FEM) is a numerical method which approximates the solution to an exact partial differential equation. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and this project.\\
 \\
-We will now consider the case of applying the FEM to the navier stokes equations using the more classic lagrange finite element.\\
-As seen in Common and Unusual Finite Elements [7], the lagrange finite element approximates a function using polynomials of degree q defined by their pointwise values at an array of points (such as a uniform lattice).\\
-For instance take a $q=1$ on a 1D problem cut into $3$ cells. This is effectively a linear interpolation, we approximate the function on each of the three cells by a linear function. This linear function is defined on each cell using two points whithin it, such as the two edge points. This concept can be extended to 2D.\\
+We will now consider the case of applying the FEM to the stokes equations using the more classic lagrange finite element. We will specifically consider a test case created by the method of manufactured solution.\\
+\begin{align}
+0 &= -\nabla p + \mu \nabla^2 u\\
+\nabla \cdot u &= 0
+\end{align}
+Using the boundary conditions are  $u = (u_0,u_1) = (e^{x y},e^{x y})$ on the edges of the unit square, our domain.\\
+It can easily be verified that the solution to this equation is :
+\begin{align}
+(u_0,u_1) = (e^{x y},e^{x y}) \ p = 2 \mu e^{x y}
+\end{align}
+As seen in Common and Unusual Finite Elements [7], the lagrange finite element approximates a function on a cell using polynomials of degree $q$ defined by their pointwise values at an array of points (such as a uniform lattice).\\
+For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first order lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points whithin it, the two edge points. Hence we get figure . In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
 \\
-First we cut our computatinal domain into an arbitrary mesh of triangles.\\
-Then we will find the weak form of the navier stokes equation. We do so by integrating (1) and multiplying by an arbitrary function $v$.
-
-
+It follows that we first cut up our domain into a mesh. Commonly these meshes are made up of triangles for simplicity. Then we approximate $u$ and $p$ using the lagrange element. Hence we get that for instance $u$ is the sum of a set of known piecewise linear functions (as they are determined by the mesh) but with unkown coeffecients. The aim of the rest of the method is to determine these unkown coefficients.\\
+For that end we need to find what is called the weak form of the equation. We multiply (3) by an arbitrary function $v$, also approximated. Hence we get :
+\begin{align*}
+\int_{\omega} -v \cdot \nabla p + \mu v \cdot \nabla^2 u dx = 0
+\end{align*}
+Since our domain $\omega$ is cut out into triangles we can cut the integral into triangles and work on each one individually. Hence for each cell $c$ in $\omega$ we get : 
+\begin{align*}
+\int_{c} -v \cdot \nabla p + \mu v \cdot \nabla^2 u dx = 0
+\end{align*}
+However since $u$ and $v$ are now approximated by functions which may be discontinuous in their derivatives $\nabla^2$ may not be defined. Hence we need to use integration by parts to get :  
+\begin{align*}
+\int_{c} -v \cdot \nabla p + \mu \nabla v \cdot \nabla u dx = 0
+\end{align*}
+Now we use the fact that $v$, $u$ and $p$ are a sum of known linear functions and coefficients.\\
+Pulling out and removing the coefficients of $v$ we get that :
+\begin{align*}
+\sum_i \sum_j \int_{c} -\phi_i \cdot \nabla \phi_j dx+ \sum_i \sum_j  \int_{c} \mu \nabla \phi_i \cdot u_j \nabla \phi_j dx = 0
+\end{align*}
+Which we can eventually turn into a matrix equation of the form :
+\begin{align}
+M x = 0
+\end{align}
+Where x is a vector of coefficients of $u$ and $p$.\\
+We can solve this using a variety of linear systems solvers.\\
+Using the above and implementing it in firedrake we get figures .
+\section{Tools and Definitions}
 \subsection{Brezzi-Douglas-Marini Element}
 The paper Common and Unusual Finite Elements [7] states that the BDM space on one triangle $K$ is composed by polynomials of order $q$ defined by the normal component on each edge. If $q > 1$ it is also defined using the integration against gradients of the polynomials on the triangle. If $q > 2$ we then also use the integration  against curls of $b_K P_{q-2}(K)$ where $b_{q-2}$ is the  cubic bubble function associated with $K$ and $P_{q}(K)$ is the set of polynomials defined on $K$.
 
