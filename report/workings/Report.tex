@@ -46,24 +46,29 @@ For that end we need to find what is called the weak form of the equation. We mu
 \end{align*}
 Since our domain $\omega$ is cut out into triangles we can cut the integral into triangles and work on each one individually. Hence for each cell $c$ in $\omega$ we get : 
 \begin{align*}
-\int_{c} -v \cdot \nabla p + \mu v \cdot \nabla^2 u dx = 0
+\int_{c} - p \nabla \cdot v + \mu v \cdot \nabla^2 u dx = 0
 \end{align*}
 However since $u$ and $v$ are now approximated by functions which may be discontinuous in their derivatives $\nabla^2$ may not be defined. Hence we need to use integration by parts to get :  
 \begin{align*}
-\int_{c} -v \cdot \nabla p + \mu \nabla v \cdot \nabla u dx = 0
+\int_{c} - p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx = 0
 \end{align*}
-Now we use the fact that $v$, $u$ and $p$ are a sum of known linear functions and coefficients.\\
+Finally multiplying (4) by a similar pressure test function $q$ and adding it to the left hand side of the above we get :
+\begin{align}
+\int_{c} - p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx + \int_{c} q \nabla \cdot u dx = 0
+\end{align}
+Now we use the fact that $q$, $v$, $u$ and $p$ are a sum of known linear functions and coefficients.\\
 Pulling out and removing the coefficients of $v$ we get that :
 \begin{align*}
-\sum_i \sum_j \int_{c} -\phi_i \cdot \nabla \phi_j dx+ \sum_i \sum_j  \int_{c} \mu \nabla \phi_i \cdot u_j \nabla \phi_j dx = 0
+ \int_{c} \sum_i \sum_j ( - p_j \phi_j \nabla  \cdot \Phi_i + \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = 0
 \end{align*}
-Which we can eventually turn into a matrix equation of the form :
+Combining all the triangles we can eventually turn into a matrix equation of the form :
 \begin{align}
 M x = 0
 \end{align}
 Where x is a vector of coefficients of $u$ and $p$.\\
-We can solve this using a variety of linear systems solvers.\\
+We can solve this easily using a variety of linear systems solvers. Note in particular that since the majority of basis functions $\Phi$ and $\phi$ are $0$ in any given triangle the matrix $M$ will be sparse.\\
 Using the above and implementing it in firedrake we get figures .
+
 \section{Tools and Definitions}
 \subsection{Brezzi-Douglas-Marini Element}
 The paper Common and Unusual Finite Elements [7] states that the BDM space on one triangle $K$ is composed by polynomials of order $q$ defined by the normal component on each edge. If $q > 1$ it is also defined using the integration against gradients of the polynomials on the triangle. If $q > 2$ we then also use the integration  against curls of $b_K P_{q-2}(K)$ where $b_{q-2}$ is the  cubic bubble function associated with $K$ and $P_{q}(K)$ is the set of polynomials defined on $K$.
