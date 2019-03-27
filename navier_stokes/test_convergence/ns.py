@@ -36,3 +36,10 @@ plt.ylabel('Hdiv error')
 plt.plot([-np.log(n) for n in Ns],errors)
 plt.title('Mesh Convergence Graph')
 plt.savefig('Convergence.png')
+
+#plotting error in space
+self.ufile = File("error.pvd")
+u, p = problem.up.split()
+e = abs(u - u_0)
+u.rename("Velocity")
+self.ufile.write(u)
