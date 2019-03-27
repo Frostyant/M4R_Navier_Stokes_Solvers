@@ -10,7 +10,7 @@ Q = FunctionSpace(mesh, "CG", 1)
 W = V*Q
 
 #setting up boundary conditions
-u_0 = Function(as_vector([exp(x*y),exp(x*y)]))
+u_0 =as_vector([exp(x*y),exp(x*y)])
 bc0 = DirichletBC(W.sub(0), u_0, 0)
 bc1 = DirichletBC(W.sub(0), u_0, 1)
 bc2 = DirichletBC(W.sub(0), u_0, 2)
