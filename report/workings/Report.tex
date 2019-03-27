@@ -147,8 +147,11 @@ The first term can be summed up to an integral over $\Omega$ and the second one 
 -  \int_\Omega \nabla_h(w) : \nabla_h(u) dx + \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial w_i}{\partial x_j}\} dS
 \end{align*}
 $u$ should be continous thus the $ \{ u_i n_j \}$ term will cancel out. Hence this does not change the equation.\\
-Now we also add the term $\alpha \int_\Gamma \frac{1}{h}  J(w_i) J(u_i) dS$. According to sources [3] provided that  $\alpha$ is about $10$ stability is increased. $J$ indicates a jump between the two cells. The numerical value of $h$ is the average distance of a side. In our case we defined it as the average cellvolume over the length of the facettes between them for each individual facette element $\Gamma$.\\
+\\
+Now we also add the term $\alpha \int_\Gamma \frac{1}{h}  J(w_i) J(u_i) dS$. According to sources [3] provided that  $\alpha$ is larger than $10$ numerical stability is increased.\\
+$J$ indicates a jump between the two cells. The numerical value of $h$ is the average distance of a side.In our case we defined it as the average cell-volume over the length of the facettes between them for each individual facette element $\Gamma$.\\
 The $J(u_i)$ term makes this integral $0$ in continous space so this does not change the solution.\\
+\\
  Lastly we need to add in all the exterior boundary terms corresponding to each of the above terms we added. This is allows us to set up penalty terms so that our solution tends to those boundary values. Hence our final viscous term becomes :\\
 \begin{align*}
 &-  \int_\Omega \nabla_h(w) : \nabla_h(u) dx + \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial w_i}{\partial x_j}\} dS \\

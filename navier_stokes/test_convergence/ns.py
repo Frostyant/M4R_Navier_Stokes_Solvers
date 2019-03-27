@@ -29,7 +29,7 @@ for it,n in enumerate(Ns):
     u, p = problem.up.split()
     uexact = Function(V)
     uexact.project(u_0)
-    errors[it] = np.log(norm(u-u_0))
+    errors[it] = np.log(norm(u-uexact))
 
 plt.xlabel('h')
 plt.ylabel('Hdiv error')
@@ -40,6 +40,6 @@ plt.savefig('Convergence.png')
 #plotting error in space
 ufile = File("error.pvd")
 u, p = problem.up.split()
-e = abs(u - u_0)
+e = abs(u - uexact)
 u.rename("Velocity")
 ufile.write(u)
