@@ -38,8 +38,8 @@ plt.title('Mesh Convergence Graph')
 plt.savefig('Convergence.png')
 
 #plotting error in space
-self.ufile = File("error.pvd")
+ufile = File("error.pvd")
 u, p = problem.up.split()
 e = abs(u - u_0)
 u.rename("Velocity")
-self.ufile.write(u)
+ufile.write(u)

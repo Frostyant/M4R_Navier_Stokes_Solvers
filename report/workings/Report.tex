@@ -77,7 +77,9 @@ This finite element, combined with the DG element for pressure, discretizes the 
 Additionally we will be able to employ an enhanced lagrangian preconditioner thanks to the global divergence free property [2].\\
 
 However unlike the lagrange elements we can no longer set a dirichelet boundary condition's tangential component. Therefore we need to find alternative approaches to enforce these conditions.
-Additionally some operations (such as the curl) are undefined in this space
+Additionally some operations (such as the curl) are undefined in this space.Additionally due to possible discontinuities at the boundaries we also have to be carefull with all boundary integrals.\\
+
+In general the weak form will be far more complicated.
 
 
 \subsection{Discontinous Galerkin}
