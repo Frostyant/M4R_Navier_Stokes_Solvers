@@ -7,7 +7,7 @@ xs = np.array([0,1/2*math.pi,1*math.pi,3/2*math.pi,2*math.pi])
 ys = np.sin(xs)
 
 x2s = np.arange(0,2*math.pi,1/128*math.pi)
-y2s = ns.sin(x2s)
+y2s = np.sin(x2s)
 
 plt.xlabel('x')
 plt.ylabel('f')
