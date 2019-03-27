@@ -1,5 +1,7 @@
 from firedrake import *
 
+n = 16
+
 #setting up function spaces and mesh
 mesh = UnitSquareMesh(n, n)
 x,y= SpatialCoordinate(mesh)
