@@ -18,7 +18,7 @@ We seek to create an efficient solver of the steady Navier stokes equations in a
 u \cdot \nabla u &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
 \end{align}
-Since we are working in an arbitrary domain we will be using finite element. Hence we will be approximating $u$ by a function in a different space. In our case we will use Brezzi-Douglas-Marini element (BDM) for $u$ and discontinuous galerkin (DG) for $p$. BDM2 is continuous at the boundary in the normal but not necessarily otherwise. Hence some operations (especially in the viscosity and convective part) will be ill defined if we just attempted to find a weak form. While this does make the discretisation harder we in exchange have a number of advantages, such as being globally exactly divergence free due to using the $H(div)$ space.\\
+Not that from working in the H(div) space the second equation is naturally satisfied globally.
 \\
 First we will describe the classic Finite Element Method, its advantages and disadvantages, hence explaining why we are using a modified method. Secondly we will explain a number of definitions and tools used in the project and which may be unfamiliar to some readers. Then we will show how to find the weak form of the equations and built different parts of our solvers. Lastly we will consider some example cases and deduce that the algorithm converges to the right result at satisfactory rates.\\
 
@@ -40,7 +40,7 @@ As seen in Common and Unusual Finite Elements [7], the lagrange finite element a
 For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first order lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points whithin it, the two edge points. Hence we get figure . In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
 \\
 It follows that we first cut up our domain into a mesh. Commonly these meshes are made up of triangles for simplicity. Then we approximate $u$ and $p$ using the lagrange element. Hence we get that for instance $u$ is the sum of a set of known piecewise linear functions (as they are determined by the mesh) but with unkown coeffecients. The aim of the rest of the method is to determine these unkown coefficients.\\
-For that end we need to find what is called the weak form of the equation. We multiply (3) by an arbitrary function $v$, also approximated. Hence we get :
+For that end we need to find what is called the weak form of the equation. We multiply (3) by an arbitrary function $v$. Hence we get :
 \begin{align*}
 \int_{\omega} -v \cdot \nabla p + \mu v \cdot \nabla^2 u dx = 0
 \end{align*}
@@ -48,7 +48,7 @@ Since our domain $\omega$ is cut out into triangles we can cut the integral into
 \begin{align*}
 \int_{c} - p \nabla \cdot v + \mu v \cdot \nabla^2 u dx = 0
 \end{align*}
-However since $u$ and $v$ are now approximated by functions which may be discontinuous in their derivatives $\nabla^2$ may not be defined. Hence we need to use integration by parts to get :  
+However since $u$ and $v$ will be approximated by functions which may be discontinuous in their derivatives $\nabla^2$ may not be defined. Hence we need to use integration by parts to get :  
 \begin{align*}
 \int_{c} - p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx = 0
 \end{align*}
@@ -67,11 +67,15 @@ M x = 0
 \end{align}
 Where x is a vector of coefficients of $u$ and $p$.\\
 We can solve this easily using a variety of linear systems solvers. Note in particular that since the majority of basis functions $\Phi$ and $\phi$ are $0$ in any given triangle the matrix $M$ will be sparse.\\
+While we locally enforced the divergence-free equation by including it in the weak form, the global flow may not be divergence-free. In order to achieve that more complex mathematical tools would be required.
 Using the above and implementing it in firedrake we get figures .
 
 \section{Tools and Definitions}
 \subsection{Brezzi-Douglas-Marini Element}
-The paper Common and Unusual Finite Elements [7] states that the BDM space on one triangle $K$ is composed by polynomials of order $q$ defined by the normal component on each edge. If $q > 1$ it is also defined using the integration against gradients of the polynomials on the triangle. If $q > 2$ we then also use the integration  against curls of $b_K P_{q-2}(K)$ where $b_{q-2}$ is the  cubic bubble function associated with $K$ and $P_{q}(K)$ is the set of polynomials defined on $K$.
+The paper Common and Unusual Finite Elements [7] states that the BDM space on one triangle $K$ is composed by polynomials of order $q$ defined by the normal component on each edge. If $q > 1$ it is also defined using the integration against gradients of the polynomials on the triangle. If $q > 2$ we then also use the integration  against curls of $b_K P_{q-2}(K)$ where $b_{q-2}$ is the  cubic bubble function associated with $K$ and $P_{q}(K)$ is the set of polynomials defined on $K$.\\
+This finite element, combined with the DG element for pressure, discretizes the function space H(div). A property we thus get from simply working in BDM is that our solution will be exactly divergence free globally and locally. \\
+Additionally we will be able to employ
+However unlike the lagrange elements we can no longer set a dirichelet boundary condition's tangential component.
 
 
 \subsection{Discontinous Galerkin}
