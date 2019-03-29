@@ -313,71 +313,37 @@ class rinspt(rinsp):
         #boundary ids
         self.BcIds = BcIds
         self.DbcIds = DbcIds
-        #TimeSwitch for time terms
-        self.TimeSwitch = Constant(0)
         rinsp.__init__(self, mesh,u_0,W,x,y,viscosity = viscosity,AdvectionSwitchStep = AdvectionSwitchStep,
          gamma = gamma,AverageVelocity = AverageVelocity,LengthScale = LengthScale,BcIds = BcIds,DbcIds = DbcIds)
 
-
-        #Adding Time terms#
         #defining upb to store prior value
         self.upPrior = Function(self.W)
-        self.DeltaT = Constant(1)
-
-        #programmtically required
-        ubPrior,pbPrior = split(self.upPrior)
-        u, p = split(self.up)
-
-        #adding in the finite difference time term
-        self.F += self.TimeSwitch*inner(u - ubPrior,self.v)/self.DeltaT*dx
-        #and its derivative
-        self.aP += self.TimeSwitch*derivative(inner(u - ubPrior,self.v)/self.DeltaT*dx,self.up)
-
-        #Update problem
-        navierstokesproblem = NonlinearVariationalProblem(self.F, self.up, Jp=self.aP,
-                                                           bcs=self.bcs)
-        #Update Solver
-        self.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
-                                                        nullspace=self.nullspace,
-                                                        solver_parameters=self.parameters)
-        #Update problem
-        ContinuationProblem = LinearVariationalProblem(self.LHS,self.RHS,self.dupdadvswitch,aP = self.aP, bcs = self.bcs)
-
-        #Update solver
-        self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
 
         #setup Picards Solver
         self.PicardIterationSetup()
 
-    def SolveInTime(self,ts,precise = False,PicIt=2,PerturbationOrder = False):
+    def SolveInTime(self,ts,FindSteady = True,PicIt=2):
         """Solves Probem in time using Picard and, if precise = True, Newton in addition
         Keyword arguments:
-        precise -- If true will use Newton after Picards iterations at each timestep
         PicIt -- Number of Picards Iteration
         """
+
+        self.upPrior.assign(self.up)
+        self.t.assign(ts[0])
+
+        #determining steady solution
+        if FindSteady:
+            rinsp.FullSolve(self,FullOutput=False,Write=False)
+
+        #Saving solution at t = 0
         upfile = File("stokes.pvd")
         u, p = self.up.split()
         u.rename("Velocity")
         p.rename("Pressure")
-
-        #determining steady solution
-        self.upPrior.assign(self.up)
-        self.t.assign(ts[0])
-        rinsp.FullSolve(self,FullOutput=False,Write=False)
-
         #splitting u and p for programming purposes (unavoidable)
         u, p = self.up.split()
         upfile.write(u, p,time = ts[0])
         ts = np.delete(ts,0)
-
-        if PerturbationOrder != False:
-            up_ = Function(self.W)
-            u_,p_ = up_.split()
-            valu = as_vector([1,1])* norm(u) * ( exp(PerturbationOrder * (self.x + self.y)) )
-            valp = norm(p) * ( exp(PerturbationOrder * (self.x + self.y)) )
-            u_.project(valu)
-            p_.project(valp)
-            self.up += up_
 
         #time iterations
         for it,tval in enumerate(ts):
@@ -395,11 +361,6 @@ class rinspt(rinsp):
                 #wr are the Picards Iterates
                 self.wr.assign(self.up)
                 self.PicardsSolver.solve()
-
-            if precise:
-                self.TimeSwitch.assign(1)
-                rinsp.FullSolve(self,FullOutput=False,Write=False)
-                self.TimeSwitch.assign(0)
 
             #For coding purposes need to use up.split here
             u, p = self.up.split()
@@ -481,6 +442,18 @@ class rinspt(rinsp):
          aP=aP, bcs=self.bcs)
         self.PicardsSolver = LinearVariationalSolver(PicardsProblem, nullspace=self.nullspace,
          solver_parameters = self.parameters)
+
+    def StabTest(order = -3, seed = 12345):
+
+        rinsp.FullSolve(self,FullOutput=False,Write=False)
+
+        pcg = PCG64(seed=seed)
+
+        rg = RandomGenerator(pcg)
+
+        perturbation = Constant(10**(order))*rg.beta(self.W, 1.0, 2.0)
+
+        self.up += perturbation
 
 def norm(u):
     """
