@@ -5,16 +5,16 @@ n = 16
 #setting up function spaces and mesh
 mesh = UnitSquareMesh(n, n)
 x,y= SpatialCoordinate(mesh)
-V = FunctionSpace(mesh, "CG", 2)
+V = VectorFunctionSpace(mesh, "CG", 2)
 Q = FunctionSpace(mesh, "CG", 1)
 W = V*Q
 
 #setting up boundary conditions
 u_0 = as_vector([cos(y)*exp(x),-sin(y)*exp(x)])
-bc0 = DirichletBC(W.sub(0), u_0, 0)
-bc1 = DirichletBC(W.sub(0), u_0, 1)
-bc2 = DirichletBC(W.sub(0), u_0, 2)
-bc3 = DirichletBC(W.sub(0), u_0, 3)
+bc0 = DirichletBC(W.sub(0), u_0, 1)
+bc1 = DirichletBC(W.sub(0), u_0, 2)
+bc2 = DirichletBC(W.sub(0), u_0, 3)
+bc3 = DirichletBC(W.sub(0), u_0, 4)
 bcs = [bc0,bc1,bc2,bc3]
 
 #Setting up functions
@@ -28,7 +28,8 @@ nullspace = MixedVectorSpaceBasis(
 
 #setting up problem proper
 LHS = inner(grad(u), grad(v)) * dx + div(v) * p * dx + q * div(u) * dx
-RHS = 0 * dx
+Zero = Function(Q)
+RHS =  q*Zero * dx
 
 # Form for use in constructing preconditioner matrix
 aP = inner(grad(u), grad(v))*dx + p*q*dx
@@ -50,7 +51,7 @@ parameters = {
 
 # assembling & solving
 Problem = LinearVariationalProblem(LHS, RHS, up, aP=aP, bcs = bcs)
-Solver = LinearVariationalSolver(PicardsProblem, nullspace=nullspace,solver_parameters = parameters)
+Solver = LinearVariationalSolver(Problem, nullspace=nullspace,solver_parameters = parameters)
 Solver.solve()
 
 # Showing solution
