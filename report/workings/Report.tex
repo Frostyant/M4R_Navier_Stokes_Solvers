@@ -13,12 +13,12 @@
 \author{Anthony Webster CID 01051827}
 \maketitle
 \section{Introduction}
-We seek to create an efficient solver of the steady Navier stokes equations in an arbitrary domain in H(div) space. The steady Navier Stokes equation are as follows : 
+We seek to create an efficient solver of the steady Navier stokes equations in an arbitrary domain in $H_{div}$ space. The steady Navier Stokes equation are as follows : 
 \begin{align}
 u \cdot \nabla u &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
 \end{align}
-Not that from working in the H(div) space the second equation is naturally satisfied globally.
+Not that from working in the $H_{div}$ space the second equation is naturally satisfied globally.
 \\
 First we will describe the classic Finite Element Method, its advantages and disadvantages, hence explaining why we are using a modified method. Secondly we will explain a number of definitions and tools used in the project and which may be unfamiliar to some readers. Then we will show how to find the weak form of the equations and built different parts of our solvers. Lastly we will consider some example cases and deduce that the algorithm converges to the right result at satisfactory rates.\\
 
@@ -121,7 +121,7 @@ $$
  
 
 
-\section{Implementing the H(div) Solver}
+\section{Implementing the $H_{div}$ Solver}
 Since we have two problem terms we will deal with each separately. Hence we will first consider the stokes equation, ignoring the advection term and focusing on the viscosity term for now :
 \begin{align}
 0 &= -\nabla p + \mu \nabla^2 u  \\
@@ -255,6 +255,12 @@ u^{n+1} - u^n + \Delta t (\frac{1}{2}F(u^n,p^n) + \frac{1}{2} F(u^{n+1},p^{n+1})
 \end{align}
 
 \section{Test Cases}
+\subsection{Stokes Convergence}
+
+Once again we will primarily focus on the stokes equation (9-10).\\
+For this we will use the manufactured solution $u_x = cos(y) exp(x)$, $u_y = -sin(y) exp(x)$ for which we get $p = 0$.\\
+Figures and show us the convergence graph in velocity and pressure for the $H_{div}$ solver, while figures and show us the convergence graphs obtained in the first section of the report.\\
+
 \subsection{Manufactured Solution}
 
 As is often the case for numerical schemes we will first test it's effectiveness with a manufactured solution. We will thus find a solution to the equations.\\

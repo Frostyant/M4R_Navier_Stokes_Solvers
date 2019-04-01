@@ -443,7 +443,7 @@ class rinspt(rinsp):
         self.PicardsSolver = LinearVariationalSolver(PicardsProblem, nullspace=self.nullspace,
          solver_parameters = self.parameters)
 
-    def StabTest(order = -3, seed = 12345):
+    def StabTest(ts, order = -3, seed = 12345, PicIt = 2):
 
         rinsp.FullSolve(self,FullOutput=False,Write=False)
 
@@ -454,6 +454,8 @@ class rinspt(rinsp):
         perturbation = Constant(10**(order))*rg.beta(self.W, 1.0, 2.0)
 
         self.up += perturbation
+
+        self.SolveInTime(self,ts,FindSteady = False,PicIt = PicIt)
 
 def norm(u):
     """
