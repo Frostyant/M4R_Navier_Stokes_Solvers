@@ -118,6 +118,10 @@ We then numerically solve the transformed and hopefully better behaved system :
 $$
 P^{-1}(Mx-b) = 0
 $$ 
+
+\subsection{Manufactured Solutions and Convergence Tests}
+
+\subsection{Some Linear Solvers : ILu and Lu}
  
 
 
@@ -129,30 +133,34 @@ Since we have two problem terms we will deal with each separately. Hence we will
 \end{align}
 
 \subsection{Stokes Equation}
-First we start from the stokes equation and determine its weak form.\\
-For this purpose let us introduce two test functions, $w$ in BDM and $q$ in DG.
-Let us multiply the stokes equation by $w$ and integrate over the domain.
+We start off by cutting our computational domain $\Omega$ into a set of cells $e$. As discussed above it is now required to find the weak form of equations (9) and (10).
+For this purpose let us introduce two test functions, $w$ in BDM for velocity and $q$ in DG for pressure.
+Let us multiply equation (9) by $w$ and integrate over the domain as seen in the first section.
 \begin{align*}
 F &= \nabla p - \mu \nabla^2 u \\
-\int_\omega w \cdot F dx &= \int_\omega (w \cdot \nabla p) dx - \int_\omega (\mu w \cdot \nabla^2 u) dx
+\int_\Omega w \cdot F dx &= \int_\Omega (w \cdot \nabla p) dx - \int_\Omega (\mu w \cdot \nabla^2 u) dx
 \end{align*}
 
-
-Focusing on the viscosity term we get via integration by parts over an individual element $e$ :
+For simplicity and sparsness of the resulting matrix we will work on each cell $e$ individually : 
+\begin{align*}
+\int_e\Omega w \cdot F dx &= \int_e (w \cdot \nabla p) dx - \int_e (\mu w \cdot \nabla^2 u) dx
+\end{align*}
+Focusing on the viscosity, or second, term we get via integration by parts :
 \begin{align*}
 \int_e (w \cdot \nabla^2 u) dx = - \sum_e \int_e \nabla_h(w) : \nabla_h(u) dx + \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS
 \end{align*}
-The first term can be summed up to an integral over $\Omega$ and the second one is asymmetrical. We can add a term to make it symetrical, which helps numerical stability.
+The first term can be summed up to an integral over $\Omega$ and the second one is asymmetrical. We can add a term to make it symetrical. This helps with numerical stability of the final matrix equation. Additionally some linear solver take advantage of this structure.
 \begin{align*}
 -  \int_\Omega \nabla_h(w) : \nabla_h(u) dx + \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial w_i}{\partial x_j}\} dS
 \end{align*}
-$u$ should be continous thus the $ \{ u_i n_j \}$ term will cancel out. Hence this does not change the equation.\\
+$u$ should be continous in the solution space thus the $ \{ u_i n_j \}$ term will cancel out. Hence this does not change the equation.\\
 \\
 Now we also add the term $\alpha \int_\Gamma \frac{1}{h}  J(w_i) J(u_i) dS$. According to sources [3] provided that  $\alpha$ is larger than $10$ numerical stability is increased.\\
 $J$ indicates a jump between the two cells. The numerical value of $h$ is the average distance of a side.In our case we defined it as the average cell-volume over the length of the facettes between them for each individual facette element $\Gamma$.\\
 The $J(u_i)$ term makes this integral $0$ in continous space so this does not change the solution.\\
 \\
- Lastly we need to add in all the exterior boundary terms corresponding to each of the above terms we added. This is allows us to set up penalty terms so that our solution tends to those boundary values. Hence our final viscous term becomes :\\
+As mentioned in the BDM definition section we cannot set the tangential component of a dirichelet boundary condition in the conventional finite element manner.  So instead we use penalty terms, which should be $0$ and thus push the solution towards respecting the boundary conditions. In practice this just means taking all the terms over the edge of a cell and considering them on the edge of the domain instead.\\
+ Hence our final viscous term becomes :\\
 \begin{align*}
 &-  \int_\Omega \nabla_h(w) : \nabla_h(u) dx + \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial w_i}{\partial x_j}\} dS \\
 &+ \alpha \int_\Gamma \frac{1}{h}  j(w_i) j(u_i) dS + \int_{\partial  \Omega} w_i n_j \frac{u_i - u^0_i}{x_j} + (u_i - u^0_i) n_j\frac{w_i}{x_j} ds + \alpha \int_{\partial \Omega} \frac{1}{h} w_i(u_i-u^0_i)ds
@@ -171,8 +179,9 @@ Multiplying by $q$ and integrating we get :
 \begin{align*}
 \int_\Omega q \nabla \cdot u dx = 0
 \end{align*}
-This is $0$, so we add it to the weak formulation $(3)$ we obtained, getting one weak formulation which includes both pressure and velocity. 
-Additionally we can use some basic vector identities to get our final equation for the stokes problem :
+This is $0$, so we add it to the weak formulation $(3)$ we obtained, getting one weak formulation which includes both pressure and velocity. \\
+We need this since we want to turn the entire system into a single matrix equation which includes all the conditions.\\
+Additionally we can use some basic vector identities to get our weak equation for the stokes problem :
 \begin{align}
 \int_\Omega w \cdot F dx &= \int_\Omega (\nabla \cdot (p w)) dx - \int_\Omega ( p \nabla \cdot (w)) dx + \int_\Omega q (\nabla \cdot u) dx  - v_\mu
 \end{align}
@@ -196,7 +205,7 @@ b    \\
 0     \\  
 \end{bmatrix}
 $$
-Where $B$ is the discretized divergence operator and $B^T$ the discrete gradient operator. A contains the viscous term.
+Where $B$ is the discretized divergence operator and $B^T$ the discrete gradient operator. $A$ contains the viscous term.
 Setting $S = - B A^{-1} B^{T}$, we can factorize the above and get an expression whose inverse is : 
 $$
 \begin{bmatrix} 
@@ -213,11 +222,10 @@ I & 0\\
 \end{bmatrix}
 $$
 Hence, if we can find $A^{-1}$ and $S^{-1}$ we can easily solve the equation. We solve both via a Lu factorization.\\
-From [2] we add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (4). We thus get : 
+However while we can solve for $A$ relatively easily using methods such as Lu or ILu facorization. However $S^{-1}$, the inverse of the shur complement is difficult to determine because it is usually dense. however research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (!). Note that this term is 0 in continuous space. We thus get : 
 \begin{align}
 \int_\Omega w \cdot F dx &= \int_\Omega (\nabla \cdot (p w)) dx - \int_\Omega ( p \nabla \cdot (w)) dx + \int_\Omega q (\nabla \cdot u) dx  - v_\mu + \int_\Omega \gamma \nabla \cdot v \: \nabla \cdot w dx
 \end{align}
-This added term is $0$ in continous space and therefore doesn't change it. However the modified system is more easily well approximated and this approximation improves for larger values of $\gamma$, from [2]. We also now use an incomplete Lu (ILu) factorization for $S^{-1}$. The ILu factorization is faster than the full Lu factorization. However in some cases, such as for $A^{-1}$ our testing has shown that ILu fails. This is because $A$ is a dense matrix which includes the viscosity term.
 
 \section{The Continuation Method}
 Now we include a modified advection term : 
@@ -279,7 +287,16 @@ We can thus use this to determine the error of our solution.
 
 [3]Arnold, Douglas N., et al. "Unified analysis of discontinuous Galerkin methods for elliptic problems." SIAM journal on numerical analysis 39.5 (2002): 1749-1779.\\
 
-[4] Vassilevski, Panayot S. Multilevel Block Factorization Preconditioners: Matrix-based Analysis and Algorithms for Solving Finite Element Equations. New York, NY: Springer New York, 2008. Web.
+[4] Vassilevski, Panayot S. Multilevel Block Factorization Preconditioners: Matrix-based Analysis and Algorithms for Solving Finite Element Equations. New York, NY: Springer New York, 2008. Web.\\
 
+[5]\\
+
+[6]\\
+
+[7]\\
+
+[8]\\
+
+[9]
 
 \end{document}
