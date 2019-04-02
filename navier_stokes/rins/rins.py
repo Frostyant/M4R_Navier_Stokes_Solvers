@@ -313,6 +313,7 @@ class rinspt(rinsp):
         #boundary ids
         self.BcIds = BcIds
         self.DbcIds = DbcIds
+        self.DeltaT = Constant(1)
         rinsp.__init__(self, mesh,u_0,W,x,y,viscosity = viscosity,AdvectionSwitchStep = AdvectionSwitchStep,
          gamma = gamma,AverageVelocity = AverageVelocity,LengthScale = LengthScale,BcIds = BcIds,DbcIds = DbcIds)
 
