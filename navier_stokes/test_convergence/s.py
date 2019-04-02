@@ -21,7 +21,7 @@ for it,n in enumerate(Ns):
     u_0 = as_vector([cos(y)*exp(x),-sin(y)*exp(x)])
 
     problem = rins.rinsp(mesh,u_0,W,x,y,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
-    problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = False)
+    problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = True)
     print("Reynolds Number =")
     print(problem.R)
 
@@ -34,8 +34,8 @@ for it,n in enumerate(Ns):
 plt.xlabel('h')
 plt.ylabel('L1 Error')
 plt.plot([-np.log(n) for n in Ns],errors)
-plt.title('Navier-Stokes Convergence Graph')
-plt.savefig('navier_stokes_convergence.png')
+plt.title('Stokes Convergence Graph')
+plt.savefig('stokes_convergence.png')
 
 #plotting error in space
 ufile = File("error.pvd")
