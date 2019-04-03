@@ -118,10 +118,6 @@ We then numerically solve the transformed and hopefully better behaved system :
 $$
 P^{-1}(Mx-b) = 0
 $$ 
-
-\subsection{Manufactured Solutions and Convergence Tests}
-
-\subsection{Some Linear Solvers : ILu and Lu}
  
 
 
@@ -222,10 +218,12 @@ I & 0\\
 \end{bmatrix}
 $$
 Hence, if we can find $A^{-1}$ and $S^{-1}$ we can easily solve the equation. We solve both via a Lu factorization.\\
-However while we can solve for $A$ relatively easily using methods such as Lu or ILu facorization. However $S^{-1}$, the inverse of the shur complement is difficult to determine because it is usually dense. however research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (!). Note that this term is 0 in continuous space. We thus get : 
+We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$ via an Lu Factorization. The Lu factorization is a direct solver, and thus is innefficient. The algorithm would have to be performed in a sequential manner, preventing usage of parallelisation. We did mitigate this through the usage of the "mumps" sub-routine. Additionally there was an  However more efficient implementations would require this to be modified.\\
+ However $S^{-1}$, the inverse of the shur complement is difficult to determine because it is usually dense. However research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (!). Note that this term is 0 in continuous space. We thus get : 
 \begin{align}
 \int_\Omega w \cdot F dx &= \int_\Omega (\nabla \cdot (p w)) dx - \int_\Omega ( p \nabla \cdot (w)) dx + \int_\Omega q (\nabla \cdot u) dx  - v_\mu + \int_\Omega \gamma \nabla \cdot v \: \nabla \cdot w dx
 \end{align}
+This doesn't change the equation, thus should result in the same solution. However acoording to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. We then perform ILu in order to solve for $S^{-1}$. ILu performs the Lu Factorization on various blocks of the matrix, allowing it to be parallelised.
 
 \section{The Continuation Method}
 Now we include a modified advection term : 
@@ -257,10 +255,17 @@ While we could try and solve this equation directly using Backwards Euler or Mid
 u^{n+1} - u^n + \Delta t (\frac{1}{2}G(u^n,p^n) + \frac{1}{2} G(u^{n+1},p^{n+1}) + ( u^n \cdot \nabla u^n) ) = 0
 \end{align}
 Here $G = RHS - LHS $. We applied the midpoint rule to the linear terms of the equation while the non-linear term, the advection term, was evaluated at the previous time step. Provided the time step is low enough this will always converge, regardless of inital guess.
-Optionally we can afterwards use the method we described first, Newton's method and Midpoint Rule, to get a more accurate result after a few Picards iterations.
+Optionally we could afterwards use the method we described first, Newton's method and Midpoint Rule, to get a more accurate result after a few Picards iterations.
 \begin{align}
 u^{n+1} - u^n + \Delta t (\frac{1}{2}F(u^n,p^n) + \frac{1}{2} F(u^{n+1},p^{n+1})) = 0
 \end{align}
+
+\subsection{Stability Analysis}
+
+When interested in the stability of a solution analytically we commonly first determine the solution. We would then consider the normal modes form of the equation before perturbing it. After some algebra we determin the most unstable mode and deduce from that.\\
+While there are methods to determine these unstable modes numerically we will not use either of these methods here.\\
+Instead we will use a far simpler algorithm.
+We will consider random perturbations and then use the time stepping method to see if they grow.
 
 \section{Test Cases}
 \subsection{Stokes Convergence}

@@ -6,7 +6,7 @@ import math
 class rinsp:
     """A Navier-Stokes Problem with an efficient pre-build solver using Hdiv"""
 
-    def __init__(self, mesh,u_0,W,x,y,z = 0,viscosity = 1,AdvectionSwitchStep = 1,
+    def __init__(self, mesh,u_0,W,x,y,z = 0, F = Constant(0),viscosity = 1,AdvectionSwitchStep = 1,
     gamma = (10**4.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False,twoD=True):
         """ Creats rinsp object
         Keyword arguments:
@@ -84,7 +84,7 @@ class rinsp:
         viscous_term,L = self.GetViscousTerm(u,p)
         a_bilinear,graddiv_term = self.GetBilinear(u,p,viscous_term)
         self.aP = self.GetApV(u,p,viscous_term,graddiv_term)
-        self.F = action(a_bilinear, self.up) - L
+        self.F = action(a_bilinear, self.up) - L - inner(F,self.v)
 
         #These terms are the advective parts of the equation
         advection_term = self.GetAdvectionTerm(self.up)
