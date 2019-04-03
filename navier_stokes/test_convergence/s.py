@@ -33,7 +33,7 @@ for it,n in enumerate(Ns):
 
 plt.xlabel('h')
 plt.ylabel('L1 Error')
-plt.plot([-np.log(n) for n in Ns],errors)
+plt.plot([np.log(n) for n in Ns],errors)
 plt.title('Stokes Convergence Graph')
 plt.savefig('stokes_convergence.png')
 

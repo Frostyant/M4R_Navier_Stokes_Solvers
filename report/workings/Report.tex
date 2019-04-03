@@ -269,9 +269,9 @@ Once again we will primarily focus on the stokes equation (9-10).\\
 For this we will use the manufactured solution $u_x = cos(y) exp(x)$, $u_y = -sin(y) exp(x)$ for which we get $p = 0$.\\
 Figures and show us the convergence graph in velocity and pressure for the $H_{div}$ solver, while figures and show us the convergence graphs obtained in the first section of the report.\\
 
-\subsection{Manufactured Solution}
+\subsection{Navier-Stokes Convergence}
 
-As is often the case for numerical schemes we will first test it's effectiveness with a manufactured solution. We will thus find a solution to the equations.\\
+As is often the case for numerical schemes we will first test it's effectiveness with a manufactured solution.\\
 In our case we used $u_x = \mu  + e^y$, $u_y = \mu + e^x$ and $p = e^{xy}$.\\
 Plugging this into the equations we get that these do indeed solve the navier-stokes equations. We now adjust boundary conditions so that on $\delta \Omega$ $u$ and $p$ have the values given above.\\
 We can thus use this to determine the error of our solution.
