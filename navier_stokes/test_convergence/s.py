@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 AverageVelocity = 1
 mu = 1
 
-Ns = [2**(n+3) for n in range(7)]
+Ns = [2**(n+3) for n in range(6)]
 errors = [0]*len(Ns)
 
 for it,n in enumerate(Ns):
@@ -31,7 +31,7 @@ for it,n in enumerate(Ns):
     uexact.project(u_0)
     errors[it] = np.log(norm(u-uexact))
 
-plt.xlabel('h')
+plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
 plt.plot([np.log(n) for n in Ns],errors)
 plt.title('Stokes Convergence Graph')

@@ -7,7 +7,7 @@ class rinsp:
     """A Navier-Stokes Problem with an efficient pre-build solver using Hdiv"""
 
     def __init__(self, mesh,u_0,W,x,y,z = 0,viscosity = 1,AdvectionSwitchStep = 1,
-    gamma = (10**10.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False,twoD=True):
+    gamma = (10**4.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False,twoD=True):
         """ Creats rinsp object
         Keyword arguments:
         mesh -- mesh on which the problem is.
@@ -123,7 +123,7 @@ class rinsp:
         if not DisplayInfo:
             self.parameters["ksp_converged_reason"] = False
 
-        AdvectionSwitchStep = self.AdvectionSwitchStep
+        self.AdvectionSwitch.assign(0)
         self.navierstokessolver.solve()
 
         if Write:
@@ -140,6 +140,8 @@ class rinsp:
             FullOutput = False #if we don't write anything then we don't have full output anyway
 
         if not stokes:
+            AdvectionSwitchStep = self.AdvectionSwitchStep
+
             #Continuation Method#
             def ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep):
 
@@ -254,7 +256,7 @@ class rinsp:
         L -- LHS Viscous Terms (They do not depend on up)
         """
         c = Constant(20)
-        n= FacetNormal(self.mesh)
+        n = FacetNormal(self.mesh)
         h = avg(CellVolume(self.mesh))/FacetArea(self.mesh)
         if self.BcIds == False:
             L = c/(h)*inner(self.v,self.u_0)*ds - inner(outer(self.u_0,n),grad(v))*ds
