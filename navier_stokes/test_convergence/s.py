@@ -18,7 +18,11 @@ for it,n in enumerate(Ns):
     V = FunctionSpace(mesh, "BDM", 2)
     Q = FunctionSpace(mesh, "DG", 1)
     W = V * Q
-    u_0 = as_vector([cos(y)*exp(x),-sin(y)*exp(x)])
+    u_0 = as_vector([sin(2*pi*x)*cos(2*pi*y),-cos(2*pi*x)*sin(2*pi*y)])
+    F = as_vector([
+        -4*(pi**2)*cos(2*pi*x)*cos(2*pi*y) + 4*(pi**2)*sin(2*pi*x)*sin(2*pi*y),
+        4*(pi**2)*cos(2*pi*x)*cos(2*pi*y) - 4*(pi**2)*sin(2*pi*x)*sin(2*pi*y)
+        ])
 
     problem = rins.rinsp(mesh,u_0,W,x,y,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
     problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = True)

@@ -230,7 +230,7 @@ Now we include a modified advection term :
 \begin{align}
 0 = LHS - RHS - c ( u \cdot \nabla u) 
 \end{align}
-Where LHS and RHS are the Left hand and Right hand side of equation (5).\\
+Where LHS and RHS are the Left hand and Right hand side of equation (5). Note that this is equation is not linear, hence we will need to use Newton's method.\\ 
 Given the navier stokes equations we could try to naively set $c = 1$ and then use Newton's method applying the above preconditioning and discretization methods. However at high Reynolds number this approach quickly fails unless the mesh is refined, leading to high computational cost.\\
 Hence, in such cases, we will initially set $c$, referred to as the advection switch, to $0$. Applying the solver to $c = 0$ we should easily find a solution. Using this solution as a starting point we then calculate the derivative of (6) with respect to the advection switch.\\
 We then solve again with the non-linear solver using the previously obtained solution for $c = 1$. If this fails we reduce $c$ until it works. We then repeat this procedure until $c = 1$.\\

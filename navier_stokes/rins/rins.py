@@ -6,7 +6,7 @@ import math
 class rinsp:
     """A Navier-Stokes Problem with an efficient pre-build solver using Hdiv"""
 
-    def __init__(self, mesh,u_0,W,x,y,z = 0, F = Constant(0),viscosity = 1,AdvectionSwitchStep = 1,
+    def __init__(self, mesh,u_0,W,x,y,z = 0, F = as_vector([0,0]),viscosity = 1,AdvectionSwitchStep = 1,
     gamma = (10**4.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False,twoD=True):
         """ Creats rinsp object
         Keyword arguments:
@@ -45,6 +45,8 @@ class rinsp:
         W = self.W
         x,y= self.x,self.y
         self.up = Function(W)
+        self.F = Function(W.sub(0))
+        self.F.project(F)
         up = self.up
         #these are the default solver parameters
         self.parameters = {
