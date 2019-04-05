@@ -33,11 +33,11 @@ for it,n in enumerate(Ns):
     u, p = problem.up.split()
     uexact = Function(V)
     uexact.project(u_0)
-    errors[it] = np.log(norm(u-uexact))
+    errors[it] = norm(u-uexact)
 
 plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
-plt.plot([np.log(n) for n in Ns],errors)
+plt.loglog(Ns,errors)
 plt.title('Stokes Convergence Graph')
 plt.savefig('stokes_convergence.png')
 

@@ -29,11 +29,11 @@ for it,n in enumerate(Ns):
     u, p = problem.up.split()
     uexact = Function(V)
     uexact.project(u_0)
-    errors[it] = np.log(norm(u-uexact))
+    errors[it] = norm(u-uexact)
 
 plt.xlabel('h')
 plt.ylabel('L1 Error')
-plt.plot([-np.log(n) for n in Ns],errors)
+plt.loglog(Ns,errors)
 plt.title('Navier-Stokes Convergence Graph')
 plt.savefig('navier_stokes_convergence.png')
 

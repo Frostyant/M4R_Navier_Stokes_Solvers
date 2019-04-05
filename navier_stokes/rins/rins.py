@@ -45,8 +45,6 @@ class rinsp:
         W = self.W
         x,y= self.x,self.y
         self.up = Function(W)
-        self.F = Function(W.sub(0))
-        self.F.project(F)
         up = self.up
         #these are the default solver parameters
         self.parameters = {

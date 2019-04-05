@@ -28,42 +28,48 @@ The finite element method (FEM) is a numerical method which approximates the sol
 \\
 We will now consider the case of applying the FEM to the stokes equations using the more classic lagrange finite element. We will specifically consider a test case created by the method of manufactured solution.\\
 \begin{align}
-0 &= -\nabla p + \mu \nabla^2 u\\
+F &= -\nabla p + \mu \nabla^2 u\\
 \nabla \cdot u &= 0
 \end{align}
 Using the boundary conditions are  $u = (u_0,u_1) = (e^{x y},e^{x y})$ on the edges of the unit square, our domain.\\
 It can easily be verified that the solution to this equation is :
-\begin{align}
-(u_0,u_1) = (e^{x y},e^{x y}) \ p = 2 \mu e^{x y}
-\end{align}
+\begin{equation}
+\begin{aligned}
+	u_x & =  -cos(2 \pi x) sin(2 \pi y)\\
+	u_y & =  sin(2 \pi x) cos (2 \pi y)\\
+	p & = 0\\
+	F_x & =  - 4 \pi^2 cos(2 \pi x) cos(2 \pi y) + 4 \pi^2 sin(2 \pi x) sin(2 \pi y)\\
+	F_y & =    4 \pi^2 cos(2 \pi x) cos(2 \pi y)  - 4 \pi^2 sin(2 \pi x) sin(2 \pi y)    
+\end{aligned}
+\end{equation}
 As seen in Common and Unusual Finite Elements [7], the lagrange finite element approximates a function on a cell using polynomials of degree $q$ defined by their pointwise values at an array of points (such as a uniform lattice).\\
 For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first order lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points whithin it, the two edge points. Hence we get figure . In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
 \\
-It follows that we first cut up our domain into a mesh. Commonly these meshes are made up of triangles for simplicity. Then we approximate $u$ and $p$ using the lagrange element. Hence we get that for instance $u$ is the sum of a set of known piecewise linear functions (as they are determined by the mesh) but with unkown coeffecients. The aim of the rest of the method is to determine these unkown coefficients.\\
+It follows that we first cut up our domain into a mesh. Commonly these meshes are made up of triangles for simplicity, although squares or even curved elements for simulations on a sphere are also used. Then we approximate $u$ and $p$ using the lagrange element. Hence we get that for instance $u$ is the sum of a set of known piecewise linear functions (as they are determined by the mesh) but with unknown coeffecients. The aim of the rest of the method is to determine these unknown coefficients.\\
 For that end we need to find what is called the weak form of the equation. We multiply (3) by an arbitrary function $v$. Hence we get :
 \begin{align*}
-\int_{\omega} -v \cdot \nabla p + \mu v \cdot \nabla^2 u dx = 0
+\int_{\omega} -v \cdot \nabla p + \mu v \cdot \nabla^2 u dx = \int_{\omega} v \cdot F dx
 \end{align*}
 Since our domain $\omega$ is cut out into triangles we can cut the integral into triangles and work on each one individually. Hence for each cell $c$ in $\omega$ we get : 
 \begin{align*}
-\int_{c} - p \nabla \cdot v + \mu v \cdot \nabla^2 u dx = 0
+\int_{c} - p \nabla \cdot v + \mu v \cdot \nabla^2 u dx =  \int_{c} v \cdot F dx
 \end{align*}
 However since $u$ and $v$ will be approximated by functions which may be discontinuous in their derivatives $\nabla^2$ may not be defined. Hence we need to use integration by parts to get :  
 \begin{align*}
-\int_{c} - p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx = 0
+\int_{c} - p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx = \int_{c} v \cdot F dx
 \end{align*}
 Finally multiplying (4) by a similar pressure test function $q$ and adding it to the left hand side of the above we get :
 \begin{align}
-\int_{c} - p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx + \int_{c} q \nabla \cdot u dx = 0
+\int_{c} - p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx + \int_{c} q \nabla \cdot u dx = \int_{c} v \cdot F dx
 \end{align}
-Now we use the fact that $q$, $v$, $u$ and $p$ are a sum of known linear functions and coefficients.\\
+Now we use the fact that $q$, $v$, $F$, $u$ and $p$ are a sum of known linear functions and coefficients.\\
 Pulling out and removing the coefficients of $v$ we get that :
 \begin{align*}
- \int_{c} \sum_i \sum_j ( - p_j \phi_j \nabla  \cdot \Phi_i + \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = 0
+ \int_{c} \sum_i \sum_j ( - p_j \phi_j \nabla  \cdot \Phi_i + \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = \int_{c} \sum_i \phi_i F_i \phi_i dx
 \end{align*}
 Combining all the triangles we can eventually turn into a matrix equation of the form :
 \begin{align}
-M x = 0
+M x = b
 \end{align}
 Where x is a vector of coefficients of $u$ and $p$.\\
 We can solve this easily using a variety of linear systems solvers. Note in particular that since the majority of basis functions $\Phi$ and $\phi$ are $0$ in any given triangle the matrix $M$ will be sparse.\\
@@ -77,28 +83,39 @@ This finite element, combined with the DG element for pressure, discretizes the 
 Additionally we will be able to employ an enhanced lagrangian preconditioner thanks to the global divergence free property [2].\\
 
 However unlike the lagrange elements we can no longer set a dirichelet boundary condition's tangential component. Therefore we need to find alternative approaches to enforce these conditions.
-Additionally some operations (such as the curl) are undefined in this space.Additionally due to possible discontinuities at the boundaries we also have to be carefull with all boundary integrals.\\
+Additionally some operations (such as the curl) are undefined in this space. Due to possible discontinuities at the boundaries we also have to be carefull with all boundary integrals.\\
 
-In general the weak form will be far more complicated.
+In general the weak form will be far more involved.
 
 
 \subsection{Discontinous Galerkin}
 The discontinous Galerkin Element space is the space of piecewise linear continuous functions.
 
 \subsection{Newton's Method}
-Up until now we have described how to setup the stokes system, then precondition it and finally added the advection term to the precondititioned system. However we did not yet touch the topic of how, in practice, we actually solve the equations.\\
-We use newton's iterations to this effect.\\
-We will first describe it in a general fashion. Take the system :
+
+Newton's method is a generalized method for solving non-linear matrix equations of the form :
 $$
-F(x) = 0
+F(x,y) = 0
 $$
-Where $F$ is a vector function and $x$ is vector of unkowns.\\
-Then similarly to the 1D newton we start with a guess $x = x_0$ we then perform the following :
+Where $F$ is a vector function and $x$ is vector of unknowns. Note that $F$ may be non-linear and have constant components.
+For instance we could have $ F = x^T A x + M x - b$, where A and M are constant matrices and b is a constant vector.\\ 
+We start with a guess $x = x_0$ and then determine the Jacobian of $F(x)$, call it $DF(x)$.\\
+We determine the jacobian by calculating the Gateaux derivative, defined as follows [12] :
 \begin{align}
-DF(x_n) \Delta x = - F(x_n)
+DF_{x_n}(\Delta x) = lim_{t \rightarrow 0^+} \frac{F(x_n+ \epsilon \Delta x) - F(x_n)}{\epsilon}
+\end{align}
+We then use the vector taylor expansion :
+\begin{align*}
+F(x_{n+1}) = F(x_n) + DF_{x_n}(\Delta x) \Delta x 
+\end{align*}
+Hence we get the algorithm :
+\begin{align}
+DF_{x_n}(\Delta x) \Delta x = - F(x_n)\\
 x_{n+1} = x_n + \Delta x 
 \end{align}
-Where$DF(x_n)$ is the jacobian.
+We solve for $\Delta x$ using $x_n$ and the taylor expansion approximation and then use this result to determine $x_{n+1}$.
+This is a linear problem which can be solved via an Lu Factorization for instance.\\
+Note that the Newton's method only converges and is unique if it is within a ball around the solution [10-11].
 
 \subsection{Preconditioners}
 
@@ -107,7 +124,7 @@ Take the system :\\
 $$
 Mx = b
 $$
-Where $M$ is a very large matrix, $x$ and unkown vector we need to solve for (in our case this will be a vector of coefficients for both $u$ and $p$) and $b$ a constant vector. If $M$ is a symmetric positive definite sparse matrix then $M$ applied to a vector is cheap to compute. Hence we can easily find $r$ the residual such that :\\
+Where $M$ is a very large matrix, $x$ and unknown vector we need to solve for (in our case this will be a vector of coefficients for both $u$ and $p$) and $b$ a constant vector. If $M$ is a symmetric positive definite sparse matrix then $M$ applied to a vector is cheap to compute. Hence we can easily find $r$ the residual such that :\\
 $$
 r = b - Mx
 $$
@@ -302,6 +319,18 @@ We can thus use this to determine the error of our solution.
 
 [8]\\
 
-[9]
+[9]\\
+
+[10] Huan Zhengda, The convergence ball of Newton's method and the uniqueness ball of equations under Hölder-type continuous derivatives,
+Computers \& Mathematics with Applications,
+Volume 47, Issues 2–3,
+2004,
+Pages 247-251,
+ISSN 0898-1221,
+https://doi.org/10.1016/S0898-1221(04)90021-1.\\
+
+[11] X Wang, Convergence of Newton's method and uniqueness of the solution of equations in Banach space, IMA Journal of Numerical Analysis, Volume 20, Issue 1, January 2000, Pages 123–134, https://doi.org/10.1093/imanum/20.1.123\\
+
+[12] Bae, Jong Sook, and Sangsuk Yie. "Range of Gateaux Differentiable Operators and Local Expansions." Pacific J. Math. 125.2 (1986): 289-300. Web.\\
 
 \end{document}
