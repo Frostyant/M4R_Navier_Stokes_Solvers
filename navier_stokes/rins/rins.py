@@ -448,7 +448,7 @@ class rinspt(rinsp):
 
     def StabTest(ts, order = -3, seed = 12345, PicIt = 2):
 
-        rinsp.FullSolve(FullOutput=False,Write=False)
+        self.FullSolve(FullOutput=False,Write=False)
 
         pcg = PCG64(seed=seed)
 
