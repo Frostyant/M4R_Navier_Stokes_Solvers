@@ -446,7 +446,7 @@ class rinspt(rinsp):
         self.PicardsSolver = LinearVariationalSolver(PicardsProblem, nullspace=self.nullspace,
          solver_parameters = self.parameters)
 
-    def StabTest(ts, order = -3, seed = 12345, PicIt = 2):
+    def StabTest(self,ts, order = -3, seed = 12345, PicIt = 2):
 
         self.FullSolve(FullOutput=False,Write=False)
 
@@ -458,12 +458,4 @@ class rinspt(rinsp):
 
         self.up += perturbation
 
-        self.SolveInTime(self,ts,FindSteady = False,PicIt = PicIt)
-
-def norm(u):
-    """
-    Returns the Hdiv norm
-    Keyword arguments:
-    u -- a function
-    """
-    return assemble(inner(u,u)*dx + div(u)*div(u)*dx)
+        self.SolveInTime(ts,FindSteady = False,PicIt = PicIt)

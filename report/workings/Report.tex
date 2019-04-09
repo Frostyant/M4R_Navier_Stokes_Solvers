@@ -24,7 +24,7 @@ First we will describe the classic Finite Element Method, its advantages and dis
 
 
 \section{Classic Finite Elements Method}
-The finite element method (FEM) is a numerical method which approximates the solution to an exact partial differential equation. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and this project.\\
+The finite element method (FEM) is a numerical method which approximates the solution to an exact partial differential equation [5]. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and this project.\\
 \\
 We will now consider the case of applying the FEM to the stokes equations using the more classic lagrange finite element. We will specifically consider a test case created by the method of manufactured solution.\\
 \begin{align}
@@ -124,18 +124,17 @@ Take the system :\\
 $$
 Mx = b
 $$
-Where $M$ is a very large matrix, $x$ and unknown vector we need to solve for (in our case this will be a vector of coefficients for both $u$ and $p$) and $b$ a constant vector. If $M$ is a symmetric positive definite sparse matrix then $M$ applied to a vector is cheap to compute. Hence we can easily find $r$ the residual such that :\\
+Where $M$ is a very large matrix, assumed for simplicity to be symmetric, $x$ and unknown vector we need to solve for (in our case this will be a vector of coefficients for both $u$ and $p$) and $b$ a constant vector. If $M$ is a symmetric positive definite sparse matrix then $M$ applied to a vector is cheap to compute. Hence we can easily find $r$ the residual such that :\\
 $$
 r = b - Mx
 $$
 We then use the resulting $r$ in order to provide a correction on our result.\\
 However $M$ may not be well-behaved. In fact in our problem we know it is usually not.\\
-In this case we use a preconditioning matrix, $P$ to map the system in such a way that $P^{-1}$ is cheap to compute, this operation can easily be parallelized and the condition number, which describes how accurate this operation is (for more details refer to page 50 of the book), is lowered.
+In this case we use a preconditioning matrix, $P$ to map the system in such a way that $P^{-1}$ is cheap to compute, this operation can easily be parallelized and the condition number, the ratio of largest and smallest eigenvalue which describes the behaviour of the system [13], is lowered.
 We then numerically solve the transformed and hopefully better behaved system : 
 $$
 P^{-1}(Mx-b) = 0
 $$ 
- 
 
 
 \section{Implementing the $H_{div}$ Solver}
@@ -298,7 +297,9 @@ In our case we used $u_x = \mu  + e^y$, $u_y = \mu + e^x$ and $p = e^{xy}$.\\
 Plugging this into the equations we get that these do indeed solve the navier-stokes equations. We now adjust boundary conditions so that on $\delta \Omega$ $u$ and $p$ have the values given above.\\
 We can thus use this to determine the error of our solution.
 
-\subsection{Known Case : Flow Past a Pipe}
+\subsection{Known Case : Flow Past a Cylinder}
+
+\subsection{Known Case : Cylinder flow Stability}
 \section{Citations}
 
 [1] Imperial College London \textit{Firedrake Project} Available from : https://www.firedrakeproject.org [Accessed througout 2018-2019]\\
@@ -311,17 +312,17 @@ We can thus use this to determine the error of our solution.
 
 [4] Vassilevski, Panayot S. Multilevel Block Factorization Preconditioners: Matrix-based Analysis and Algorithms for Solving Finite Element Equations. New York, NY: Springer New York, 2008. Web.\\
 
-[5]\\
+[5]Ibrahimbegovic, Adnan. \textit{Nonlinear Solid Mechanics}. Vol. 160. Dordrecht: Springer Netherlands, 2009. Solid Mechanics and Its Applications. Web.\\
 
 [6]\\
 
-[7]  Kirby R.C., Logg A., Rognes M.E., Terrel A.R. (2012) Common and unusual finite elements. In: Logg A., Mardal KA., Wells G. (eds) Automated Solution of Differential Equations by the Finite Element Method. Lecture Notes in Computational Science and Engineering, vol 84. Springer, Berlin, Heidelberg\\
+[7]  Kirby R.C., Logg A., Rognes M.E., Terrel A.R. (2012) \textit{Common and unusual finite elements}. In: Logg A., Mardal KA., Wells G. (eds) Automated Solution of Differential Equations by the Finite Element Method. Lecture Notes in Computational Science and Engineering, vol 84. Springer, Berlin, Heidelberg\\
 
 [8]\\
 
 [9]\\
 
-[10] Huan Zhengda, The convergence ball of Newton's method and the uniqueness ball of equations under Hölder-type continuous derivatives,
+[10] Huan Zhengda, \textit{The convergence ball of Newton's method and the uniqueness ball of equations under Hölder-type continuous derivatives},
 Computers \& Mathematics with Applications,
 Volume 47, Issues 2–3,
 2004,
@@ -329,8 +330,17 @@ Pages 247-251,
 ISSN 0898-1221,
 https://doi.org/10.1016/S0898-1221(04)90021-1.\\
 
-[11] X Wang, Convergence of Newton's method and uniqueness of the solution of equations in Banach space, IMA Journal of Numerical Analysis, Volume 20, Issue 1, January 2000, Pages 123–134, https://doi.org/10.1093/imanum/20.1.123\\
+[11] X Wang, \textit{Convergence of Newton's method and uniqueness of the solution of equations in Banach space}, IMA Journal of Numerical Analysis, Volume 20, Issue 1, January 2000, Pages 123–134, https://doi.org/10.1093/imanum/20.1.123\\
 
-[12] Bae, Jong Sook, and Sangsuk Yie. "Range of Gateaux Differentiable Operators and Local Expansions." Pacific J. Math. 125.2 (1986): 289-300. Web.\\
+[12] Bae, Jong Sook, and Sangsuk Yie. \textit{Range of Gateaux Differentiable Operators and Local Expansions}  Pacific J. Math. 125.2 (1986): 289-300. Web.\\
+
+[13] Zi-Cai Li, Cheng-Sheng Chien, Hung-Tsai Huang,\textit{
+Effective condition number for finite difference method},
+Journal of Computational and Applied Mathematics,
+Volume 198, Issue 1,
+2007,
+Pages 208-235,
+ISSN 0377-0427,
+https://doi.org/10.1016/j.cam.2005.11.037.\\
 
 \end{document}
