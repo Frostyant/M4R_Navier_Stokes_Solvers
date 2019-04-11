@@ -44,3 +44,7 @@ u, p = problem.up.split()
 u -= uexact
 u.rename("error")
 ufile.write(u)
+
+valfile = open("stokes_error.txt","w+")
+valfile.write(errors)
+valfile.close()

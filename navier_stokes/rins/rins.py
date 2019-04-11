@@ -58,7 +58,7 @@ class rinsp:
             "pc_fieldsplit_off_diag_use_amat": True,
             "fieldsplit_0_ksp_type": "preonly",
             "fieldsplit_0_pc_type": "lu",#use full LU factorization, ilu fails
-            "fieldsplit_0_pc_factor_mat_solver_package": "mumps",
+            "fieldsplit_0_pc_factor_mat_solver_type": "mumps",
             "fieldsplit_1_ksp_type": "preonly",
             "fieldsplit_1_pc_type": "bjacobi",
             "fieldsplit_1_pc_sub_type": "ilu"#use incomplete LU factorization on the submatrix

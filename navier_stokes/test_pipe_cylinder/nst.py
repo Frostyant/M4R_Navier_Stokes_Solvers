@@ -11,7 +11,7 @@ mesh = Mesh("Cyl05.msh")
 #defining
 x,y= SpatialCoordinate(mesh)
 #defining time
-ts = np.arange(0.0,1.0,0.1)
+ts = np.arange(0.0,2.0,0.1)
 t = Constant(ts[0])
 
 # Define function spaces
