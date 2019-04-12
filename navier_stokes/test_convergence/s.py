@@ -19,9 +19,9 @@ for it,n in enumerate(Ns):
     Q = FunctionSpace(mesh, "DG", 1)
     W = V * Q
     u_0 = as_vector([-cos(2*pi*x)*sin(2*pi*y),sin(2*pi*x)*cos(2*pi*y)])
-    u_x = u.dx
-    u_y = u.dy
-    F = -mu*as_vector([ (u_x(0).dx + u_y(0).dy) , (u_x(1).dx + u_y(1).dy) ])
+    u_x = u.dx(0)
+    u_y = u.dx(1)
+    F = -mu*as_vector([ (u_x(0).dx(0) + u_y(0).dx(1)) , (u_x(1).dx(0) + u_y(1).dx(1)) ])
 
     problem = rins.rinsp(mesh,u_0,W,x,y,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
     problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = True)
