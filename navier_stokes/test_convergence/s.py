@@ -19,11 +19,11 @@ for it,n in enumerate(Ns):
     Q = FunctionSpace(mesh, "DG", 1)
     W = V * Q
     u_0 = as_vector([sin(2*pi*x)*sin(2*pi*y),(1-cos(2*pi*x))*sin(2*pi*y)])
-    u_x = u_0.dx(0)
-    u_y = u_0.dx(1)
-    F = -mu*as_vector([ (u_x.dx(0)[0] + u_y.dx(1)[0]) , (u_x.dx(0)[1] + u_y.dx(1)[1]) ])
+    u_xx = u_0.dx(0).dx(0)
+    u_yy = u_0.dx(1).dx(1)
+    F = -mu*as_vector([ (u_xx[0] + u_yy[0]) , (u_xx[1] + u_yy[1]) ])
 
-    problem = rins.rinsp(mesh,u_0,W,x,y,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
+    problem = rins.rinsp(mesh,u_0,W,x,y,F = F,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
     problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = True)
     print("Reynolds Number =")
     print(problem.R)
@@ -47,6 +47,12 @@ u -= uexact
 u.rename("error")
 ufile.write(u)
 
+#plotting trus solution in space
+truefile = File("true.pvd")
+uexact.rename("true velocity")
+truefile.write(u)
+
+#saving exact values of the error
 valfile = open("stokes_error.txt","w+")
 errorstring = ';'.join(str(e) for e in errors)
 valfile.write(errorstring)
