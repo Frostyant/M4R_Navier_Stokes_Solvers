@@ -18,10 +18,13 @@ for it,n in enumerate(Ns):
     V = FunctionSpace(mesh, "BDM", 2)
     Q = FunctionSpace(mesh, "DG", 1)
     W = V * Q
-    u_0 = as_vector([sin(2*pi*x)*sin(2*pi*y),(1-cos(2*pi*x))*sin(2*pi*y)])
+    u_0 = as_vector([-x*sin(2*pi*x*y),y*sin(2*pi*x*y)])
+    p_0 = sin(x*y)
+    p_x = p_0.dx(0)
+    p_y = p_0.dx(1)
     u_xx = u_0.dx(0).dx(0)
     u_yy = u_0.dx(1).dx(1)
-    F_ = -mu*as_vector([ (u_xx[0] + u_yy[0]) , (u_xx[1] + u_yy[1]) ])
+    F_ = as_vector([ p_x-mu*(u_xx[0] + u_yy[0]) , p_y-mu*(u_xx[1] + u_yy[1]) ])
     F = Function(V)
     F.project(F_)
 
@@ -49,10 +52,10 @@ u -= uexact
 u.rename("error")
 ufile.write(u)
 
-#plotting trus solution in space
+#plotting true solution in space
 truefile = File("true.pvd")
 uexact.rename("true velocity")
-truefile.write(u)
+truefile.write(uexact)
 
 #saving exact values of the error
 valfile = open("stokes_error.txt","w+")
