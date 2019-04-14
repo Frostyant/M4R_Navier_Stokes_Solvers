@@ -42,7 +42,7 @@ for it,n in enumerate(Ns):
     uexact.project(u_0)
     errors[it] = norm(u-uexact)
 
-plt.xlabel('h')
+plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
 plt.loglog(Ns,errors)
 plt.title('Navier-Stokes Convergence Graph')
