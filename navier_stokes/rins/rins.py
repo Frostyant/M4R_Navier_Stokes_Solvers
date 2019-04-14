@@ -84,7 +84,7 @@ class rinsp:
         viscous_term,L = self.GetViscousTerm(u,p)
         a_bilinear,graddiv_term = self.GetBilinear(u,p,viscous_term)
         self.aP = self.GetApV(u,p,viscous_term,graddiv_term)
-        self.F = action(a_bilinear, self.up) - L + inner(F,self.v)*dx
+        self.F = action(a_bilinear, self.up) - L - inner(F,self.v)*dx
 
         #These terms are the advective parts of the equation
         advection_term = self.GetAdvectionTerm(self.up)
