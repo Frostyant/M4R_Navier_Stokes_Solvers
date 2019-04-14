@@ -43,7 +43,11 @@ It can easily be verified that the solution to this equation is :
 \end{aligned}
 \end{equation}
 As seen in Common and Unusual Finite Elements [7], the lagrange finite element approximates a function on a cell using polynomials of degree $q$ defined by their pointwise values at an array of points (such as a uniform lattice).\\
-For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first order lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points whithin it, the two edge points. Hence we get figure . In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
+For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first order lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points in it, the two edge points. Hence we get figure 1, where the blue curve indicates our approximation and the red one the exact function. In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
+\begin{figure}
+  \includegraphics[width=\linewidth]{ex_1D_LG.png}
+  \caption{4 element First Order Interpolation Example}
+\end{figure}
 \\
 It follows that we first cut up our domain into a mesh. Commonly these meshes are made up of triangles for simplicity, although squares or even curved elements for simulations on a sphere are also used. Then we approximate $u$ and $p$ using the lagrange element. Hence we get that for instance $u$ is the sum of a set of known piecewise linear functions (as they are determined by the mesh) but with unknown coeffecients. The aim of the rest of the method is to determine these unknown coefficients.\\
 For that end we need to find what is called the weak form of the equation. We multiply (3) by an arbitrary function $v$. Hence we get :
@@ -67,14 +71,14 @@ Pulling out and removing the coefficients of $v$ we get that :
 \begin{align*}
  \int_{c} \sum_i \sum_j ( - p_j \phi_j \nabla  \cdot \Phi_i + \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = \int_{c} \sum_i \phi_i F_i \phi_i dx
 \end{align*}
-Combining all the triangles we can eventually turn into a matrix equation of the form :
+Combining all the triangles we can eventually turn our problem into a matrix equation of the form :
 \begin{align}
 M x = b
 \end{align}
 Where x is a vector of coefficients of $u$ and $p$.\\
-We can solve this easily using a variety of linear systems solvers. Note in particular that since the majority of basis functions $\Phi$ and $\phi$ are $0$ in any given triangle the matrix $M$ will be sparse.\\
+We can solve this using a variety of linear systems solvers. Note in particular that since the majority of basis functions $\Phi$ and $\phi$ are $0$ in any given triangle the matrix $M$ will be sparse.\\
 While we locally enforced the divergence-free equation by including it in the weak form, the global flow may not be divergence-free. In order to achieve that more complex mathematical tools would be required.
-Using the above and implementing it in firedrake we get figures .
+Using the above and implementing it in firedrake we get figures .On a mesh with vertices we get an error of about.
 
 \section{Tools and Definitions}
 \subsection{Brezzi-Douglas-Marini Element}
@@ -88,8 +92,10 @@ Additionally some operations (such as the curl) are undefined in this space. Due
 In general the weak form will be far more involved.
 
 
-\subsection{Discontinous Galerkin}
-The discontinous Galerkin Element space is the space of piecewise linear continuous functions.
+\subsection{Discontinous Galerkin and BDM-DG Mixed Space}
+The discontinous Galerkin Element space is the space of piecewise linear continuous functions.\\
+Combined with the BDM space we obtain a mixed finite element space which approximates the $H_{div}$ finite element space.\\
+Past research has shown [15]
 
 \subsection{Newton's Method}
 
@@ -342,5 +348,10 @@ Volume 198, Issue 1,
 Pages 208-235,
 ISSN 0377-0427,
 https://doi.org/10.1016/j.cam.2005.11.037.\\
+
+[14]\\
+
+[15] Cockburn B, Kanschat G, Schötzau D. A note on discontinuous galerkin divergence-free solutions of the navier-stokes equations. Journal of Scientific Computing. 2007 Jun 1;31(1-2):61-73. https://doi.org/10.1007/s10915-006-9107-7
+
 
 \end{document}

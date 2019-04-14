@@ -21,7 +21,9 @@ for it,n in enumerate(Ns):
     u_0 = as_vector([sin(2*pi*x)*sin(2*pi*y),(1-cos(2*pi*x))*sin(2*pi*y)])
     u_xx = u_0.dx(0).dx(0)
     u_yy = u_0.dx(1).dx(1)
-    F = -mu*as_vector([ (u_xx[0] + u_yy[0]) , (u_xx[1] + u_yy[1]) ])
+    F_ = -mu*as_vector([ (u_xx[0] + u_yy[0]) , (u_xx[1] + u_yy[1]) ])
+    F = Function(V)
+    F.project(F_)
 
     problem = rins.rinsp(mesh,u_0,W,x,y,F = F,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
     problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = True)
