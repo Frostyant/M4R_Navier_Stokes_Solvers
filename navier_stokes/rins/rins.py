@@ -325,7 +325,7 @@ class rinspt(rinsp):
         #setup Picards Solver
         self.PicardIterationSetup()
 
-    def SolveInTime(self,ts,FindSteady = True,PicIt=2):
+    def SolveInTime(self,ts,FindSteady = True,PicIt=2,IsStabTest = False):
         """Solves Probem in time using Picard and, if precise = True, Newton in addition
         Keyword arguments:
         PicIt -- Number of Picards Iteration
@@ -339,7 +339,13 @@ class rinspt(rinsp):
             rinsp.FullSolve(self,FullOutput=False,Write=False)
 
         #Saving solution at t = 0
-        upfile = File("stokes.pvd")
+        upfile = File("ns.pvd")
+
+        if IsStabTest:
+            #creating stabfile & initiating deviation from steady solution
+            stabfile = File("stab.pvd")
+            devup = Function(W)
+
         u, p = self.up.split()
         u.rename("Velocity")
         p.rename("Pressure")
@@ -368,6 +374,13 @@ class rinspt(rinsp):
             #For coding purposes need to use up.split here
             u, p = self.up.split()
             upfile.write(u, p,time = tval)
+
+            if IsStabTest:
+                #determine deviation from steady solution &saves it
+                devup.assign(self.up - self.steadyup)
+                du, dp = devup.split()
+                stabfile.write(du, dp,time = tval)
+
 
     def PicardIterationSetup(self):
         """Does Picards iterations on the navier stokes solution
@@ -458,4 +471,8 @@ class rinspt(rinsp):
 
         self.up += perturbation
 
-        self.SolveInTime(ts,FindSteady = False,PicIt = PicIt)
+        self.steadyup = Function(self.W)
+
+        self.steadyup.assign(self.up)
+
+        self.SolveInTime(ts,FindSteady = False,PicIt = PicIt,IsStabTest = True)

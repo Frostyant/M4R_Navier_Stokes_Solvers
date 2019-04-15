@@ -293,17 +293,24 @@ We will consider random perturbations and then use the time stepping method to s
 \subsection{Stokes Convergence}
 
 Once again we will primarily focus on the stokes equation (9-10).\\
-For this we will use the manufactured solution $u_x = cos(y) exp(x)$, $u_y = -sin(y) exp(x)$ for which we get $p = 0$.\\
-Figures and show us the convergence graph in velocity and pressure for the $H_{div}$ solver, while figures and show us the convergence graphs obtained in the first section of the report.\\
+For this we will use the manufactured solution $u_x = -x sin(2 \pi x y)$, $u_y = y sin(2 \pi x y)$ and $p = sin(x y)$.
+We then add in a forcing term to ensure the above respects the stokes equation.\\
+Hence we get : $F = \nabla p - \mu \nabla^2 u$.\\
+Figures and show us the convergence graphs in velocity and pressure for the $H_{div}$ solver.\\
+Hence we can deduce we obtain a convergence rate of a bit over $2$, as expected given the usage of the BDM2 and DG1 space.
+This shows that the preconditioning and discretisation holds for the stokes equation if boundary conditions are $0$.
 
 \subsection{Navier-Stokes Convergence}
 
-As is often the case for numerical schemes we will first test it's effectiveness with a manufactured solution.\\
-In our case we used $u_x = \mu  + e^y$, $u_y = \mu + e^x$ and $p = e^{xy}$.\\
-Plugging this into the equations we get that these do indeed solve the navier-stokes equations. We now adjust boundary conditions so that on $\delta \Omega$ $u$ and $p$ have the values given above.\\
-We can thus use this to determine the error of our solution.
+We again use a manufactured solution to determine the convergence rate of our solver.
+We can re-use the first solution in the stokes convergence test, $u_x = -x sin(2 \pi x y)$, $u_y = y sin(2 \pi x y)$ and $p = sin(x y)$. However the forcing term will now be $F = \nabla p - \mu \nabla^2 u + u \cdot \nabla u$.
+Plugging this into the equations we get that these do indeed solve the navier-stokes equations.\\
+Figures and show us the convergence graphs in velocity and pressure.\\
 
 \subsection{Known Case : Flow Past a Cylinder}
+
+The flow past a cylinder is a well-known and studied flow with interesting properties, namely in stability of its steady solution.\\
+Hence we will see how our solver resolves this flow and compare results with other papers [14].
 
 \subsection{Known Case : Cylinder flow Stability}
 \section{Citations}
@@ -349,7 +356,7 @@ Pages 208-235,
 ISSN 0377-0427,
 https://doi.org/10.1016/j.cam.2005.11.037.\\
 
-[14]\\
+[14] Hashiguchi, Masanori \& Kuwahara, Kunio. (1996). Two-Dimensional Study of Flow past a Circular Cylinder. RIMS Kokyuroku. 974. \\
 
 [15] Cockburn B, Kanschat G, Schötzau D. A note on discontinuous galerkin divergence-free solutions of the navier-stokes equations. Journal of Scientific Computing. 2007 Jun 1;31(1-2):61-73. https://doi.org/10.1007/s10915-006-9107-7
 

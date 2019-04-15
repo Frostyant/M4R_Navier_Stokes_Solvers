@@ -29,4 +29,4 @@ problem = rins.rinspt(mesh,u_0,W,x,y,t,viscosity = 20,BcIds = (1,5), DbcIds = (1
 print("Reynolds Number =")
 print(problem.R)
 
-problem.StabTest(ts,order = -2, PicIt = 10)
+problem.StabTest(ts,order = -3, PicIt = 10)
