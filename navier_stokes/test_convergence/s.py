@@ -9,8 +9,9 @@ import matplotlib.pyplot as plt
 AverageVelocity = 1
 mu = 1
 
-Ns = [2**(n+4) for n in range(6)]
+Ns = [2**(n+3) for n in range(7)]
 errors = [0]*len(Ns)
+ep = [0]*len(Ns)
 
 for it,n in enumerate(Ns):
     mesh = UnitSquareMesh(n, n)
@@ -36,14 +37,24 @@ for it,n in enumerate(Ns):
     #dealing with stokes error
     u, p = problem.up.split()
     uexact = Function(V)
+    pexact = Function(Q)
     uexact.project(u_0)
+    pexact.project(p_0)
     errors[it] = norm(u-uexact)
+    ep[it] = norm(p-pexact)
 
 plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
 plt.loglog(Ns,errors)
-plt.title('Stokes Convergence Graph')
+plt.title('Stokes Velocity Convergence Graph')
 plt.savefig('stokes_convergence.png')
+
+plt.figure()
+plt.xlabel('o(n)')
+plt.ylabel('L1 Error')
+plt.loglog(Ns,ep)
+plt.title('Stokes Pressure Convergence Graph')
+plt.savefig('stokes_pressure_convergence.png')
 
 #plotting error in space
 ufile = File("error.pvd")
