@@ -18,8 +18,8 @@ for it,n in enumerate(Ns):
     V = FunctionSpace(mesh, "BDM", 2)
     Q = FunctionSpace(mesh, "DG", 1)
     W = V * Q
-    u_0 = as_vector([-x*sin(2*pi*x*y),y*sin(2*pi*x*y)])
-    p_0 = sin(x*y)
+    u_0 = as_vector([sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)^2,-sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)^2])
+    p_0 = sin(2*pi*x)*cos(2*pi*y)
     p_x = p_0.dx(0)
     p_y = p_0.dx(1)
     u_x = u_0.dx(0)
@@ -36,17 +36,27 @@ for it,n in enumerate(Ns):
     print("Reynolds Number =")
     print(problem.R)
 
-    #dealing with stokes error
+    #finding with  error
     u, p = problem.up.split()
     uexact = Function(V)
+    pexact = Function(Q)
     uexact.project(u_0)
+    pexact.project(p_0)
     errors[it] = norm(u-uexact)
+    ep[it] = norm(p-pexact)
 
 plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
 plt.loglog(Ns,errors)
 plt.title('Navier-Stokes Convergence Graph')
 plt.savefig('navier_stokes_convergence.png')
+
+plt.figure()
+plt.xlabel('o(n)')
+plt.ylabel('L1 Error')
+plt.loglog(Ns,ep)
+plt.title('Stokes Pressure Convergence Graph')
+plt.savefig('stokes_pressure_convergence.png')
 
 #plotting error in space
 ufile = File("error.pvd")

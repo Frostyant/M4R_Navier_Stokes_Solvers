@@ -344,7 +344,7 @@ class rinspt(rinsp):
         if IsStabTest:
             #creating stabfile & initiating deviation from steady solution
             stabfile = File("stab.pvd")
-            devup = Function(W)
+            devup = Function(self.W)
 
         u, p = self.up.split()
         u.rename("Velocity")
@@ -379,6 +379,8 @@ class rinspt(rinsp):
                 #determine deviation from steady solution &saves it
                 devup.assign(self.up - self.steadyup)
                 du, dp = devup.split()
+                du.rename("Velocity Deviation")
+                dp.rename("Pressure Deviation")
                 stabfile.write(du, dp,time = tval)
 
 
