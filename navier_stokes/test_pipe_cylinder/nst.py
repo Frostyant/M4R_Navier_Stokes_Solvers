@@ -11,7 +11,7 @@ mesh = Mesh("Cyl05.msh")
 #defining
 x,y= SpatialCoordinate(mesh)
 #defining time
-ts = np.arange(0.0,2.0,0.1)
+ts = np.arange(0.0,10.0,0.05)
 t = Constant(ts[0])
 
 # Define function spaces
@@ -29,4 +29,4 @@ problem = rins.rinspt(mesh,u_0,W,x,y,t,viscosity = 20,BcIds = (1,5), DbcIds = (1
 print("Reynolds Number =")
 print(problem.R)
 
-problem.StabTest(ts,order = -3, PicIt = 10)
+problem.StabTest(ts,order = -6, PicIt = 7)

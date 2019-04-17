@@ -19,8 +19,8 @@ for it,n in enumerate(Ns):
     V = FunctionSpace(mesh, "BDM", 2)
     Q = FunctionSpace(mesh, "DG", 1)
     W = V * Q
-    u_0 = as_vector([sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)^2,-sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)^2])
-    p_0 = sin(2*pi*x)*cos(2*pi*y)
+    u_0 = as_vector([sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)^2,-sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)^2])
+    p_0 = sin(2*pi*x)*sin(2*pi*y)
     p_x = p_0.dx(0)
     p_y = p_0.dx(1)
     u_x = u_0.dx(0)
