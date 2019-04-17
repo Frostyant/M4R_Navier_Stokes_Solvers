@@ -9,8 +9,9 @@ import matplotlib.pyplot as plt
 AverageVelocity = 1
 mu = 1
 
-Ns = [2**(n+3) for n in range(7)]
+Ns = [2**(n+3) for n in range(5)]
 errors = [0]*len(Ns)
+ep = [0]*len(Ns)
 
 for it,n in enumerate(Ns):
     mesh = UnitSquareMesh(n, n)
