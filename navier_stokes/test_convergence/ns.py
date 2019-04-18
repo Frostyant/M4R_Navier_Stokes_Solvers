@@ -28,10 +28,10 @@ for it,n in enumerate(Ns):
     u_xx = u_x.dx(0)
     u_yy = u_x.dx(1)
     F_ = as_vector([- mu*(u_xx[0]+u_yy[0])
-                , - mu*(u_xx[1] + u_yy[1]))
+                , - mu*(u_xx[1] + u_yy[1])])
     F = Function(V)
     F.project(F_)
-    F_adv = ([u_0[0]*u_x[0]+u_0[1]*u_y[0], u_0[0]*u_x[1]+u_0[1]*u_y[1]]]
+    F_adv = as_vector([ u_0[0]*u_x[0]+u_0[1]*u_y[0], u_0[0]*u_x[1]+u_0[1]*u_y[1] ])
     Fadv = Function(V)
     Fadv.project(F_adv)
 
