@@ -292,20 +292,40 @@ We will consider random perturbations and then use the time stepping method to s
 \section{Test Cases}
 \subsection{Stokes Convergence}
 
-Once again we will primarily focus on the stokes equation (9-10).\\
-For this we will use the manufactured solution $u_x = -x sin(2 \pi x y)$, $u_y = y sin(2 \pi x y)$ and $p = sin(x y)$.
-We then add in a forcing term to ensure the above respects the stokes equation.\\
-Hence we get : $F = \nabla p - \mu \nabla^2 u$.\\
-Figures and show us the convergence graphs in velocity and pressure for the $H_{div}$ solver.\\
+Once again we will primarily focus on the stokes equation (9-10) in order to verify that this part of our discretization is working as intended.\\
+We will consider a manufactured solution, and artificial solution we selected in advance. Take $u_x = sin(2 \pi y) cos(2 \pi y)*sin(2 \pi x)^2$, $u_y= -sin(2 \pi x) cos(2 \pi x) sin(2 \pi y)^2$ and $p = sin(2 \pi x) sin(2 \pi y)$.\\
+We then adjust the boundary conditions and forcing term appropriately for this solution to hold.\\
+ The forcing term thus becomes :$F = \nabla p - \mu \nabla^2 u$.\\
+Figures and show us the convergence graphs in velocity and pressure.\\
+This shows that the preconditioning and discretisation holds as expected for the stokes equation if boundary conditions are $0$.
+\\
+\\
+To demonstrate that our solver works also for non-zero boundary condition we will consider an alternative test.
+Take the manufactured solution $u_x = -x sin(2 \pi x y)$, $u_y = y sin(2 \pi x y)$ and $p = sin(x y)$.
+We determine the forcing term in the same way as before.\\
+Figures and show us the convergence graphs in velocity and pressure.\\
 Hence we can deduce we obtain a convergence rate of a bit over $2$, as expected given the usage of the BDM2 and DG1 space.
-This shows that the preconditioning and discretisation holds for the stokes equation if boundary conditions are $0$.
+
 
 \subsection{Navier-Stokes Convergence}
 
 We again use a manufactured solution to determine the convergence rate of our solver.
-We can re-use the first solution in the stokes convergence test, $u_x = -x sin(2 \pi x y)$, $u_y = y sin(2 \pi x y)$ and $p = sin(x y)$. However the forcing term will now be $F = \nabla p - \mu \nabla^2 u + u \cdot \nabla u$.
+We can re-use the first solution in the stokes convergence test, $u_x = sin(2 \pi y) cos(2 \pi y)sin(2 \pi x)^2$, $u_y= -sin(2 \pi x) cos(2 \pi x) sin(2 \pi y)^2$ and $p = sin(2 \pi x) sin(2 \pi y)$.\\
+However the forcing term will now be $F = \nabla p - \mu \nabla^2 u + u \cdot \nabla u$.
 Plugging this into the equations we get that these do indeed solve the navier-stokes equations.\\
 Figures and show us the convergence graphs in velocity and pressure.\\
+
+
+Again let us demonstrate that this also works with non-zero boundary conditions, using the manufactured solution .\\
+Here we get figures and, as expected.\\
+
+
+Note that we did not reuse the manufactured solution from the stokes convergence test for non-zero boundary conditions, as a matter of fact applying those we get figures and  for velocity and pressure. These show non-convergence, which is confirmed when considering the error graph in space in figure.\\
+While this might have indicated some error in the solver it turns out this is to be expected. In this scenario the equation is ill-posed. The exact reason is unkown, as this is still an active field of research. However a rule of thumb is that if you have dirichelet outflow the equation is ill-posed. An intuitive way of explaining this is that if we were to expand our domain the out of bounds flow might still be able to affect the flow in the computational domain (for instance trailing vorticies) in ways that we would thus not be able to capture if this region was excluded. 
+
+\subsection{Known Case : Flow between two rotating circles}
+
+We will study this relatively simple problem as means to demonstrate the ability of our solver to work even on non-uniform arbitrary meshes. 
 
 \subsection{Known Case : Flow Past a Cylinder}
 

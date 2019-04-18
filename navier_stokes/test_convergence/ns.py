@@ -27,12 +27,15 @@ for it,n in enumerate(Ns):
     u_y = u_0.dx(1)
     u_xx = u_x.dx(0)
     u_yy = u_x.dx(1)
-    F_ = as_vector([ p_x - mu*(u_xx[0]+u_yy[0]) + u_0[0]*u_x[0]+u_0[1]*u_y[0]
-                , p_y - mu*(u_xx[1] + u_yy[1]) + u_0[0]*u_x[1]+u_0[1]*u_y[1]])
+    F_ = as_vector([- mu*(u_xx[0]+u_yy[0])
+                , - mu*(u_xx[1] + u_yy[1]))
     F = Function(V)
     F.project(F_)
+    F_adv = ([u_0[0]*u_x[0]+u_0[1]*u_y[0], u_0[0]*u_x[1]+u_0[1]*u_y[1]]]
+    Fadv = Function(V)
+    Fadv.project(F_adv)
 
-    problem = rins.rinsp(mesh,u_0,W,x,y,F = F,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
+    problem = rins.rinsp(mesh,u_0,W,x,y,F = F,AdvectionForcing = Fadv,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
     problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = False)
     print("Reynolds Number =")
     print(problem.R)
