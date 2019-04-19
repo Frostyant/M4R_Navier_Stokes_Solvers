@@ -16,6 +16,8 @@ class rinsp:
         x -- x Spatial coordinate.
         y -- y Spatial coordinate.
         z -- z Spatial coordinate, if is default 0 then this is a 2D problem.
+        F -- Forcing terms
+        AdvectionForcing -- Forcing term adjusted to advection (for advection stepping method)
         viscosity -- viscosity in problem, default 1.
         AdvectionSwitchStep -- Guess for advection stepsize default 1. If high Reynolds number may want to decrease this for effeciency.
         gamma -- A constant, the higher it is the more effecient the linear solver becomes, default is 10**10.
@@ -104,7 +106,7 @@ class rinsp:
         self.dupdadvswitch = Function(W)
         #this is newton approximation term
         self.up += self.dupdadvswitch*(AdvectionSwitchStep)
-        self.RHS = -advection_term
+        self.RHS = -advection_term + inner(AdvectionForcing,self.v)*dx
         self.LHS = derivative(self.F,self.up)
 
 
