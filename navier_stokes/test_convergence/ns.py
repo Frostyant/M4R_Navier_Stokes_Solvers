@@ -20,7 +20,7 @@ for it,n in enumerate(Ns):
     Q = FunctionSpace(mesh, "DG", 1)
     W = V * Q
     u_0 = as_vector([sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,-sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
-    p_0 = Constant(1)*sin(2*pi*x)*sin(2*pi*y)
+    p_0 = Constant(1)*sin(2*pi*x)**2*sin(2*pi*y)**2
     p_x = p_0.dx(0)
     p_y = p_0.dx(1)
     u_x = u_0.dx(0)
@@ -36,6 +36,9 @@ for it,n in enumerate(Ns):
     Fadv.project(F_adv)
 
     problem = rins.rinsp(mesh,u_0,W,x,y,F = F,AdvectionForcing = Fadv,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
+    #Adding pressure boundary conditions
+    problem.bcs.extend([DirichletBC(self.W.sub(1), self.p_0, id) for id in (1,2,3,4)])
+    problem.UpdateProblem()
     problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = False)
     print("Reynolds Number =")
     print(problem.R)

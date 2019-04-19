@@ -307,6 +307,18 @@ class rinsp:
         pmass = self.q*p*dx
         return viscous_term + (self.viscosity + self.gamma)*pmass + graddiv_term
 
+    def UpdateProblem():
+        '''
+        This functions simply reinitializes the various solvers with the parameters, under the assumption these were changed
+        '''
+        navierstokesproblem = NonlinearVariationalProblem(problem.F, problem.up, Jp=problem.aP,
+                                                          bcs=problem.bcs)
+        problem.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
+                                                        nullspace=problem.nullspace,
+                                                        solver_parameters=problem.parameters)
+        ContinuationProblem = LinearVariationalProblem(problem.LHS,problem.RHS,problem.dupdadvswitch,aP = problem.aP, bcs = problem.bcs)
+        problem.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=problem.nullspace, solver_parameters = problem.parameters)
+
 
 
 class rinspt(rinsp):
