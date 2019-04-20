@@ -311,13 +311,13 @@ class rinsp:
         '''
         This functions simply reinitializes the various solvers with the parameters, under the assumption these were changed
         '''
-        navierstokesproblem = NonlinearVariationalProblem(problem.F, problem.up, Jp=problem.aP,
-                                                          bcs=problem.bcs)
-        problem.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
-                                                        nullspace=problem.nullspace,
-                                                        solver_parameters=problem.parameters)
-        ContinuationProblem = LinearVariationalProblem(problem.LHS,problem.RHS,problem.dupdadvswitch,aP = problem.aP, bcs = problem.bcs)
-        problem.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=problem.nullspace, solver_parameters = problem.parameters)
+        navierstokesproblem = NonlinearVariationalProblem(self.F, self.up, Jp=self.aP,
+                                                          bcs=self.bcs)
+        self.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
+                                                        nullspace=self.nullspace,
+                                                        solver_parameters=self.parameters)
+        ContinuationProblem = LinearVariationalProblem(self.LHS,self.RHS,self.dupdadvswitch,aP = self.aP, bcs = self.bcs)
+        self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
 
 
 
