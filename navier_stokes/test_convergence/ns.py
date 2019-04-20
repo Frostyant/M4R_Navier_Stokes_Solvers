@@ -35,7 +35,7 @@ for it,n in enumerate(Ns):
     Fadv = Function(V)
     Fadv.project(F_adv)
 
-    problem = rins.rinsp(mesh,u_0,W,x,y,F = F,AdvectionForcing = Fadv,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
+    problem = rins.rinsp(mesh,u_0,W,x,y,F = F + F_adv,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
     #Adding pressure boundary conditions
     problem.bcs = problem.bcs + tuple([DirichletBC(problem.W.sub(1), p_0, id) for id in [1,2,3,4]])
     problem.UpdateProblem()
