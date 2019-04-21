@@ -21,13 +21,13 @@ for it,n in enumerate(Ns):
     W = V * Q
     #u_0 = as_vector([-x*sin(2*pi*x*y),y*sin(2*pi*x*y)])
     #p_0 = sin(x*y)
-    u_0 = as_vector([sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2,-sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2])
+    u_0 = as_vector([-sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
     p_0 = Constant(0)*sin(2*pi*x)**2*sin(2*pi*y)**2
     p_x = p_0.dx(0)
     p_y = p_0.dx(1)
     u_xx = u_0.dx(0).dx(0)
     u_yy = u_0.dx(1).dx(1)
-    F_ = as_vector([ -mu*(u_xx[0] + u_yy[0]) , -mu*(u_xx[1] + u_yy[1]) ])
+    F_ = as_vector([p_x -mu*(u_xx[0] + u_yy[0]) , p_y -mu*(u_xx[1] + u_yy[1]) ])
     F = Function(V)
     F.project(F_)
 
