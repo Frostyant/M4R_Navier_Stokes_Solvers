@@ -20,7 +20,7 @@ for it,n in enumerate(Ns):
     Q = FunctionSpace(mesh, "DG", 1)
     W = V * Q
     u_0 = as_vector([sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,-sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
-    p_0 = Constant(10)*sin(2*pi*x)**2*sin(2*pi*y)**2
+    p_0 = Constant(1)*sin(2*pi*x)**2*sin(2*pi*y)**2
     p_x = p_0.dx(0)
     p_y = p_0.dx(1)
     u_x = u_0.dx(0)
@@ -35,7 +35,7 @@ for it,n in enumerate(Ns):
     Fadv = Function(V)
     Fadv.project(F_adv)
 
-    problem = rins.rinsp(mesh,u_0,W,x,y,F = F - F_adv,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
+    problem = rins.rinsp(mesh,u_0,W,x,y,F = F + F_adv,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
     #Adding pressure boundary conditions
     bc1 = DirichletBC(W.sub(0), u_0, 1)
     bc1p = DirichletBC(W.sub(1), p_0, 1)
@@ -45,8 +45,14 @@ for it,n in enumerate(Ns):
     bc3p = DirichletBC(W.sub(1), p_0, 3)
     bc4 = DirichletBC(W.sub(0), u_0, 4)
     bc4p = DirichletBC(W.sub(1), p_0, 4)
-    problem.bcs = (bc1,bc1p,bc2,bc2p,bc3,bc3p,bc4,bc4p)
-    problem.UpdateProblem()
+    bcs = (bc1,bc1p,bc2,bc2p,bc3,bc3p,bc4,bc4p)
+    navierstokesproblem = NonlinearVariationalProblem(problem.F, problem.up, Jp=problem.aP,
+                                                      bcs=bcs)
+    problem.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
+                                                    nullspace=problem.nullspace,
+                                                    solver_parameters=problem.parameters)
+    ContinuationProblem = LinearVariationalProblem(problem.LHS,problem.RHS,problem.dupdadvswitch,aP = problem.aP, bcs = bcs)
+    problem.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=problem.nullspace, solver_parameters = problem.parameters)
     problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = False)
     print("Reynolds Number =")
     print(problem.R)
