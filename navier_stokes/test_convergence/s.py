@@ -78,3 +78,9 @@ valfile = open("stokes_error.txt","w+")
 errorstring = ';'.join(str(e) for e in errors)
 valfile.write(errorstring)
 valfile.close()
+
+#saving exact values of the error
+valfile2 = open("stokes_pressure_error.txt","w+")
+errorstring2 = ';'.join(str(e) for e in ep)
+valfile2.write(errorstring2)
+valfile2.close()
