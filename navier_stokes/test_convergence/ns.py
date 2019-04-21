@@ -37,7 +37,15 @@ for it,n in enumerate(Ns):
 
     problem = rins.rinsp(mesh,u_0,W,x,y,F = F - F_adv,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
     #Adding pressure boundary conditions
-    problem.bcs = problem.bcs + tuple([DirichletBC(problem.W.sub(1), p_0, id) for id in [1,2,3,4]])
+    bc1 = DirichletBC(W.sub(0), u_0, 1)
+    bc1p = DirichletBC(W.sub(1), p_0, 1)
+    bc2 = DirichletBC(W.sub(0), u_0, 2)
+    bc2p = DirichletBC(W.sub(1), p_0, 2)
+    bc3 = DirichletBC(W.sub(1), p_0, 3)
+    bc3p = DirichletBC(W.sub(1), p_0, 3)
+    bc4 = DirichletBC(W.sub(0), u_0, 4)
+    bc4p = DirichletBC(W.sub(1), p_0, 4)
+    problem.bcs = (bc1,bc1p,bc2,bc2p,bc3,bc3p,bc4,bc4p)
     problem.UpdateProblem()
     problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = False)
     print("Reynolds Number =")
