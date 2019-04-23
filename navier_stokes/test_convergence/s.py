@@ -65,7 +65,7 @@ u -= uexact
 p -= pexact
 u.rename("velocity error")
 p.rename("pressure error")
-ufile.write(u)
+ufile.write(u,p)
 
 #plotting true solution in space
 truefile = File("true.pvd")
