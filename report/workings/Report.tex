@@ -20,7 +20,7 @@ u \cdot \nabla u &= -\nabla p + \mu \nabla^2 u + F \\
 \end{align}
 Not that from working in the $H_{div}$ space the second equation is naturally satisfied globally.
 \\
-First we will describe the classic Finite Element Method, its advantages and disadvantages, hence explaining why we are using a modified method. Secondly we will explain a number of definitions and tools used in the project and which may be unfamiliar to some readers. Then we will show how to find the weak form of the equations and built different parts of our solvers. Lastly we will consider some example cases and deduce that the algorithm converges to the right result at satisfactory rates.\\
+First we will describe the classic Finite Element Method, its advantages and disadvantages, hence explaining why we are using a modified method. Secondly we will explain a number of definitions and tools used in the project and which may be unfamiliar to some readers. Then we will show how to find the weak form of the equations and build different parts of our solvers. Lastly we will consider some example cases and deduce that the algorithm converges to the right result at satisfactory rates.\\
 
 
 \section{Classic Finite Elements Method}
@@ -95,7 +95,6 @@ In general the weak form will be far more involved.
 \subsection{Discontinous Galerkin and BDM-DG Mixed Space}
 The discontinous Galerkin Element space is the space of piecewise linear continuous functions.\\
 Combined with the BDM space we obtain a mixed finite element space which approximates the $H_{div}$ finite element space.\\
-Past research has shown [15]
 
 \subsection{Newton's Method}
 
@@ -282,9 +281,9 @@ Optionally we could afterwards use the method we described first, Newton's metho
 u^{n+1} - u^n + \Delta t (\frac{1}{2}F(u^n,p^n) + \frac{1}{2} F(u^{n+1},p^{n+1})) = 0
 \end{align}
 
-\subsection{Stability Analysis}
+\subsection{Perturbation}
 
-When interested in the stability of a solution analytically we commonly first determine the solution. We would then consider the normal modes form of the equation before perturbing it. After some algebra we determin the most unstable mode and deduce from that.\\
+When interested in the stability of a solution analytically we commonly first determine the solution. We would then consider the normal modes form of the equation before perturbing it. After some algebra we determine the most unstable mode and deduce from that.\\
 While there are methods to determine these unstable modes numerically we will not use either of these methods here.\\
 Instead we will use a far simpler algorithm.
 We will consider random perturbations and then use the time stepping method to see if they grow.
@@ -323,9 +322,11 @@ Here we get figures and, as expected.\\
 Note that we did not reuse the manufactured solution from the stokes convergence test for non-zero boundary conditions, as a matter of fact applying those we get figures and  for velocity and pressure. These show non-convergence, which is confirmed when considering the error graph in space in figure.\\
 While this might have indicated some error in the solver it turns out this is to be expected. In this scenario the equation is ill-posed. The exact reason is unkown, as this is still an active field of research. However a rule of thumb is that if you have dirichelet outflow the equation is ill-posed. An intuitive way of explaining this is that if we were to expand our domain the out of bounds flow might still be able to affect the flow in the computational domain (for instance trailing vorticies) in ways that we would thus not be able to capture if this region was excluded. 
 
-\subsection{Known Case : Flow between two rotating circles}
+\subsection{Known Case : Flow between concentric circles}
 
-We will study this relatively simple problem as means to demonstrate the ability of our solver to work even on non-uniform arbitrary meshes. 
+We will study this relatively simple problem as means to demonstrate the ability of our solver to work even on non-uniform arbitrary meshes and solve an unsteady problem.\\
+The problem takes place in the annulus between two concentric circles each rotating at a different speed. For our steady case we will consider the inner one rotating at speed $1$ and the outer one rotating at speed $3$. Figures show pressure and velocity in this case.\\
+Now consider the outer circle initially immobile, but slowly accelerating until it reaches tangential speed of $3$. The velocity solution at different time steps is shown in figures.
 
 \subsection{Known Case : Flow Past a Cylinder}
 
