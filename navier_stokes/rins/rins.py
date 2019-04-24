@@ -6,8 +6,8 @@ import math
 class rinsp:
     """A Navier-Stokes Problem with an efficient pre-build solver using Hdiv"""
 
-    def __init__(self, mesh,u_0,W,x,y,z = 0, F = Constant(as_vector([0,0])),viscosity = 1,AdvectionSwitchStep = 1,
-    gamma = (10**4.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False,twoD=True):
+    def __init__(self, mesh,u_0,W,x,y,z = 0,p_0 = Constant(0), F = Constant(as_vector([0,0])),viscosity = 1,AdvectionSwitchStep = 1,
+    gamma = (10**4.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False, PDbcIds = False,twoD=True):
         """ Creats rinsp object
         Keyword arguments:
         mesh -- mesh on which the problem is.
@@ -23,13 +23,14 @@ class rinsp:
         gamma -- A constant, the higher it is the more effecient the linear solver becomes, default is 10**10.
         AverageVelocity -- Average velocity for system, used for determining Reynolds number, default 1.
         LengthScale -- Length Scale for system, used for determining Reynolds number, default 1.
-        BcIds -- Ids for Boundaries on which we apply weak conditions. At default 0 we apply to ALL boundaries. If BcIds and dbcIds are 0 then we assume this is a square.
-        DbcIds -- IDs for Boundaries on which we apply strong conditions. At default 0 we just use BcIds instead. If BcIds and dbcIds are 0 then we assume this is a square.
+        BcIds -- Ids for Boundaries on which we apply weak conditions. At default False we apply to NO boundaries.
+        DbcIds -- IDs for Boundaries on which we apply strong conditions. At default False we just use BcIds instead for Dirichelet Boundaries.
         """
 
         #setting up basic class attributes
         self.mesh = mesh
         self.u_0 = u_0
+        self.p_0 = p_0
         self.viscosity = Constant(viscosity)
         self.AdvectionSwitchStep = AdvectionSwitchStep
         self.gamma = Constant(gamma)
@@ -40,7 +41,6 @@ class rinsp:
         self.AverageVelocity = Constant(AverageVelocity)
         self.R = LengthScale*AverageVelocity/viscosity
         self.BcIds = BcIds
-        self.DbcIds = DbcIds
         self.twoD = twoD
         AverageVelocity = self.AverageVelocity
         AdvectionSwitchStep = self.AdvectionSwitchStep
@@ -68,10 +68,10 @@ class rinsp:
         #setting up dirichelet boundary conditions
         if(DbcIds != False):
             #using DbcIds
-            self.dbc(DbcIds)
+            self.dbc(DbcIds,PDbcIds)
         else:
             #using BcIDs, which are the IDs used for weak boundaries
-            self.dbc(BcIds)
+            self.dbc(BcIds,PDbcIds)
         n = FacetNormal(mesh)
         # Removing Pressure constant
         self.nullspace = MixedVectorSpaceBasis(
@@ -194,22 +194,19 @@ class rinsp:
             self.parameters["ksp_converged_reason"] = True
 
 
-    def dbc(self,Ids):
-        #sets up dirichelet boundary conditions
+    def dbc(self,Ids,PIds):
+        """
+        Sets up dirichelet boundary conditions
+        """
 
-        if isinstance(Ids,int):
-            #this is just to avoid uneccessary bugs, can input integer instead of tuple
-            bcs = [DirichletBC(self.W.sub(0), self.u_0, Ids)]
-        else:
-            if Ids != False:
-                bcs = [0,]*len(Ids)
-            else:
-                #if Ids = 0 we assume this is a square where Dirichelet conditions are imposed on all boundaries
-                bcs = [0,]*4
-                Ids = (1,2,3,4)
-
+        if Ids != False:
+            bcs = [0,]*len(Ids)
             for it,id in enumerate(Ids):
                 bcs[it] = DirichletBC(self.W.sub(0), self.u_0, id)
+
+        if PIds != False:
+            for id in Ids:
+                bcs.append(DirichletBC(self.W.sub(1), self.p_0, id))
 
         self.bcs = tuple(bcs)
 
@@ -328,7 +325,6 @@ class rinspt(rinsp):
         self.t=t
         #boundary ids
         self.BcIds = BcIds
-        self.DbcIds = DbcIds
         self.DeltaT = Constant(1)
         rinsp.__init__(self, mesh,u_0,W,x,y,viscosity = viscosity,AdvectionSwitchStep = AdvectionSwitchStep,
          gamma = gamma,AverageVelocity = AverageVelocity,LengthScale = LengthScale,BcIds = BcIds,DbcIds = DbcIds)

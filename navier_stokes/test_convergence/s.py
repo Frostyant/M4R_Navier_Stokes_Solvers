@@ -31,7 +31,7 @@ for it,n in enumerate(Ns):
     F = Function(V)
     F.project(F_)
 
-    problem = rins.rinsp(mesh,u_0,W,x,y,F = F,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
+    problem = rins.rinsp(mesh,u_0,W,x,y,p_0 = p_0, F = F,viscosity = mu,BcIds = (1,2,3,4), PDbcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
     problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = True)
     print("Reynolds Number =")
     print(problem.R)

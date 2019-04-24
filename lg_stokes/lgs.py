@@ -12,6 +12,7 @@ for it,n in enumerate(Ns):
     V = VectorFunctionSpace(mesh, "CG", 2)
     Q = FunctionSpace(mesh, "CG", 1)
     W = V*Q
+    mu = Constant(1)
 
     u_0 = as_vector([sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,-sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
     p_0 = Constant(1)*sin(2*pi*x)**2*sin(2*pi*y)**2
