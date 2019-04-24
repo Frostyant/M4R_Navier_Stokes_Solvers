@@ -1,4 +1,7 @@
 from firedrake import *
+from matplotlib import *
+import numpy as np
+import matplotlib.pyplot as plt
 
 Ns = [2**(n+3) for n in range(5)]
 errors = [0]*len(Ns)
