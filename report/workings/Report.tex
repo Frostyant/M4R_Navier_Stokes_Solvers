@@ -31,7 +31,6 @@ We will now consider the case of applying the FEM to the stokes equations using 
 0 &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
 \end{align}
-\end{equation}
 As seen in Common and Unusual Finite Elements [7], the lagrange finite element approximates a function on a cell using polynomials of degree $q$ defined by their pointwise values at an array of points (such as a uniform lattice).\\
 For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first order lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points in it, the two edge points. Hence we get figure 1, where the blue curve indicates our approximation and the red one the exact function. In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
 \begin{figure}
@@ -39,27 +38,27 @@ For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first 
   \caption{4 element First Order Interpolation Example}
 \end{figure}
 \\
-It follows that we first cut up our domain into a mesh. Commonly these meshes are made up of triangles for simplicity, although squares or even curved elements for simulations on a sphere are also used. Then we approximate $u$ and $p$ using the lagrange element. Hence we get that for instance $u$ is the sum of a set of known piecewise linear functions (as they are determined by the mesh) but with unknown coeffecients. The aim of the rest of the method is to determine these unknown coefficients.\\
+It follows that we first cut up our domain into a mesh. Commonly these meshes are made up of triangles for simplicity, although squares or even curved elements for simulations on a sphere are also used. Then we approximate $u$ and $p$ using the lagrange element. Hence we get that for instance $u$ is the sum of a set of known piecewise linear functions (as they are determined by the mesh) but with unknown coefficients. The aim of the rest of the method is to determine these unknown coefficients.\\
 For that end we need to find what is called the weak form of the equation. We multiply (3) by an arbitrary function $v$. Hence we get :
 \begin{align*}
 \int_{\omega} -v \cdot \nabla p + \mu v \cdot \nabla^2 u dx = -\int_{\omega} v \cdot F dx
 \end{align*}
 Since our domain $\omega$ is cut out into triangles we can cut the integral into triangles and work on each one individually. Hence for each cell $c$ in $\omega$ we get : 
 \begin{align*}
-\int_{c} - p \nabla \cdot v + \mu v \cdot \nabla^2 u dx =  -\int_{c} v \cdot F dx
+\int_{c} p \nabla \cdot v + \mu v \cdot \nabla^2 u dx =  -\int_{c} v \cdot F dx
 \end{align*}
 However since $u$ and $v$ will be approximated by functions which may be discontinuous in their derivatives $\nabla^2$ may not be defined. Hence we need to use integration by parts to get :  
 \begin{align*}
-\int_{c} - p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx = -\int_{c} v \cdot F dx
+\int_{c} p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx = -\int_{c} v \cdot F dx
 \end{align*}
 Finally multiplying (4) by a similar pressure test function $q$ and adding it to the left hand side of the above we get :
 \begin{align}
-\int_{c} - p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx + \int_{c} q \nabla \cdot u dx = -\int_{c} v \cdot F dx
+\int_{c} p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx + \int_{c} q \nabla \cdot u dx = -\int_{c} v \cdot F dx
 \end{align}
 Now we use the fact that $q$, $v$, $F$, $u$ and $p$ are a sum of known linear functions and coefficients.\\
 Pulling out and removing the coefficients of $v$ we get that :
 \begin{align*}
- \int_{c} \sum_i \sum_j ( - p_j \phi_j \nabla  \cdot \Phi_i + \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = -\int_{c} \sum_i \phi_i F_i \phi_i dx
+ \int_{c} \sum_i \sum_j (  p_j \phi_j \nabla  \cdot \Phi_i + \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = -\int_{c} \sum_i \phi_i F_i \phi_i dx
 \end{align*}
 Combining all the triangles we can eventually turn our problem into a matrix equation of the form :
 \begin{align}
@@ -143,7 +142,7 @@ $$
 \section{Implementing the $H_{div}$ Solver}
 Since we have two problem terms we will deal with each separately. Hence we will first consider the stokes equation, ignoring the advection term and focusing on the viscosity term for now :
 \begin{align}
-0 &= -\nabla p + \mu \nabla^2 u  \\
+0 &= -\nabla p + \mu \nabla^2 u + F  \\
 \nabla \cdot u &= 0
 \end{align}
 
@@ -152,17 +151,16 @@ We start off by cutting our computational domain $\Omega$ into a set of cells $e
 For this purpose let us introduce two test functions, $w$ in BDM for velocity and $q$ in DG for pressure.
 Let us multiply equation (9) by $w$ and integrate over the domain as seen in the first section.
 \begin{align*}
-F &= \nabla p - \mu \nabla^2 u \\
 \int_\Omega w \cdot F dx &= \int_\Omega (w \cdot \nabla p) dx - \int_\Omega (\mu w \cdot \nabla^2 u) dx
 \end{align*}
 
-For simplicity and sparsness of the resulting matrix we will work on each cell $e$ individually : 
+Again we will work on each cell $e$ individually and them sum it all up : 
 \begin{align*}
-\int_e\Omega w \cdot F dx &= \int_e (w \cdot \nabla p) dx - \int_e (\mu w \cdot \nabla^2 u) dx
+\int_e w \cdot F dx &= \int_e (w \cdot \nabla p) dx - \int_e (\mu w \cdot \nabla^2 u) dx
 \end{align*}
 Focusing on the viscosity, or second, term we get via integration by parts :
 \begin{align*}
-\int_e (w \cdot \nabla^2 u) dx = - \sum_e \int_e \nabla_h(w) : \nabla_h(u) dx + \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS
+\int_e (w \cdot \nabla^2 u) dx = - \int_e \nabla_h(w) : \nabla_h(u) dx + \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS
 \end{align*}
 The first term can be summed up to an integral over $\Omega$ and the second one is asymmetrical. We can add a term to make it symetrical. This helps with numerical stability of the final matrix equation. Additionally some linear solver take advantage of this structure.
 \begin{align*}
