@@ -268,12 +268,11 @@ class rinsp:
         viscous_byparts2 = 2*inner(avg(outer(self.v,n)),avg(grad(u)))*dS #this the term over interior surfaces from integration by parts
         viscous_symetry = 2*inner(avg(outer(u,n)),avg(grad(self.v)))*dS #this the term ensures symetry while not changing the continuous equation
         viscous_stab = c*1/(h)*inner(jump(self.v),jump(u))*dS #stabilizes the equation
-        #Note NatBc turns these terms off, otherwise it is 1
         if self.BcIds == False:
-            viscous_byparts2_ext = (inner(outer(self.v,n),grad(u)) + inner(outer(u,n),grad(self.v)))*ds #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
+            viscous_byparts2_ext = (inner(outer(self.v,n),grad(u)) + inner(outer(u,n),grad(self.v)))*ds #This deals with boundaries
             viscous_ext =c/(h)*inner(self.v,u)*ds#this is a penalty term for the boundaries
         else:
-            viscous_byparts2_ext = (inner(outer(self.v,n),grad(u)) + inner(outer(u,n),grad(self.v)))*ds(self.BcIds) #This deals with boundaries TOFIX : CONSIDER NON-0 BDARIEs
+            viscous_byparts2_ext = (inner(outer(self.v,n),grad(u)) + inner(outer(u,n),grad(self.v)))*ds(self.BcIds) #This deals with boundaries
             viscous_ext =c/(h)*inner(self.v,u)*ds(self.BcIds)#this is a penalty term for the boundaries
         #Assembling Viscous Term
         viscous_term = self.viscosity*(

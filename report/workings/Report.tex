@@ -43,22 +43,22 @@ For that end we need to find what is called the weak form of the equation. We mu
 \begin{align*}
 \int_{\omega} -v \cdot \nabla p + \mu v \cdot \nabla^2 u dx = -\int_{\omega} v \cdot F dx
 \end{align*}
-Since our domain $\omega$ is cut out into triangles we can cut the integral into triangles and work on each one individually. Hence for each cell $c$ in $\omega$ we get : 
+Since our domain $\omega$ is cut out into triangles we can cut the integral into triangles and work on each one individually. Hence for each cell $e$ in $\omega$ we get : 
 \begin{align*}
-\int_{c} p \nabla \cdot v + \mu v \cdot \nabla^2 u dx =  -\int_{c} v \cdot F dx
+\int_{e} p \nabla \cdot v + \mu v \cdot \nabla^2 u dx =  -\int_{e} v \cdot F dx
 \end{align*}
 However since $u$ and $v$ will be approximated by functions which may be discontinuous in their derivatives $\nabla^2$ may not be defined. Hence we need to use integration by parts to get :  
 \begin{align*}
-\int_{c} p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx = -\int_{c} v \cdot F dx
+\int_{e} p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx = -\int_{e} v \cdot F dx
 \end{align*}
 Finally multiplying (4) by a similar pressure test function $q$ and adding it to the left hand side of the above we get :
 \begin{align}
-\int_{c} p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx + \int_{c} q \nabla \cdot u dx = -\int_{c} v \cdot F dx
+\int_{e} p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx + \int_{e} q \nabla \cdot u dx = -\int_{e} v \cdot F dx
 \end{align}
 Now we use the fact that $q$, $v$, $F$, $u$ and $p$ are a sum of known linear functions and coefficients.\\
 Pulling out and removing the coefficients of $v$ we get that :
 \begin{align*}
- \int_{c} \sum_i \sum_j (  p_j \phi_j \nabla  \cdot \Phi_i + \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = -\int_{c} \sum_i \phi_i F_i \phi_i dx
+ \int_{e} \sum_i \sum_j (  p_j \phi_j \nabla  \cdot \Phi_i + \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = -\int_{e} \sum_i \phi_i F_i \phi_i dx
 \end{align*}
 Combining all the triangles we can eventually turn our problem into a matrix equation of the form :
 \begin{align}
@@ -138,6 +138,20 @@ $$
 P^{-1}(Mx-b) = 0
 $$ 
 
+\subsection{Notation}
+
+Let $\{ a \} = a_+ + a_-$. \\
+This is an average term. Due to discontinuities of our space on facette elements integrals over facets from integration by parts on an individual element will not dissappear necessarily, hence these terms remain. Additionally, since we cannot use dirichelet boundary conditions, weak penalty terms will also use this operation.\\
+When the mesh is setup the program ensures each facette of each cell has a positive and negative side. Whenever we call this term on a facette integral it thus follows the formula above, where $a_+$ is the value of $a$ on the positive side $a_-$ on the negative side.\\
+For integrals over outer facettes we explicitly write out the formula for clarity.\\
+\\
+Simliarly $J(a) = a_+ - a_-$\\
+This is a jump term. Note that this operation is $0$ is continuous space, which is where we assume the real-world fluids velocity and pressures to be.\\
+\\
+We may have surface integrals over interior facettes and exterior facettes, which are oun the computational boundaries.\\
+In the first case the integral of $a$ is $\int_\Gamma a dS$ while in the latter we note $\int_{\delta \Omega} a ds$.\\
+This is used both for clarity and because it is the actual notation in the code.
+
 
 \section{Implementing the $H_{div}$ Solver}
 Since we have two problem terms we will deal with each separately. Hence we will first consider the stokes equation, ignoring the advection term and focusing on the viscosity term for now :
@@ -149,40 +163,41 @@ Since we have two problem terms we will deal with each separately. Hence we will
 \subsection{Stokes Equation}
 We start off by cutting our computational domain $\Omega$ into a set of cells $e$. As discussed above it is now required to find the weak form of equations (9) and (10).
 For this purpose let us introduce two test functions, $w$ in BDM for velocity and $q$ in DG for pressure.
-Let us multiply equation (9) by $w$ and integrate over the domain as seen in the first section.
+Let us multiply equation (9) by $v$ and integrate over the domain as seen in the first section.
 \begin{align*}
-\int_\Omega w \cdot F dx &= \int_\Omega (w \cdot \nabla p) dx - \int_\Omega (\mu w \cdot \nabla^2 u) dx
+\int_\Omega v \cdot F dx &= \int_\Omega (v \cdot \nabla p) dx - \int_\Omega (\mu v \cdot \nabla^2 u) dx
 \end{align*}
 
-Again we will work on each cell $e$ individually and them sum it all up : 
+Again we can work on each cell $e$ individually and them sum it all up, hence get :
 \begin{align*}
-\int_e w \cdot F dx &= \int_e (w \cdot \nabla p) dx - \int_e (\mu w \cdot \nabla^2 u) dx
+\sum_e \int_e v \cdot F dx &= \sum_e (\int_e (v \cdot \nabla p) dx - \int_e (\mu v \cdot \nabla^2 u) dx)
 \end{align*}
 Focusing on the viscosity, or second, term we get via integration by parts :
 \begin{align*}
-\int_e (w \cdot \nabla^2 u) dx = - \int_e \nabla_h(w) : \nabla_h(u) dx + \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS
+\int_e (v \cdot \nabla^2 u) dx = - \int_e \nabla_h(v) : \nabla_h(u) dx + \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS
 \end{align*}
-The first term can be summed up to an integral over $\Omega$ and the second one is asymmetrical. We can add a term to make it symetrical. This helps with numerical stability of the final matrix equation. Additionally some linear solver take advantage of this structure.
+Where the $\Gamma$ is an integration over the surface of the element.\\
+The first term can be summed up to an integral over $\Omega$ and the second one is asymmetrical. We can add a term to make it symetrical. This helps with numerical stability of the final matrix equation. Additionally some linear solvers take advantage of this structure.
 \begin{align*}
--  \int_\Omega \nabla_h(w) : \nabla_h(u) dx + \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial w_i}{\partial x_j}\} dS
+-  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e( \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial v_i}{\partial x_j}\} dS)
 \end{align*}
 $u$ should be continous in the solution space thus the $ \{ u_i n_j \}$ term will cancel out. Hence this does not change the equation.\\
 \\
-Now we also add the term $\alpha \int_\Gamma \frac{1}{h}  J(w_i) J(u_i) dS$. According to sources [3] provided that  $\alpha$ is larger than $10$ numerical stability is increased.\\
-$J$ indicates a jump between the two cells. The numerical value of $h$ is the average distance of a side.In our case we defined it as the average cell-volume over the length of the facettes between them for each individual facette element $\Gamma$.\\
+Now we also add the term $\alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS$. According to sources [3] provided that  $\alpha$ is larger than $10$ numerical stability is increased.\\
+$J$ is the jump notation. The numerical value of $h$ is the average distance of a side.In our case we defined it as the average cell-volume over the length of the facettes between them for each individual facette element $\Gamma$.\\
 The $J(u_i)$ term makes this integral $0$ in continous space so this does not change the solution.\\
 \\
 As mentioned in the BDM definition section we cannot set the tangential component of a dirichelet boundary condition in the conventional finite element manner.  So instead we use penalty terms, which should be $0$ and thus push the solution towards respecting the boundary conditions. In practice this just means taking all the terms over the edge of a cell and considering them on the edge of the domain instead.\\
  Hence our final viscous term becomes :\\
 \begin{align*}
-&-  \int_\Omega \nabla_h(w) : \nabla_h(u) dx + \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial w_i}{\partial x_j}\} dS \\
-&+ \alpha \int_\Gamma \frac{1}{h}  j(w_i) j(u_i) dS + \int_{\partial  \Omega} w_i n_j \frac{u_i - u^0_i}{x_j} + (u_i - u^0_i) n_j\frac{w_i}{x_j} ds + \alpha \int_{\partial \Omega} \frac{1}{h} w_i(u_i-u^0_i)ds
+&-  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial w_i}{\partial x_j}\} dS \\
+&+ \alpha \int_\Gamma \frac{1}{h}  j(v_i) j(u_i) dS + \int_{\partial  \Omega} v_i n_j \frac{u_i - u^0_i}{x_j} + (u_i - u^0_i) n_j\frac{w_i}{x_j} ds + \alpha \int_{\partial \Omega} \frac{1}{h} v_i(u_i-u^0_i)ds
 \end{align*}
 Where $u^0_i$ are the boundary values.
-We will call this term $v_\mu$.\\
+We will call this term $\eta_\mu$.\\
 Back to our original equation we get : 
 \begin{align}
-\int_\Omega w \cdot F dx &= \int_\Omega (w \cdot \nabla p) dx - v_\mu
+\int_\Omega v \cdot F dx &= \int_\Omega v \cdot \nabla p) dx - \eta_\mu
 \end{align}
 Let us consider the continuity equation again :
 \begin{align*}
@@ -196,7 +211,7 @@ This is $0$, so we add it to the weak formulation $(3)$ we obtained, getting one
 We need this since we want to turn the entire system into a single matrix equation which includes all the conditions.\\
 Additionally we can use some basic vector identities to get our weak equation for the stokes problem :
 \begin{align}
-\int_\Omega w \cdot F dx &= \int_\Omega (\nabla \cdot (p w)) dx - \int_\Omega ( p \nabla \cdot (w)) dx + \int_\Omega q (\nabla \cdot u) dx  - v_\mu
+\int_\Omega v \cdot F dx &= \int_\Omega (\nabla \cdot (p v)) dx - \int_\Omega ( p \nabla \cdot (v)) dx + \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu
 \end{align}
 
 \subsection{Applying the Schur Preconditioner to our problem}
