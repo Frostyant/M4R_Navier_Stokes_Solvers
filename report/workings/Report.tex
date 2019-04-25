@@ -26,21 +26,11 @@ First we will describe the classic Finite Element Method, its advantages and dis
 \section{Classic Finite Elements Method}
 The finite element method (FEM) is a numerical method which approximates the solution to an exact partial differential equation [5]. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and this project.\\
 \\
-We will now consider the case of applying the FEM to the stokes equations using the more classic lagrange finite element. We will specifically consider a test case created by the method of manufactured solution.\\
+We will now consider the case of applying the FEM to the stokes equations using the more classic lagrange finite element.\\
 \begin{align}
-F &= -\nabla p + \mu \nabla^2 u\\
+0 &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
 \end{align}
-Using the boundary conditions are  $u = (u_0,u_1) = (e^{x y},e^{x y})$ on the edges of the unit square, our domain.\\
-It can easily be verified that the solution to this equation is :
-\begin{equation}
-\begin{aligned}
-	u_x & =  -cos(2 \pi x) sin(2 \pi y)\\
-	u_y & =  sin(2 \pi x) cos (2 \pi y)\\
-	p & = 0\\
-	F_x & =  - 4 \pi^2 cos(2 \pi x) cos(2 \pi y) + 4 \pi^2 sin(2 \pi x) sin(2 \pi y)\\
-	F_y & =    4 \pi^2 cos(2 \pi x) cos(2 \pi y)  - 4 \pi^2 sin(2 \pi x) sin(2 \pi y)    
-\end{aligned}
 \end{equation}
 As seen in Common and Unusual Finite Elements [7], the lagrange finite element approximates a function on a cell using polynomials of degree $q$ defined by their pointwise values at an array of points (such as a uniform lattice).\\
 For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first order lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points in it, the two edge points. Hence we get figure 1, where the blue curve indicates our approximation and the red one the exact function. In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
@@ -52,24 +42,24 @@ For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first 
 It follows that we first cut up our domain into a mesh. Commonly these meshes are made up of triangles for simplicity, although squares or even curved elements for simulations on a sphere are also used. Then we approximate $u$ and $p$ using the lagrange element. Hence we get that for instance $u$ is the sum of a set of known piecewise linear functions (as they are determined by the mesh) but with unknown coeffecients. The aim of the rest of the method is to determine these unknown coefficients.\\
 For that end we need to find what is called the weak form of the equation. We multiply (3) by an arbitrary function $v$. Hence we get :
 \begin{align*}
-\int_{\omega} -v \cdot \nabla p + \mu v \cdot \nabla^2 u dx = \int_{\omega} v \cdot F dx
+\int_{\omega} -v \cdot \nabla p + \mu v \cdot \nabla^2 u dx = -\int_{\omega} v \cdot F dx
 \end{align*}
 Since our domain $\omega$ is cut out into triangles we can cut the integral into triangles and work on each one individually. Hence for each cell $c$ in $\omega$ we get : 
 \begin{align*}
-\int_{c} - p \nabla \cdot v + \mu v \cdot \nabla^2 u dx =  \int_{c} v \cdot F dx
+\int_{c} - p \nabla \cdot v + \mu v \cdot \nabla^2 u dx =  -\int_{c} v \cdot F dx
 \end{align*}
 However since $u$ and $v$ will be approximated by functions which may be discontinuous in their derivatives $\nabla^2$ may not be defined. Hence we need to use integration by parts to get :  
 \begin{align*}
-\int_{c} - p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx = \int_{c} v \cdot F dx
+\int_{c} - p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx = -\int_{c} v \cdot F dx
 \end{align*}
 Finally multiplying (4) by a similar pressure test function $q$ and adding it to the left hand side of the above we get :
 \begin{align}
-\int_{c} - p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx + \int_{c} q \nabla \cdot u dx = \int_{c} v \cdot F dx
+\int_{c} - p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx + \int_{c} q \nabla \cdot u dx = -\int_{c} v \cdot F dx
 \end{align}
 Now we use the fact that $q$, $v$, $F$, $u$ and $p$ are a sum of known linear functions and coefficients.\\
 Pulling out and removing the coefficients of $v$ we get that :
 \begin{align*}
- \int_{c} \sum_i \sum_j ( - p_j \phi_j \nabla  \cdot \Phi_i + \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = \int_{c} \sum_i \phi_i F_i \phi_i dx
+ \int_{c} \sum_i \sum_j ( - p_j \phi_j \nabla  \cdot \Phi_i + \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = -\int_{c} \sum_i \phi_i F_i \phi_i dx
 \end{align*}
 Combining all the triangles we can eventually turn our problem into a matrix equation of the form :
 \begin{align}
@@ -77,7 +67,15 @@ M x = b
 \end{align}
 Where x is a vector of coefficients of $u$ and $p$.\\
 We can solve this using a variety of linear systems solvers. Note in particular that since the majority of basis functions $\Phi$ and $\phi$ are $0$ in any given triangle the matrix $M$ will be sparse.\\
-While we locally enforced the divergence-free equation by including it in the weak form, the global flow may not be divergence-free. In order to achieve that more complex mathematical tools would be required.
+While we locally enforced the divergence-free equation by including it in the weak form, the global flow may not be divergence-free. In order to achieve that more complex mathematical tools would be required.\\
+Now apply this to the manufactured solution :
+\begin{align*}
+u_x &=  sin(2 \pi y) cos(2 \pi y)  sin(2 \pi x)^2 \\
+u_y &= -sin(2 \pi x) cos(2 \pi x)  sin(2 \pi y)^2 \\
+p = sin(2 \pi x)^2 sin(2 \pi y)^2 \\
+F = \nabla p - \mu \nabla^2 u
+\end{align*}
+Where $F$ was selected specifically to ensure that any given $u$ and $p$ are solutions.
 Using the above and implementing it in firedrake we get figures .On a mesh with vertices we get an error of about.
 
 \section{Tools and Definitions}
@@ -325,7 +323,18 @@ While this might have indicated some error in the solver it turns out this is to
 \subsection{Known Case : Flow between concentric circles}
 
 We will study this relatively simple problem as means to demonstrate the ability of our solver to work even on non-uniform arbitrary meshes and solve an unsteady problem.\\
-The problem takes place in the annulus between two concentric circles each rotating at a different speed. For our steady case we will consider the inner one rotating at speed $1$ and the outer one rotating at speed $3$. Figures show pressure and velocity in this case.\\
+The problem takes place in the annulus between two concentric circles each rotating at a different speed. For our steady case we will consider unit circle rotating at speed $1$ and circle of radius $2$ rotating at speed $3$. 
+From [16] we get that the general solution of the tangential velocity and pressure for this problem is of the form :
+\begin{align}
+u_{\phi} = C_1 r + \frac{C_2}{r} \\
+p = \rho \int \frac{u_{\phi}^2}{r} dr + C
+\end{align}
+From the above boundary conditions are $u_{\phi}(r=1) = 1$, $u_{\phi}(r=2) = 3$. Hence get :
+\begin{align*}
+C_1 = 1 - C_2 
+\end{align*}
+Figures show pressure and velocity in this case.\\
+
 Now consider the outer circle initially immobile, but slowly accelerating until it reaches tangential speed of $3$. The velocity solution at different time steps is shown in figures.
 
 \subsection{Known Case : Flow Past a Cylinder}
@@ -379,7 +388,9 @@ https://doi.org/10.1016/j.cam.2005.11.037.\\
 
 [14] Hashiguchi, Masanori \& Kuwahara, Kunio. (1996). Two-Dimensional Study of Flow past a Circular Cylinder. RIMS Kokyuroku. 974. \\
 
-[15] Cockburn B, Kanschat G, Schötzau D. A note on discontinuous galerkin divergence-free solutions of the navier-stokes equations. Journal of Scientific Computing. 2007 Jun 1;31(1-2):61-73. https://doi.org/10.1007/s10915-006-9107-7
+[15] Cockburn B, Kanschat G, Schötzau D. A note on discontinuous galerkin divergence-free solutions of the navier-stokes equations. Journal of Scientific Computing. 2007 Jun 1;31(1-2):61-73. https://doi.org/10.1007/s10915-006-9107-7\\
+
+[16] Constantinescu V.N. (1995) \textit{Other Solutions of Navier-Stokes Equations (Steady Incompressible Flow).} In: Laminar Viscous Flow. Mechanical Engineering Series. Springer, New York, NY
 
 
 \end{document}

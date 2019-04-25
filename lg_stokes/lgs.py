@@ -45,11 +45,11 @@ for it,n in enumerate(Ns):
             W, [W.sub(0), VectorSpaceBasis(constant=True)])
 
     #setting up problem proper
-    LHS = inner(grad(u), grad(v)) * dx + div(v) * p * dx + q * div(u) * dx
-    RHS =  inner(v,F) * dx
+    LHS = inner(grad(u), grad(v)) * dx - div(v) * p * dx + q * div(u) * dx
+    RHS =  -inner(v,F) * dx
 
     # Form for use in constructing preconditioner matrix
-    aP = inner(grad(u), grad(v))*dx + p*q*dx
+    #aP = inner(grad(u), grad(v))*dx + p*q*dx
 
     parameters = {
         "ksp_type": "gmres",
@@ -67,7 +67,7 @@ for it,n in enumerate(Ns):
     }
 
     # assembling & solving
-    Problem = LinearVariationalProblem(LHS, RHS, up, aP=aP, bcs = bcs)
+    Problem = LinearVariationalProblem(LHS, RHS, up, bcs = bcs)
     Solver = LinearVariationalSolver(Problem, nullspace=nullspace,solver_parameters = parameters)
     Solver.solve()
 
