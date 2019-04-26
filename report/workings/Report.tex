@@ -145,12 +145,12 @@ This is an average term. Due to discontinuities of our space on facette elements
 When the mesh is setup the program ensures each facette of each cell has a positive and negative side. Whenever we call this term on a facette integral it thus follows the formula above, where $a_+$ is the value of $a$ on the positive side $a_-$ on the negative side.\\
 For integrals over outer facettes we explicitly write out the formula for clarity.\\
 \\
-Simliarly $J(a) = a_+ - a_-$\\
-This is a jump term. Note that this operation is $0$ is continuous space, which is where we assume the real-world fluids velocity and pressures to be.\\
+Similarly let $J(a) = a_+ - a_-$\\
+This is a jump term. Note that this operation is $0$ in continuous space, which is where we assume the physical fluid velocity and pressure to be.\\
 \\
-We may have surface integrals over interior facettes and exterior facettes, which are oun the computational boundaries.\\
+We may have surface integrals over interior facettes and exterior facettes, which are on the computational boundaries.\\
 In the first case the integral of $a$ is $\int_\Gamma a dS$ while in the latter we note $\int_{\delta \Omega} a ds$.\\
-This is used both for clarity and because it is the actual notation in the code.
+This is used both for additional clarity and because it is the notation in the code.
 
 
 \section{Implementing the $H_{div}$ Solver}
@@ -176,28 +176,29 @@ Focusing on the viscosity, or second, term we get via integration by parts :
 \begin{align*}
 \int_e (v \cdot \nabla^2 u) dx = - \int_e \nabla_h(v) : \nabla_h(u) dx + \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS
 \end{align*}
-Where the $\Gamma$ is an integration over the surface of the element.\\
-The first term can be summed up to an integral over $\Omega$ and the second one is asymmetrical. We can add a term to make it symetrical. This helps with numerical stability of the final matrix equation. Additionally some linear solvers take advantage of this structure.
+The first term can be summed up to an integral over $\Omega$ and the second one is asymmetrical. We can add a term to make it symetrical. This helps with numerical stability of the final matrix equation. Additionally some linear solvers take advantage of this structure.\\
+Hence this term becomes :
 \begin{align*}
 -  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e( \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial v_i}{\partial x_j}\} dS)
 \end{align*}
-$u$ should be continous in the solution space thus the $ \{ u_i n_j \}$ term will cancel out. Hence this does not change the equation.\\
+$u$ should be continous in the physical space thus the added term will cancel out. Hence this does not change the equation.\\
 \\
 Now we also add the term $\alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS$. According to sources [3] provided that  $\alpha$ is larger than $10$ numerical stability is increased.\\
-$J$ is the jump notation. The numerical value of $h$ is the average distance of a side.In our case we defined it as the average cell-volume over the length of the facettes between them for each individual facette element $\Gamma$.\\
+$J$ is the jump notation.\\
+The numerical value of $h$ is the average distance of a side. In our case we defined it as the average cell-volume over the length of the facettes between them for each individual facette element $\Gamma$.\\
 The $J(u_i)$ term makes this integral $0$ in continous space so this does not change the solution.\\
 \\
-As mentioned in the BDM definition section we cannot set the tangential component of a dirichelet boundary condition in the conventional finite element manner.  So instead we use penalty terms, which should be $0$ and thus push the solution towards respecting the boundary conditions. In practice this just means taking all the terms over the edge of a cell and considering them on the edge of the domain instead.\\
+As mentioned in the BDM definition section we cannot set the tangential component of a dirichelet boundary condition in the conventional finite element manner.  So instead we use penalty terms, which should be $0$. This pushes the solution towards respecting the boundary conditions. In practice this just means taking all the terms over the edge of a cell and considering them on the edge of the domain instead.\\
  Hence our final viscous term becomes :\\
 \begin{align*}
-&-  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial w_i}{\partial x_j}\} dS \\
-&+ \alpha \int_\Gamma \frac{1}{h}  j(v_i) j(u_i) dS + \int_{\partial  \Omega} v_i n_j \frac{u_i - u^0_i}{x_j} + (u_i - u^0_i) n_j\frac{w_i}{x_j} ds + \alpha \int_{\partial \Omega} \frac{1}{h} v_i(u_i-u^0_i)ds
+&-  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e ( \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial w_i}{\partial x_j}\} dS \\
+&- \alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS \ ) + \int_{\partial  \Omega} v_i n_j \frac{u_i - u^0_i}{x_j} + (u_i - u^0_i) n_j\frac{w_i}{x_j} ds - \alpha \int_{\partial \Omega} \frac{1}{h} v_i(u_i-u^0_i)ds
 \end{align*}
 Where $u^0_i$ are the boundary values.
 We will call this term $\eta_\mu$.\\
 Back to our original equation we get : 
 \begin{align}
-\int_\Omega v \cdot F dx &= \int_\Omega v \cdot \nabla p) dx - \eta_\mu
+\int_\Omega v \cdot F dx &= \int_\Omega v \cdot \nabla p dx - \eta_\mu
 \end{align}
 Let us consider the continuity equation again :
 \begin{align*}
@@ -207,11 +208,11 @@ Multiplying by $q$ and integrating we get :
 \begin{align*}
 \int_\Omega q \nabla \cdot u dx = 0
 \end{align*}
-This is $0$, so we add it to the weak formulation $(3)$ we obtained, getting one weak formulation which includes both pressure and velocity. \\
+This is $0$, so we substract this from the weak formulation $(3)$ we obtained, getting one weak formulation which includes both pressure and velocity while also keeping symmetry. \\
 We need this since we want to turn the entire system into a single matrix equation which includes all the conditions.\\
-Additionally we can use some basic vector identities to get our weak equation for the stokes problem :
+Integrating by parts the pressure term and using the divergence theorem get :
 \begin{align}
-\int_\Omega v \cdot F dx &= \int_\Omega (\nabla \cdot (p v)) dx - \int_\Omega ( p \nabla \cdot (v)) dx + \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu
+\int_\Omega v \cdot F dx &= \int_\Omega \nabla \cdot (p v) dx - \int_\Omega  p ( \nabla \cdot v) dx - \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu
 \end{align}
 
 \subsection{Applying the Schur Preconditioner to our problem}
@@ -253,14 +254,14 @@ Hence, if we can find $A^{-1}$ and $S^{-1}$ we can easily solve the equation. We
 We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$ via an Lu Factorization. The Lu factorization is a direct solver, and thus is innefficient. The algorithm would have to be performed in a sequential manner, preventing usage of parallelisation. We did mitigate this through the usage of the "mumps" sub-routine. Additionally there was an  However more efficient implementations would require this to be modified.\\
  However $S^{-1}$, the inverse of the shur complement is difficult to determine because it is usually dense. However research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (!). Note that this term is 0 in continuous space. We thus get : 
 \begin{align}
-\int_\Omega w \cdot F dx &= \int_\Omega (\nabla \cdot (p w)) dx - \int_\Omega ( p \nabla \cdot (w)) dx + \int_\Omega q (\nabla \cdot u) dx  - v_\mu + \int_\Omega \gamma \nabla \cdot v \: \nabla \cdot w dx
+\int_\Omega w \cdot F dx &= \int_\Omega \nabla \cdot (p v) dx - \int_\Omega ( p \nabla \cdot (v)) dx - \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu + \int_\Omega \gamma \nabla \cdot u \: \nabla \cdot v dx
 \end{align}
 This doesn't change the equation, thus should result in the same solution. However acoording to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. We then perform ILu in order to solve for $S^{-1}$. ILu performs the Lu Factorization on various blocks of the matrix, allowing it to be parallelised.
 
 \section{The Continuation Method}
 Now we include a modified advection term : 
 \begin{align}
-0 = LHS - RHS - c ( u \cdot \nabla u) 
+0 = RHS - LHS - c ( u \cdot \nabla u) 
 \end{align}
 Where LHS and RHS are the Left hand and Right hand side of equation (5). Note that this is equation is not linear, hence we will need to use Newton's method.\\ 
 Given the navier stokes equations we could try to naively set $c = 1$ and then use Newton's method applying the above preconditioning and discretization methods. However at high Reynolds number this approach quickly fails unless the mesh is refined, leading to high computational cost.\\
@@ -269,6 +270,8 @@ We then solve again with the non-linear solver using the previously obtained sol
  This allows us to rapidly solve simple problems, for which the advection switch is unecessary, as well as more complex problems, since we can use more efficient step-size in $c$ initially saving iterations, automatically.\\
 In some circumstances however even with a variable step-size in $c$ we fail to obtain a solution. In our code if the step-size is below $10^{-3}$ our solver stops and fails.
 
+\subsection{Navier Stokes Weak Form}
+TODO
 \section{Stability Analysis}
 
 While we are mainly interested in the steady-state solution of the navier-stokes equation we also need to consider whether or not the solution is stable. To that end we need to solve a full navier stokes, including the time derivative. This will be used to determine if small perturbations of the solution die down.

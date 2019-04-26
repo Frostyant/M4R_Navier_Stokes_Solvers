@@ -293,8 +293,8 @@ class rinsp:
         #Setting up bilenar form
         graddiv_term = self.gamma*div(self.v)*div(u)*dx
         a_bilinear = (
-            viscous_term +
-            self.q * div(u) * dx + p * div(self.v) * dx
+            viscous_term -
+            div(self.p*self.v)*dx + self.q * div(u) * dx + p * div(self.v) * dx #Pressure terms
             + graddiv_term
         )
         return a_bilinear,graddiv_term
