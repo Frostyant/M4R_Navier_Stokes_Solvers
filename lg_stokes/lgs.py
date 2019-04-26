@@ -45,7 +45,7 @@ for it,n in enumerate(Ns):
             W, [W.sub(0), VectorSpaceBasis(constant=True)])
 
     #setting up problem proper
-    LHS = inner(grad(u), grad(v)) * dx + div(v) * p * dx + q * div(u) * dx
+    LHS = -inner(grad(u), grad(v)) * dx + div(v) * p * dx + q * div(u) * dx
     RHS =  -inner(v,F) * dx
 
     # Form for use in constructing preconditioner matrix
