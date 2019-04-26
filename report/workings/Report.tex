@@ -49,16 +49,16 @@ Since our domain $\omega$ is cut out into triangles we can cut the integral into
 \end{align*}
 However since $u$ and $v$ will be approximated by functions which may be discontinuous in their derivatives $\nabla^2$ may not be defined. Hence we need to use integration by parts to get :  
 \begin{align*}
-\int_{e} p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx = -\int_{e} v \cdot F dx
+\int_{e} p \nabla \cdot v - \mu \nabla v \cdot \nabla u dx = -\int_{e} v \cdot F dx
 \end{align*}
 Finally multiplying (4) by a similar pressure test function $q$ and adding it to the left hand side of the above we get :
 \begin{align}
-\int_{e} p \nabla \cdot v + \mu \nabla v \cdot \nabla u dx + \int_{e} q \nabla \cdot u dx = -\int_{e} v \cdot F dx
+\int_{e} p \nabla \cdot v - \mu \nabla v \cdot \nabla u dx + \int_{e} q \nabla \cdot u dx = -\int_{e} v \cdot F dx
 \end{align}
 Now we use the fact that $q$, $v$, $F$, $u$ and $p$ are a sum of known linear functions and coefficients.\\
 Pulling out and removing the coefficients of $v$ we get that :
 \begin{align*}
- \int_{e} \sum_i \sum_j (  p_j \phi_j \nabla  \cdot \Phi_i + \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = -\int_{e} \sum_i \phi_i F_i \phi_i dx
+ \int_{e} \sum_i \sum_j (  p_j \phi_j \nabla  \cdot \Phi_i - \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = -\int_{e} \sum_i \phi_i F_i \phi_i dx
 \end{align*}
 Combining all the triangles we can eventually turn our problem into a matrix equation of the form :
 \begin{align}
