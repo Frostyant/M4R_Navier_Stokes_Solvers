@@ -35,27 +35,7 @@ for it,n in enumerate(Ns):
     Fadv = Function(V)
     Fadv.project(F_adv)
 
-    problem = rins.rinsp(mesh,u_0,W,x,y,p_0 = p_0,F = F + F_adv,viscosity = mu,BcIds = (1,2,3,4),PDbcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
-    #Adding pressure boundary conditions
-    """
-    bc1 = DirichletBC(W.sub(0), u_0, 1)
-    bc1p = DirichletBC(W.sub(1), p_0, 1)
-    bc2 = DirichletBC(W.sub(0), u_0, 2)
-    bc2p = DirichletBC(W.sub(1), p_0, 2)
-    bc3 = DirichletBC(W.sub(1), p_0, 3)
-    bc3p = DirichletBC(W.sub(1), p_0, 3)
-    bc4 = DirichletBC(W.sub(0), u_0, 4)
-    bc4p = DirichletBC(W.sub(1), p_0, 4)
-    bcs = (bc1,bc1p,bc2,bc2p,bc3,bc3p,bc4,bc4p)
-
-    navierstokesproblem = NonlinearVariationalProblem(problem.F, problem.up, Jp=problem.aP,
-                                                      bcs=bcs)
-    problem.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
-                                                    nullspace=problem.nullspace,
-                                                    solver_parameters=problem.parameters)
-    ContinuationProblem = LinearVariationalProblem(problem.LHS,problem.RHS,problem.dupdadvswitch,aP = problem.aP, bcs = bcs)
-    problem.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=problem.nullspace, solver_parameters = problem.parameters)
-    """
+    problem = rins.rinsp(mesh,u_0,W,x,y,F = F + F_adv,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
     problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = False)
     print("Reynolds Number =")
     print(problem.R)

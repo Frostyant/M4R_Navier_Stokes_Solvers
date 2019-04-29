@@ -17,7 +17,8 @@ for it,n in enumerate(Ns):
     W = V*Q
     mu = Constant(1)
 
-    u_0 = as_vector([sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,-sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
+    #u_0 = as_vector([sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,-sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
+    u_0 = as_vector([cos(y)*exp(x),-sin(y)*exp(x)])
     p_0 = Constant(1)*sin(2*pi*x)**2*sin(2*pi*y)**2
     p_x = p_0.dx(0)
     p_y = p_0.dx(1)
@@ -45,8 +46,11 @@ for it,n in enumerate(Ns):
             W, [W.sub(0), VectorSpaceBasis(constant=True)])
 
     #setting up problem proper
-    LHS = -inner(grad(u), grad(v)) * dx + div(v) * p * dx + q * div(u) * dx
-    RHS =  -inner(v,F) * dx
+    #LHS = -inner(grad(u), grad(v)) * dx + div(v) * p * dx + q * div(u) * dx
+    #RHS =  -inner(v,F) * dx
+    LHS = inner(grad(u), grad(v)) * dx - div(v) * p * dx + q * div(u) * dx
+    Zero = Function(Q)
+    RHS =  q*Zero * dx
 
     # Form for use in constructing preconditioner matrix
     aP = inner(grad(u), grad(v))*dx + p*q*dx

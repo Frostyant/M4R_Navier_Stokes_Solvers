@@ -71,8 +71,8 @@ Now apply this to the manufactured solution :
 \begin{align*}
 u_x &=  sin(2 \pi y) cos(2 \pi y)  sin(2 \pi x)^2 \\
 u_y &= -sin(2 \pi x) cos(2 \pi x)  sin(2 \pi y)^2 \\
-p = sin(2 \pi x)^2 sin(2 \pi y)^2 \\
-F = \nabla p - \mu \nabla^2 u
+p &= sin(2 \pi x)^2 sin(2 \pi y)^2 \\
+F &= \nabla p - \mu \nabla^2 u
 \end{align*}
 Where $F$ was selected specifically to ensure that any given $u$ and $p$ are solutions.
 Using the above and implementing it in firedrake we get figures .On a mesh with vertices we get an error of about.
@@ -191,8 +191,8 @@ The $J(u_i)$ term makes this integral $0$ in continous space so this does not ch
 As mentioned in the BDM definition section we cannot set the tangential component of a dirichelet boundary condition in the conventional finite element manner.  So instead we use penalty terms, which should be $0$. This pushes the solution towards respecting the boundary conditions. In practice this just means taking all the terms over the edge of a cell and considering them on the edge of the domain instead.\\
  Hence our final viscous term becomes :\\
 \begin{align*}
-&-  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e ( \int_\Gamma 2 \{ w_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial w_i}{\partial x_j}\} dS \\
-&- \alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS \ ) + \int_{\partial  \Omega} v_i n_j \frac{u_i - u^0_i}{x_j} + (u_i - u^0_i) n_j\frac{w_i}{x_j} ds - \alpha \int_{\partial \Omega} \frac{1}{h} v_i(u_i-u^0_i)ds
+&-  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e ( \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial v_i}{\partial x_j}\} dS \\
+&- \alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS \ ) + \int_{\partial  \Omega} v_i n_j \frac{\partial(u_i + u^0_i)}{\partial x_j} + (u_i + u^0_i) n_j\frac{\partial v_i}{\partial x_j} ds - \alpha \int_{\partial \Omega} \frac{1}{h} v_i(u_i-u^0_i)ds
 \end{align*}
 Where $u^0_i$ are the boundary values.
 We will call this term $\eta_\mu$.\\

@@ -7,7 +7,7 @@ class rinsp:
     """A Navier-Stokes Problem with an efficient pre-build solver using Hdiv"""
 
     def __init__(self, mesh,u_0,W,x,y,z = 0,p_0 = Constant(0), F = Constant(as_vector([0,0])),viscosity = 1,AdvectionSwitchStep = 1,
-    gamma = (10**4.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False, PDbcIds = False,twoD=True):
+    gamma = (10**4.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False, PDbcIds = False, PNbcIds = False,twoD=True):
         """ Creats rinsp object
         Keyword arguments:
         mesh -- mesh on which the problem is.
@@ -257,11 +257,26 @@ class rinsp:
         c = Constant(20)
         n = FacetNormal(self.mesh)
         h = avg(CellVolume(self.mesh))/FacetArea(self.mesh)
+
         if self.BcIds == False:
-            L = c/(h)*inner(self.v,self.u_0)*ds - inner(outer(self.u_0,n),grad(v))*ds
+            viscous_stab_L = c/(h)*inner(self.v,self.u_0)*ds(self.BcIds)
+            viscous_byparts2_ext_L = 1/2*(
+            + inner(outer(self.u_0,n),grad(v))*ds
+            + inner(outer(self.v),n),grad(self.u_0))*ds
+            )
         else:
-            #apply Bcs only to relevant boundaries
-            L = c/(h)*inner(self.v,self.u_0)*ds(self.BcIds) - inner(outer(self.u_0,n),grad(self.v))*ds(self.BcIds)
+            viscous_stab_L = c/(h)*inner(self.v,self.u_0)*ds(self.BcIds)
+            viscous_byparts2_ext_L = 1/2*(
+            + inner(outer(self.u_0,n),grad(v))*ds(self.BcIds)
+            + inner(outer(self.v),n),grad(self.u_0))*ds(self.BcIds)
+            )
+        if self.BcIds == False:
+            L = (
+            c/(h)*inner(self.v,self.u_0)*ds
+             + inner(outer(self.u_0,n),grad(v))*ds
+             + inner(outer(self.v),n),grad(self.u_0))*ds
+             )
+        L = viscous_stab_L + viscous_byparts2_ext_L
 
         #Viscous Term parts
         viscous_byparts1 = inner(grad(u), grad(self.v))*dx #this is the term over omega from the integration by parts
@@ -269,10 +284,10 @@ class rinsp:
         viscous_symetry = 2*inner(avg(outer(u,n)),avg(grad(self.v)))*dS #this the term ensures symetry while not changing the continuous equation
         viscous_stab = c*1/(h)*inner(jump(self.v),jump(u))*dS #stabilizes the equation
         if self.BcIds == False:
-            viscous_byparts2_ext = (inner(outer(self.v,n),grad(u)) + inner(outer(u,n),grad(self.v)))*ds #This deals with boundaries
+            viscous_byparts2_ext = 1/2*(inner(outer(self.v,n),grad(u)) + inner(outer(u,n),grad(self.v)))*ds #This deals with boundaries
             viscous_ext =c/(h)*inner(self.v,u)*ds#this is a penalty term for the boundaries
         else:
-            viscous_byparts2_ext = (inner(outer(self.v,n),grad(u)) + inner(outer(u,n),grad(self.v)))*ds(self.BcIds) #This deals with boundaries
+            viscous_byparts2_ext = 1/2*(inner(outer(self.v,n),grad(u)) + inner(outer(u,n),grad(self.v)))*ds(self.BcIds) #This deals with boundaries
             viscous_ext =c/(h)*inner(self.v,u)*ds(self.BcIds)#this is a penalty term for the boundaries
         #Assembling Viscous Term
         viscous_term = self.viscosity*(
@@ -293,8 +308,9 @@ class rinsp:
         #Setting up bilenar form
         graddiv_term = self.gamma*div(self.v)*div(u)*dx
         a_bilinear = (
-            viscous_term -
-            div(p*self.v)*dx + self.q * div(u) * dx + p * div(self.v) * dx #Pressure terms
+            viscous_term +
+            self.q * div(u) * dx + p * div(self.v) * dx #Pressure terms from second integ by parts
+            - div(p*self.v)*dx  #pressure due to first integ by parts term + div theorem
             + graddiv_term
         )
         return a_bilinear,graddiv_term
