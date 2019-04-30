@@ -267,7 +267,7 @@ class rinsp:
         else:
             viscous_stab_L = c/(h)*inner(self.v,self.u_0)*ds(self.BcIds)
             viscous_byparts2_ext_L = 1/2*(
-            + inner(outer(self.u_0,n),grad(v))*ds(self.BcIds)
+            + inner(outer(self.u_0,n),grad(self.v))*ds(self.BcIds)
             + inner(outer(self.v,n),grad(self.u_0))*ds(self.BcIds)
             )
 
