@@ -259,23 +259,18 @@ class rinsp:
         h = avg(CellVolume(self.mesh))/FacetArea(self.mesh)
 
         if self.BcIds == False:
-            viscous_stab_L = c/(h)*inner(self.v,self.u_0)*ds(self.BcIds)
+            viscous_stab_L = c/(h)*inner(self.v,self.u_0)*ds
             viscous_byparts2_ext_L = 1/2*(
             + inner(outer(self.u_0,n),grad(v))*ds
-            + inner(outer(self.v),n),grad(self.u_0))*ds
+            + inner(outer(self.v,n),grad(self.u_0))*ds
             )
         else:
             viscous_stab_L = c/(h)*inner(self.v,self.u_0)*ds(self.BcIds)
             viscous_byparts2_ext_L = 1/2*(
             + inner(outer(self.u_0,n),grad(v))*ds(self.BcIds)
-            + inner(outer(self.v),n),grad(self.u_0))*ds(self.BcIds)
+            + inner(outer(self.v,n),grad(self.u_0))*ds(self.BcIds)
             )
-        if self.BcIds == False:
-            L = (
-            c/(h)*inner(self.v,self.u_0)*ds
-             + inner(outer(self.u_0,n),grad(v))*ds
-             + inner(outer(self.v),n),grad(self.u_0))*ds
-             )
+
         L = viscous_stab_L + viscous_byparts2_ext_L
 
         #Viscous Term parts
