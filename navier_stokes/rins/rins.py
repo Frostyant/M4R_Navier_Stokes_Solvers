@@ -304,7 +304,7 @@ class rinsp:
         graddiv_term = self.gamma*div(self.v)*div(u)*dx
         a_bilinear = (
             viscous_term +
-            self.q * div(u) * dx + p * div(self.v) * dx #Pressure terms from second integ by parts
+            self.q * div(u) * dx - p * div(self.v) * dx #Pressure terms from second integ by parts
             #- div(p*self.v)*dx  #pressure due to first integ by parts term + div theorem
             + graddiv_term
         )
