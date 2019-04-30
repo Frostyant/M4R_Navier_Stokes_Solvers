@@ -305,7 +305,7 @@ class rinsp:
         a_bilinear = (
             viscous_term +
             self.q * div(u) * dx + p * div(self.v) * dx #Pressure terms from second integ by parts
-            - div(p*self.v)*dx  #pressure due to first integ by parts term + div theorem
+            #- div(p*self.v)*dx  #pressure due to first integ by parts term + div theorem
             + graddiv_term
         )
         return a_bilinear,graddiv_term
