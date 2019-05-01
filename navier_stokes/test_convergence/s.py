@@ -43,7 +43,7 @@ for it,n in enumerate(Ns):
     uexact.project(u_0)
     pexact.project(p_0)
     errors[it] = norm(u-uexact)
-    ep[it] = norm(p-pexact)
+    ep[it] = norm(p-pexact)-0.25 #adjusting constant
 
 plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
