@@ -235,10 +235,10 @@ class rinsp:
         adv_bdc1 = inner(self.u_0,perp(n,cross(self.u_0,self.v)))*ds #boundary version of adv_byparts2
         adv_grad_parts2 = 1/2*inner(inner(self.u_0,self.u_0)*self.v,n)*ds #boundary term from grad u^2 integration by parts
         advection_term = (
-            - adv_byparts1
-            + adv_byparts2
+            + adv_byparts1
+            - adv_byparts2
             - adv_grad_parts1
-            + adv_bdc1
+            - adv_bdc1
             + adv_grad_parts2
         )
 

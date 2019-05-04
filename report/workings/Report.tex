@@ -282,12 +282,32 @@ Consider the following vector identity :
 \end{align*}
 Hence get : 
 \begin{align}
-\int_\Omega (u \cdot \nabla)u \cdot v \ dx = \frac{1}{2} \int_\Omega \nabla (u^2) \cdot v \ dx - \int_{\Omega} u \times (\nabla \times u) \ dx
+\int_\Omega (u \cdot \nabla)u \cdot v \ dx = \frac{1}{2} \int_\Omega \nabla (u^2) \cdot v \ dx - \int_{\Omega} u \times (\nabla \times u) \cdot v \ dx
 \end{align}
 We can then perform an integration by parts on the first term on the right hand side to get :
 \begin{align}
  \frac{1}{2} \int_\Omega \nabla (u^2) \cdot v \ dx = \frac{1}{2} (\int_{\delta \Omega } u^2 v \cdot n \ ds - \int_\Omega u^2 \nabla \cdot v \ dx)
 \end{align}
+Now consider the second term in (17 !)
+\begin{align*}
+- \int_{\Omega} u \times (\nabla \times u) \cdot v \ dx &= \int_{\Omega} v \cdot (\nabla \times u) u \ dx   \\
+&=  \int_{\Omega} (\nabla \times u) \cdot (u \times v)  \ dx
+\end{align*}
+We then cut this inegral up into a sum of integrals over each cell and integrate on each one by parts separately. Performing this integration we get for each cell :
+\begin{align}
+\int_e u \cdot (\nabla \times (u \times v) \ ) dx - \int_{\delta e} u^+ \cdot (n \times (u \cdot v) \ ) dS
+\end{align}
+Not that the second term becomes the following on the computational domain boundary :
+\begin{align*}
+- \int_{\delta \Omega} u_0 \cdot (n \times (u \cdot v) \ ) ds
+\end{align*}
+Hence the weak form of our advection term becomes : 
+\begin{align}
+ Adv &= \int_e u \cdot (\nabla \times (u \times v) \ ) dx - \int_{\delta e} u^+ \cdot (n \times (u \cdot v) \ ) dS \\ 
+&- \frac{1}{2} \int_\Omega u^2 \nabla \cdot v \ dx - \int_{\delta \Omega} u_0 \cdot (n \times (u \cdot v) \ ) ds
++ \frac{1}{2} \int_{\delta \Omega } u^2 v \cdot n \ ds 
+\end{align}
+We reordered some terms to be in-line with our code.
 
 \section{Stability Analysis}
 
