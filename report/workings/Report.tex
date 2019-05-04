@@ -15,7 +15,7 @@
 \section{Introduction}
 We seek to create an efficient solver of the steady Navier stokes equations in an arbitrary domain in $H_{div}$ space. The steady Navier Stokes equation are as follows : 
 \begin{align}
-u \cdot \nabla u &= -\nabla p + \mu \nabla^2 u + F \\
+(u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
 \end{align}
 Not that from working in the $H_{div}$ space the second equation is naturally satisfied globally.
@@ -261,17 +261,34 @@ This doesn't change the equation, thus should result in the same solution. Howev
 \section{The Continuation Method}
 Now we include a modified advection term : 
 \begin{align}
-0 = RHS - LHS - c ( u \cdot \nabla u) 
+c (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
 \end{align}
-Where LHS and RHS are the Left hand and Right hand side of equation (5). Note that this is equation is not linear, hence we will need to use Newton's method.\\ 
+Note that this is equation is not linear, hence we will need to use Newton's method.\\ 
 Given the navier stokes equations we could try to naively set $c = 1$ and then use Newton's method applying the above preconditioning and discretization methods. However at high Reynolds number this approach quickly fails unless the mesh is refined, leading to high computational cost.\\
 Hence, in such cases, we will initially set $c$, referred to as the advection switch, to $0$. Applying the solver to $c = 0$ we should easily find a solution. Using this solution as a starting point we then calculate the derivative of (6) with respect to the advection switch.\\
 We then solve again with the non-linear solver using the previously obtained solution for $c = 1$. If this fails we reduce $c$ until it works. We then repeat this procedure until $c = 1$.\\
  This allows us to rapidly solve simple problems, for which the advection switch is unecessary, as well as more complex problems, since we can use more efficient step-size in $c$ initially saving iterations, automatically.\\
 In some circumstances however even with a variable step-size in $c$ we fail to obtain a solution. In our code if the step-size is below $10^{-3}$ our solver stops and fails.
 
-\subsection{Navier Stokes Weak Form}
-TODO
+\subsection{Advection Weak Form}
+In order to solve the equation regardless of the method, we need to find the weak form of the advection term, $(u \cdot \nabla) u$.
+Similarly to before we therefore take the inner product of the advection term with $q$ and integrate over the domain.
+\begin{align}
+\int_\Omega (u \cdot \nabla)u \cdot v \ dx
+\end{align}
+Consider the following vector identity :
+\begin{align*}
+\nabla (u \cdot u) = 2 (u \cdot \nabla) u + 2 u \times (\nabla \times u) 
+\end{align*}
+Hence get : 
+\begin{align}
+\int_\Omega (u \cdot \nabla)u \cdot v \ dx = \frac{1}{2} \int_\Omega \nabla (u^2) \cdot v \ dx - \int_{\Omega} u \times (\nabla \times u) \ dx
+\end{align}
+We can then perform an integration by parts on the first term on the right hand side to get :
+\begin{align}
+ \frac{1}{2} \int_\Omega \nabla (u^2) \cdot v \ dx = \frac{1}{2} (\int_{\delta \Omega } u^2 v \cdot n \ ds - \int_\Omega u^2 \nabla \cdot v \ dx)
+\end{align}
+
 \section{Stability Analysis}
 
 While we are mainly interested in the steady-state solution of the navier-stokes equation we also need to consider whether or not the solution is stable. To that end we need to solve a full navier stokes, including the time derivative. This will be used to determine if small perturbations of the solution die down.
