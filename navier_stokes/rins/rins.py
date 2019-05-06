@@ -91,8 +91,8 @@ class rinsp:
         #These terms are the advective parts of the equation
         advection_term = self.GetAdvectionTerm(self.up)
         self.AdvectionSwitch = Constant(0) #initially we neglect advection
-        self.F += -self.AdvectionSwitch*(advection_term)
-        self.aP += self.AdvectionSwitch*derivative(-advection_term, self.up)
+        self.F += self.AdvectionSwitch*(advection_term)
+        self.aP += self.AdvectionSwitch*derivative(advection_term, self.up)
 
         #Creating Solvers #
 
@@ -106,7 +106,7 @@ class rinsp:
         self.dupdadvswitch = Function(W)
         #this is newton approximation term
         self.up += self.dupdadvswitch*(AdvectionSwitchStep)
-        self.RHS = -advection_term
+        self.RHS = advection_term
         self.LHS = derivative(self.F,self.up)
 
 
@@ -235,7 +235,7 @@ class rinsp:
         adv_bdc1 = inner(self.u_0,perp(n,cross(self.u_0,self.v)))*ds #boundary version of adv_byparts2
         adv_grad_parts2 = 1/2*inner(inner(self.u_0,self.u_0)*self.v,n)*ds #boundary term from grad u^2 integration by parts
         advection_term = (
-            + adv_byparts1
+            adv_byparts1
             - adv_byparts2
             - adv_grad_parts1
             - adv_bdc1
