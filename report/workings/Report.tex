@@ -343,7 +343,7 @@ We will consider random perturbations and then use the time stepping method to s
 \subsection{Stokes Convergence}
 
 Once again we will primarily focus on the stokes equation (9-10) in order to verify that this part of our discretization is working as intended.\\
-We will consider a manufactured solution, and artificial solution we selected in advance. Take $u_x = sin(2 \pi y) cos(2 \pi y)*sin(2 \pi x)^2$, $u_y= -sin(2 \pi x) cos(2 \pi x) sin(2 \pi y)^2$ and $p = sin(2 \pi x) sin(2 \pi y)$.\\
+We will consider a manufactured solution, an artificial solution we selected in advance. Take $u_x = sin(2 \pi y) cos(2 \pi y)*sin(2 \pi x)^2$, $u_y= -sin(2 \pi x) cos(2 \pi x) sin(2 \pi y)^2$ and $p = sin(2 \pi x) sin(2 \pi y)$.\\
 We then adjust the boundary conditions and forcing term appropriately for this solution to hold.\\
  The forcing term thus becomes :$F = \nabla p - \mu \nabla^2 u$.\\
 Figures and show us the convergence graphs in velocity and pressure.\\
@@ -356,6 +356,16 @@ We determine the forcing term in the same way as before.\\
 Figures and show us the convergence graphs in velocity and pressure.\\
 Hence we can deduce we obtain a convergence rate of a bit over $2$, as expected given the usage of the BDM2 and DG1 space.
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{stokes_convergence_dbc0.png}
+  \caption{DG2-BDM1 Stokes velocity Convergence Graph}
+
+  \vspace*{\floatsep}
+
+  \includegraphics[width=\linewidth]{stokes_pressure_convergence_dbc0.png}
+  \caption{DG2-BDM1 Stokes velocity Convergence Grap}
+\end{figure}
 
 \subsection{Navier-Stokes Convergence}
 
@@ -439,9 +449,9 @@ Pages 208-235,
 ISSN 0377-0427,
 https://doi.org/10.1016/j.cam.2005.11.037.\\
 
-[14] Hashiguchi, Masanori \& Kuwahara, Kunio. (1996). Two-Dimensional Study of Flow past a Circular Cylinder. RIMS Kokyuroku. 974. \\
+[14] Hashiguchi, Masanori \& Kuwahara, Kunio. (1996). \textit{Two-Dimensional Study of Flow past a Circular Cylinder}. RIMS Kokyuroku. 974. \\
 
-[15] Cockburn B, Kanschat G, Schötzau D. A note on discontinuous galerkin divergence-free solutions of the navier-stokes equations. Journal of Scientific Computing. 2007 Jun 1;31(1-2):61-73. https://doi.org/10.1007/s10915-006-9107-7\\
+[15] Cockburn B, Kanschat G, Schötzau D. \textit{A note on discontinuous galerkin divergence-free solutions of the navier-stokes equations. Journal of Scientific Computing}. 2007 Jun 1;31(1-2):61-73. https://doi.org/10.1007/s10915-006-9107-7\\
 
 [16] Constantinescu V.N. (1995) \textit{Other Solutions of Navier-Stokes Equations (Steady Incompressible Flow).} In: Laminar Viscous Flow. Mechanical Engineering Series. Springer, New York, NY
 

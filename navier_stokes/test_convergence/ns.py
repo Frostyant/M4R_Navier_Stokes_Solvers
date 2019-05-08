@@ -7,7 +7,7 @@ from rins import rins
 import matplotlib.pyplot as plt
 
 AverageVelocity = 1
-mu = 1
+mu = Constant(1)
 
 Ns = [2**(n+3) for n in range(5)]
 errors = [0]*len(Ns)
@@ -19,7 +19,7 @@ for it,n in enumerate(Ns):
     V = FunctionSpace(mesh, "BDM", 2)
     Q = FunctionSpace(mesh, "DG", 1)
     W = V * Q
-    u_0 = as_vector([-sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
+    u_0 = Constant(1)*as_vector([-sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
     p_0 = Constant(1)*sin(2*pi*x)**2*sin(2*pi*y)**2
     p_x = p_0.dx(0)
     p_y = p_0.dx(1)
@@ -35,17 +35,20 @@ for it,n in enumerate(Ns):
     Fadv = Function(V)
     Fadv.project(F_adv)
 
-    problem = rins.rinsp(mesh,u_0,W,x,y,F = F + F_adv,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
+    problem = rins.rinsp(mesh,u_0,W,x,y,F = F + F_adv,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 1,AverageVelocity = AverageVelocity,LengthScale = 1)
+    u,p = problem.up.split()
+    uexact = Function(V)
+    pexact = Function(Q)
+    uexact.project(u_0)
+    pexact.project(p_0)
+    u.assign(uexact)
+    p.assign(pexact)
     problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = False)
     print("Reynolds Number =")
     print(problem.R)
 
     #finding with  error
     u, p = problem.up.split()
-    uexact = Function(V)
-    pexact = Function(Q)
-    uexact.project(u_0)
-    pexact.project(p_0)
     errors[it] = norm(u-uexact)
     ep[it] = norm(p-pexact)
 

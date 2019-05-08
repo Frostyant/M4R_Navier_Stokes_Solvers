@@ -1,6 +1,7 @@
 from firedrake import *
 
 n = 16
+mu = 1
 
 #setting up function spaces and mesh
 mesh = UnitSquareMesh(n, n)
@@ -39,7 +40,7 @@ nullspace = MixedVectorSpaceBasis(
         W, [W.sub(0), VectorSpaceBasis(constant=True)])
 
 #setting up problem proper
-LHS = inner(grad(u), grad(v)) * dx + div(v) * p * dx + q * div(u) * dx
+LHS = inner(grad(u), grad(v)) * dx - div(v) * p * dx + q * div(u) * dx
 Zero = Function(Q)
 RHS =  inner(v,F) * dx #q*Zero * dx
 
