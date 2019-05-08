@@ -117,15 +117,28 @@ class rinsp:
         self.ContinuationSolver = LinearVariationalSolver(ContinuationProblem, nullspace=self.nullspace, solver_parameters = self.parameters)
 
 
-    def FullSolve(self,FullOutput = False,Write = True,DisplayInfo = True,stokes = False):
-        #Fulloutput outputs at EVERY iteration for continuation method into a file
-        #Write means that we write down the output at all into a file
-        #DisplayInfo is if we want to display any info in command line
+    def FullSolve(self,FullOutput = False,Write = True,DisplayInfo = True,stokes = False,method = "continuation"):
+        '''
+        Fulloutput outputs at EVERY iteration for continuation method into a file
+        Write means that we write down the output at all into a file
+        DisplayInfo is if we want to display any info in command line
+        stokes indicates if we just want to solve stokes
+        method selects how we find an ns solution (for stokes leave at default)
+            method = "continuation" , start from stokes then use continuation
+            method = "direct" , skip stokes solution
+            default is continuation
+        '''
 
         if not DisplayInfo:
             self.parameters["ksp_converged_reason"] = False
 
-        self.AdvectionSwitch.assign(0)
+        if method == "direct":
+            #direct solve means skippin stokes solution
+            self.AdvectionSwitch.assign(1)
+        else:
+            #default behaviou, first solve stokes problem
+            self.AdvectionSwitch.assign(0)
+
         self.navierstokessolver.solve()
 
         if Write:
@@ -141,10 +154,12 @@ class rinsp:
         else:
             FullOutput = False #if we don't write anything then we don't have full output anyway
 
-        if not stokes:
+        if not stokes and method !="direct":
+            #Continuation Method#
+            #if only solving stokes, we don't need continuation
+            #of solving directly we don't need continuation
             AdvectionSwitchStep = self.AdvectionSwitchStep
 
-            #Continuation Method#
             def ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep):
 
                 self.AdvectionSwitch.assign(AdvectionSwitchValue)
@@ -159,7 +174,17 @@ class rinsp:
             AdvectionSwitchValue = 0
 
             while AdvectionSwitchValue + AdvectionSwitchStep <= 1:
+                '''
+                explanation :
+                -increase advection term (via switch)
+                -try to solve at new advection
+                    if fail -> reduce switch stepsize by 2, reset switch try again
+                    if success -> increase switch size by 0.5, try again
 
+                -repeat until:
+                    -switch becomes too small, solver failed, display error
+                    -reach switch = 1, and succesfully solve, get solution
+                '''
                 try:
                     AdvectionSwitchValue += AdvectionSwitchStep
                     if DisplayInfo:
@@ -187,9 +212,8 @@ class rinsp:
                         print("Too low step size, solver failed")
                         break
 
+        #Resets parameters for future use
         self.AdvectionSwitch.assign(0)
-
-        #Reseting Info for potential future use where it might be required
         if not DisplayInfo:
             self.parameters["ksp_converged_reason"] = True
 
