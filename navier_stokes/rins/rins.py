@@ -94,12 +94,8 @@ class rinsp:
         self.F += self.AdvectionSwitch*(advection_term)
         self.aP += self.AdvectionSwitch*derivative(advection_term, self.up)
 
-        #Creating Solvers #
-
-        #Input what we wrote before
         navierstokesproblem = NonlinearVariationalProblem(self.F, self.up, Jp=self.aP,
                                                           bcs=self.bcs)
-        #Solver
         self.navierstokessolver = NonlinearVariationalSolver(navierstokesproblem,
                                                         nullspace=self.nullspace,
                                                         solver_parameters=self.parameters)
@@ -242,7 +238,7 @@ class rinsp:
 
         #Re-Defining functions for use in Advection term
         if self.twoD:
-            curl = lambda phi: as_vector([-phi.dx(1), phi.dx(0)])
+            curl = lambda phi: as_vector([phi.dx(1), -phi.dx(0)])
             cross = lambda u, w: u[0]*w[1]-u[1]*w[0]
             perp = lambda n, phi: as_vector([n[1]*phi, -n[0]*phi])
         else:

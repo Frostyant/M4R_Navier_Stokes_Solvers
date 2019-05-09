@@ -43,7 +43,7 @@ for it,n in enumerate(Ns):
     pexact.project(p_0)
     u.assign(uexact)
     p.assign(pexact)
-    problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = False,method = "direct")
+    problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = False,method = "continuation")
     print("Reynolds Number =")
     print(problem.R)
 
