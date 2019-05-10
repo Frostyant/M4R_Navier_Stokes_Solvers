@@ -36,14 +36,13 @@ for it,n in enumerate(Ns):
     Fadv.project(F_adv)
 
     problem = rins.rinsp(mesh,u_0,W,x,y,F = F + F_adv,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 1,AverageVelocity = AverageVelocity,LengthScale = 1)
-    u,p = problem.up.split()
+    problem.FullSolve(FullOutput = True, DisplayInfo = True,stokes = False,method = "continuation")
     uexact = Function(V)
     pexact = Function(Q)
     uexact.project(u_0)
     pexact.project(p_0)
     u.assign(uexact)
     p.assign(pexact)
-    problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = False,method = "continuation")
     print("Reynolds Number =")
     print(problem.R)
 
@@ -77,6 +76,7 @@ ufile.write(u,p)
 #plotting true solution in space
 truefile = File("true.pvd")
 uexact.rename("true velocity")
+uexact.rename("true pressure")
 truefile.write(uexact,pexact)
 
 #saving exact values of the error

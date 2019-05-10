@@ -132,13 +132,13 @@ class rinsp:
             #direct solve means skippin stokes solution
             self.AdvectionSwitch.assign(1)
         else:
-            #default behaviou, first solve stokes problem
+            #default behaviour, first solve stokes problem
             self.AdvectionSwitch.assign(0)
 
         self.navierstokessolver.solve()
 
         if Write:
-            self.upfile = File("stokes.pvd")
+            self.upfile = File("ns.pvd")
 
             u, p = self.up.split()
 
@@ -164,6 +164,12 @@ class rinsp:
 
                 # Plot solution
                 if FullOutput:
+                    u, p = self.up.split()
+
+                    u.rename("Velocity")
+
+                    p.rename("Pressure")
+
                     self.upfile.write(u, p)
 
             #setup variable
@@ -185,9 +191,11 @@ class rinsp:
                     AdvectionSwitchValue += AdvectionSwitchStep
                     if DisplayInfo:
                         print("Advection term is at "+ str(100*AdvectionSwitchValue) + "%")
-                    ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep)
-                    AdvectionSwitchStep = 1.5*AdvectionSwitchStep
 
+                    ContinuationMethod(self,AdvectionSwitchValue,AdvectionSwitchStep)
+
+                    '''This entire section is for adjusting step size'''
+                    AdvectionSwitchStep = 1.5*AdvectionSwitchStep
                     if AdvectionSwitchStep >= (1-AdvectionSwitchValue) and AdvectionSwitchValue < 1:
                         AdvectionSwitchStep = (1-AdvectionSwitchValue)
                         if DisplayInfo:
