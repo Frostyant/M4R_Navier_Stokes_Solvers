@@ -33,6 +33,7 @@ for it,n in enumerate(Ns):
     F = Function(V)
     F.project(F_ + F_adv)
 
+    problem = rins.rinsp(mesh,u_0,W,x,y,F = F,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 1,AverageVelocity = AverageVelocity,LengthScale = 1)
     u, p = problem.up.split()
     uexact = Function(V)
     pexact = Function(Q)
@@ -40,8 +41,6 @@ for it,n in enumerate(Ns):
     pexact.project(p_0)
     u.assign(uexact)
     p.assign(pexact)
-
-    problem = rins.rinsp(mesh,u_0,W,x,y,F = F,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 1,AverageVelocity = AverageVelocity,LengthScale = 1)
     problem.FullSolve(FullOutput = True, DisplayInfo = True,stokes = False,method = "direct")
     print("Reynolds Number =")
     print(problem.R)
