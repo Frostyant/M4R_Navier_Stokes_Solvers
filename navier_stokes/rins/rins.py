@@ -102,7 +102,7 @@ class rinsp:
         self.dupdadvswitch = Function(W)
         #this is newton approximation term
         self.up += self.dupdadvswitch*(AdvectionSwitchStep)
-        self.RHS = advection_term
+        self.RHS = -advection_term
         self.LHS = derivative(self.F,self.up)
 
 
@@ -129,7 +129,7 @@ class rinsp:
             self.parameters["ksp_converged_reason"] = False
 
         if method == "direct":
-            #direct solve means skippin stokes solution
+            #direct solve means skipping stokes solution
             self.AdvectionSwitch.assign(1)
         else:
             #default behaviour, first solve stokes problem

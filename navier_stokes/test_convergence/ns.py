@@ -29,23 +29,22 @@ for it,n in enumerate(Ns):
     u_yy = u_x.dx(1)
     F_ = as_vector([p_x - mu*(u_xx[0]+u_yy[0])
                 ,p_y - mu*(u_xx[1] + u_yy[1])])
-    F = Function(V)
-    F.project(F_)
     F_adv = as_vector([ u_0[0]*u_x[0]+u_0[1]*u_y[0], u_0[0]*u_x[1]+u_0[1]*u_y[1] ])
-    Fadv = Function(V)
-    Fadv.project(F_adv)
+    F = Function(V)
+    F.project(F_ + F_adv)
 
-    problem = rins.rinsp(mesh,u_0,W,x,y,F = F + F_adv,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 1,AverageVelocity = AverageVelocity,LengthScale = 1)
-    problem.FullSolve(FullOutput = True, DisplayInfo = True,stokes = False,method = "continuation")
+    u, p = problem.up.split()
     uexact = Function(V)
     pexact = Function(Q)
     uexact.project(u_0)
     pexact.project(p_0)
     u.assign(uexact)
     p.assign(pexact)
+
+    problem = rins.rinsp(mesh,u_0,W,x,y,F = F,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 1,AverageVelocity = AverageVelocity,LengthScale = 1)
+    problem.FullSolve(FullOutput = True, DisplayInfo = True,stokes = False,method = "direct")
     print("Reynolds Number =")
     print(problem.R)
-
     #finding with  error
     u, p = problem.up.split()
     errors[it] = norm(u-uexact)
@@ -73,6 +72,13 @@ u.rename("velocity error")
 p.rename("pressure error")
 ufile.write(u,p)
 
+#plotting error in space
+ufile = File("ns.pvd")
+u, p = problem.up.split()
+u.rename("velocity")
+p.rename("pressure")
+ufile.write(u,p)
+
 #plotting true solution in space
 truefile = File("true.pvd")
 uexact.rename("true velocity")
@@ -90,3 +96,5 @@ valfile2 = open("ns_pressure_error.txt","w+")
 errorstring2 = ';'.join(str(e) for e in ep)
 valfile2.write(errorstring2)
 valfile2.close()
+
+print("Is ns convergence test 0")

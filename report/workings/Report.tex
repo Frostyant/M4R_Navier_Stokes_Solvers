@@ -262,17 +262,12 @@ We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$ via an Lu Factoriz
 \end{align}
 This doesn't change the equation, thus should result in the same solution. However acoording to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. We then perform ILu in order to solve for $S^{-1}$. ILu performs the Lu Factorization on various blocks of the matrix, allowing it to be parallelised.
 
-\section{The Continuation Method}
-Now we include a modified advection term : 
-\begin{align}
-c (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
-\end{align}
+\section{Full Navier Stokes}
+Now we include the advection term : 
+\begin{align*}
+(u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
+\end{align*}
 Note that this is equation is not linear, hence we will need to use Newton's method.\\ 
-Given the navier stokes equations we could try to naively set $c = 1$ and then use Newton's method applying the above preconditioning and discretization methods. However at high Reynolds number this approach quickly fails unless the mesh is refined, leading to high computational cost.\\
-Hence, in such cases, we will initially set $c$, referred to as the advection switch, to $0$. Applying the solver to $c = 0$ we should easily find a solution. Using this solution as a starting point we then calculate the derivative of (6) with respect to the advection switch.\\
-We then solve again with the non-linear solver using the previously obtained solution for $c = 1$. If this fails we reduce $c$ until it works. We then repeat this procedure until $c = 1$.\\
- This allows us to rapidly solve simple problems, for which the advection switch is unecessary, as well as more complex problems, since we can use more efficient step-size in $c$ initially saving iterations, automatically.\\
-In some circumstances however even with a variable step-size in $c$ we fail to obtain a solution. In our code if the step-size is below $10^{-3}$ our solver stops and fails.
 
 \subsection{Advection Weak Form}
 In order to solve the equation regardless of the method, we need to find the weak form of the advection term, $(u \cdot \nabla) u$.
@@ -312,6 +307,26 @@ Hence the weak form of our advection term becomes :
 + \frac{1}{2} \int_{\delta \Omega } u^2 v \cdot n \ ds 
 \end{align}
 We reordered some terms to be in-line with our code.
+
+\subsection{Continuation Method}
+
+Given the navier stokes equations we could try to naively solve directly applying the above preconditioning and discretization methods. However at high Reynolds number this approach quickly fails unless the mesh is refined, leading to high computational cost.\\
+Hence consider the modified equation :
+\begin{align}
+c (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
+\end{align}
+As mentioned in the Newton's method section, the newton's method converges only if the initial guess is within a certain ball around the solution. Hence we need to find a method to get our initial guess to be closer to the solution.\\
+We could use the stokes solution, which we can most likely solve. We then increase $c$ to $1$ and try to solve using the stokes solution as a guess. If it still fails we can reduce the step-size of $c$ and solve for $c = 0.5$ instead before solving for full advection. If necessary we can bring down the step-size multiple times until we reach a $c$ for which it works, after which we then gradually increase c using the same procedure until we solve for full advection.\\
+\\
+However we can speed up this process in two ways.\\
+The first, very simple method, is adapting our step-size to the problem. Rather than starting with a step size of $1$ we can reduce the step size initially if the Reynolds number is high enough. In addition to reducing the stepsize if the newton iteration fails, we can increase step size if it succeeds. This should allow us to close in on the optimal step size rapidly. This allows us to reduce the total number of times we try to use the Newton's method.\\
+The second involves approximating the $(u,p)$ at a subsequent step more accuratly. Rather than just using the prior value of $(u,p)$ when $c = 1$, call it $x_c$, we use taylor expansion. We can consider $x_c$ to be a function of $c$, hence get :
+$$
+x_{c+\Delta c} = x_c + \Delta c \frac{\partial x_c}{\partial c}
+$$
+Provided we can find $\frac{\partial x_c}{\partial c}$ this will give us a far more accurate solution.
+To find the derivative of $x_c$ with respect to $c$ we consider :\\
+In some circumstances however even with a variable step-size in $c$ we fail to obtain a solution. In our code if the step-size is below $10^{-3}$ our solver stops and fails.
 
 \section{Stability Analysis}
 
