@@ -160,6 +160,7 @@ class rinsp:
 
                 self.AdvectionSwitch.assign(AdvectionSwitchValue)
                 self.ContinuationSolver.solve()
+                self.up += self.dupdadvswitch*(AdvectionSwitchStep)
                 self.navierstokessolver.solve()
 
                 # Plot solution
@@ -247,8 +248,8 @@ class rinsp:
         #Re-Defining functions for use in Advection term
         if self.twoD:
             curl = lambda phi: as_vector([phi.dx(1), -phi.dx(0)])
-            cross = lambda u, w: u[0]*w[1]-u[1]*w[0]
-            perp = lambda n, phi: as_vector([n[1]*phi, -n[0]*phi])
+            cross = lambda u, w: u[1]*w[0]-u[0]*w[1]
+            perp = lambda n, phi: as_vector([-n[1]*phi, n[0]*phi])
         else:
             perp = cross
 
@@ -258,9 +259,9 @@ class rinsp:
 
         #Assembling Advection Term
         adv_byparts1 = inner(u, curl(cross(u, self.v)))*dx #This is the term from integration by parts of double curl
-        adv_byparts2 = inner(U_upwind, 2*avg( perp(n, cross(u, self.v))))*dS #Second term over surface
+        adv_byparts2 = inner(U_upwind, 2*jump( perp(n, cross(u, self.v))))*dS #Second term over surface
         adv_grad_parts1 = 0.5*div(self.v)*inner(u,u)*dx #This is the term due to the integration by parts of grad u^2
-        adv_bdc1 = inner(self.u_0,perp(n,cross(self.u_0,self.v)))*ds #boundary version of adv_byparts2
+        adv_bdc1 = inner(self.u_0+u,perp(n,cross(self.u_0-u,self.v)))*ds #boundary version of adv_byparts2
         adv_grad_parts2 = 1/2*inner(inner(self.u_0,self.u_0)*self.v,n)*ds #boundary term from grad u^2 integration by parts
         advection_term = (
             adv_byparts1
