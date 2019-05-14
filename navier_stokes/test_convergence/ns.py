@@ -62,6 +62,13 @@ plt.loglog(Ns,ep)
 plt.title('Navier-Stokes Pressure Convergence Graph')
 plt.savefig('navier_stokes_pressure_convergence.png')
 
+#plotting stuff in space
+ufile = File("ns.pvd")
+u, p = problem.up.split()
+u.rename("velocity")
+p.rename("pressure")
+ufile.write(u,p)
+
 #plotting error in space
 ufile = File("error.pvd")
 u, p = problem.up.split()
@@ -69,13 +76,6 @@ u -= uexact
 p -= pexact
 u.rename("velocity error")
 p.rename("pressure error")
-ufile.write(u,p)
-
-#plotting error in space
-ufile = File("ns.pvd")
-u, p = problem.up.split()
-u.rename("velocity")
-p.rename("pressure")
 ufile.write(u,p)
 
 #plotting true solution in space
