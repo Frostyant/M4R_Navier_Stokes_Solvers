@@ -27,12 +27,8 @@ for it,n in enumerate(Ns):
     u_y = u_0.dx(1)
     u_xx = u_x.dx(0)
     u_yy = u_x.dx(1)
-    F_ = as_vector([p_x - mu*(u_xx[0]+u_yy[0])  +
-                            u_0[0]*(-2*pi*sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)*cos(2*pi*x)) +
-                            u_0[1]*(-sin(2*pi*x)**2)*(cos(2*pi*y)**2 - sin(2*pi*y)**2))
-                ,p_y - mu*(u_xx[1] + u_yy[1])   +
-                            u_0[0]*(sin(2*pi*y)**2)*(cos(2*pi*x)**2 - sin(2*pi*x)**2))+
-                            u_0[1]*(2*pi*sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)*cos(2*pi*y))])
+    F_ = as_vector([p_x - mu*(u_xx[0]+u_yy[0])
+                ,p_y - mu*(u_xx[1] + u_yy[1]) ])
     F_adv = as_vector([ u_0[0]*u_x[0]+u_0[1]*u_y[0], u_0[0]*u_x[1]+u_0[1]*u_y[1] ])
     F = Function(V)
     F.project(F_)
@@ -45,7 +41,7 @@ for it,n in enumerate(Ns):
     pexact.project(p_0)
     u.assign(uexact)
     p.assign(pexact)
-    problem.FullSolve(FullOutput = True, DisplayInfo = True,stokes = False,method = "direct")
+    problem.FullSolve(FullOutput = True, DisplayInfo = True,stokes = True,method = "direct")
     print("Reynolds Number =")
     print(problem.R)
     #finding with  error

@@ -101,7 +101,7 @@ class rinsp:
                                                         solver_parameters=self.parameters)
         self.dupdadvswitch = Function(W)
         #this is newton approximation term
-        self.up += self.dupdadvswitch*(AdvectionSwitchStep)
+        #self.up += self.dupdadvswitch*(AdvectionSwitchStep)
         self.RHS = -advection_term
         self.LHS = derivative(self.F,self.up)
 
