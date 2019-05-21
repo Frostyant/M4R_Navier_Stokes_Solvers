@@ -48,15 +48,15 @@ for it,n in enumerate(Ns):
 plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
 plt.loglog(Ns,errors)
-plt.title('Navier Stokes Velocity Convergence Graph')
-plt.savefig('ns_convergence.png')
+plt.title('Stokes Velocity Convergence Graph')
+plt.savefig('stokes_convergence.png')
 
 plt.figure()
 plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
 plt.loglog(Ns,ep)
-plt.title('Navier Stokes Pressure Convergence Graph')
-plt.savefig('ns_pressure_convergence.png')
+plt.title('Stokes Pressure Convergence Graph')
+plt.savefig('stokes_pressure_convergence.png')
 
 #plotting error in space
 ufile = File("error.pvd")
@@ -74,13 +74,13 @@ pexact.rename("true pressure")
 truefile.write(uexact,pexact)
 
 #saving exact values of the error
-valfile = open("ns_error.txt","w+")
+valfile = open("stokes_error.txt","w+")
 errorstring = ';'.join(str(e) for e in errors)
 valfile.write(errorstring)
 valfile.close()
 
 #saving exact values of the error
-valfile2 = open("ns_pressure_error.txt","w+")
+valfile2 = open("stokes_pressure_error.txt","w+")
 errorstring2 = ';'.join(str(e) for e in ep)
 valfile2.write(errorstring2)
 valfile2.close()
