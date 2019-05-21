@@ -22,17 +22,21 @@ for it,n in enumerate(Ns):
     #u_0 = as_vector([-x*sin(2*pi*x*y),y*sin(2*pi*x*y)])
     #p_0 = sin(x*y)
     u_0 = as_vector([-sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
+    u_1 = as_vector([-sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
     p_0 = Constant(1)*sin(2*pi*x)**2*sin(2*pi*y)**2
     p_x = p_0.dx(0)
     p_y = p_0.dx(1)
     u_xx = u_0.dx(0).dx(0)
     u_yy = u_0.dx(1).dx(1)
     F_ = as_vector([p_x -mu*(u_xx[0] + u_yy[0]) , p_y -mu*(u_xx[1] + u_yy[1]) ])
+    u_x = u_1.dx(0)
+    u_y = u_1.dx(1)
+    F_adv = as_vector([ u_0[0]*u_x[0]+u_0[1]*u_y[0], u_0[0]*u_x[1]+u_0[1]*u_y[1] ])
     F = Function(V)
-    F.project(F_)
+    F.project(F_ + F_adv)
 
     problem = rins.rinsp(mesh,u_0,W,x,y, F = F,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
-    problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = True)
+    problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = False,method = "direct")
     print("Reynolds Number =")
     print(problem.R)
 
