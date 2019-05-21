@@ -183,7 +183,6 @@ class rinsp:
                 -try to solve at new advection
                     if fail -> reduce switch stepsize by 2, reset switch try again
                     if success -> increase switch size by 0.5, try again
-
                 -repeat until:
                     -switch becomes too small, solver failed, display error
                     -reach switch = 1, and succesfully solve, get solution
@@ -267,8 +266,8 @@ class rinsp:
             adv_byparts1
             - adv_byparts2
             - adv_grad_parts1
-            #- adv_bdc1
-            #+ adv_grad_parts2
+            - adv_bdc1
+            + adv_grad_parts2
         )
 
         return advection_term
@@ -278,7 +277,6 @@ class rinsp:
         Keyword arguments:
         u -- velocity
         p -- pressure
-
         Outputs :
         viscous_term -- RHS Viscous terms (ie they depend on up)
         L -- LHS Viscous Terms (They do not depend on up)
