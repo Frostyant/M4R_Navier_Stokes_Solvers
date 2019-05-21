@@ -28,14 +28,11 @@ for it,n in enumerate(Ns):
     u_xx = u_0.dx(0).dx(0)
     u_yy = u_0.dx(1).dx(1)
     F_ = as_vector([p_x -mu*(u_xx[0] + u_yy[0]) , p_y -mu*(u_xx[1] + u_yy[1]) ])
-    u_x = u_0.dx(0)
-    u_y = u_0.dx(1)
-    F_adv = as_vector([ u_0[0]*u_x[0]+u_0[1]*u_y[0], u_0[0]*u_x[1]+u_0[1]*u_y[1] ])
     F = Function(V)
-    F.project(F_ + F_adv)
+    F.project(F_)
 
     problem = rins.rinsp(mesh,u_0,W,x,y, F = F,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
-    problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = False, method = "direct")
+    problem.FullSolve(FullOutput = False,DisplayInfo = False,stokes = True)
     print("Reynolds Number =")
     print(problem.R)
 
@@ -46,12 +43,12 @@ for it,n in enumerate(Ns):
     uexact.project(u_0)
     pexact.project(p_0)
     errors[it] = norm(u-uexact)
-    ep[it] = norm(p-pexact)#-0.25 #adjusting constant
+    ep[it] = norm(p-pexact)-0.25 #adjusting constant
 
 plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
 plt.loglog(Ns,errors)
-plt.title('Navier Velocity Convergence Graph')
+plt.title('Navier Stokes Velocity Convergence Graph')
 plt.savefig('ns_convergence.png')
 
 plt.figure()
@@ -87,5 +84,3 @@ valfile2 = open("ns_pressure_error.txt","w+")
 errorstring2 = ';'.join(str(e) for e in ep)
 valfile2.write(errorstring2)
 valfile2.close()
-
-print("Is ns convergence test 0")
