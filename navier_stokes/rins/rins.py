@@ -90,7 +90,7 @@ class rinsp:
         self.F = action(a_bilinear, self.up) - L - inner(F,self.v)*dx
 
         #These terms are the advective parts of the equation
-        advection_term = self.GetAdvectionTerm(self.up,InflowBc)
+        advection_term = self.GetAdvectionTerm(self.up,InflowBc,BcIds)
         self.AdvectionSwitch = Constant(0) #initially we neglect advection
         self.F += self.AdvectionSwitch*(advection_term)
         self.aP += self.AdvectionSwitch*derivative(advection_term, self.up)
@@ -269,7 +269,7 @@ class rinsp:
             adv_grad_parts2 = 1/2*inner(inner(u,u)*self.v,n)*ds(Bcs) #boundary term from grad u^2 integration by parts
             adv_bdc1 +=  inner(self.u_0,perp(n,cross(self.u_0,self.v)))*ds(InflowBc) #boundary version of adv_byparts2
             adv_grad_parts2 += 1/2*inner(inner(self.u_0,self.u_0)*self.v,n)*ds(InflowBc) #boundary term from grad u^2 integration by parts
-            
+
         advection_term = (
             adv_byparts1
             - adv_byparts2
