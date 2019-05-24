@@ -7,7 +7,7 @@ class rinsp:
     """A Navier-Stokes Problem with an efficient pre-build solver using Hdiv"""
 
     def __init__(self, mesh,u_0,W,x,y,z = 0,p_0 = Constant(0), F = Constant(as_vector([0,0])),viscosity = 1,AdvectionSwitchStep = 1,
-    gamma = (10**4.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False, PDbcIds = False, PNbcIds = False,twoD=True):
+    gamma = (10**4.0),AverageVelocity = 1,LengthScale = 1,BcIds = False,DbcIds = False, PDbcIds = False, InflowBc = False, twoD=True):
         """ Creats rinsp object
         Keyword arguments:
         mesh -- mesh on which the problem is.
@@ -23,8 +23,9 @@ class rinsp:
         gamma -- A constant, the higher it is the more effecient the linear solver becomes, default is 10**10.
         AverageVelocity -- Average velocity for system, used for determining Reynolds number, default 1.
         LengthScale -- Length Scale for system, used for determining Reynolds number, default 1.
-        BcIds -- Ids for Boundaries on which we apply weak conditions. At default False we apply to NO boundaries.
-        DbcIds -- IDs for Boundaries on which we apply strong conditions. At default False we just use BcIds instead for Dirichelet Boundaries.
+        BcIds -- (Tangential Bcs) Ids for Boundaries on which we apply weak conditions. At default False we apply to NO boundaries.
+        DbcIds -- (Normal Bcs) IDs for Boundaries on which we apply strong conditions. At default False we just use BcIds instead for Dirichelet Boundaries.
+        InflowBc -- Inflow Boundary conditions, necessary for navier stokes
         """
 
         #setting up basic class attributes
@@ -89,7 +90,7 @@ class rinsp:
         self.F = action(a_bilinear, self.up) - L - inner(F,self.v)*dx
 
         #These terms are the advective parts of the equation
-        advection_term = self.GetAdvectionTerm(self.up)
+        advection_term = self.GetAdvectionTerm(self.up,InflowBc)
         self.AdvectionSwitch = Constant(0) #initially we neglect advection
         self.F += self.AdvectionSwitch*(advection_term)
         self.aP += self.AdvectionSwitch*derivative(advection_term, self.up)
@@ -238,7 +239,7 @@ class rinsp:
 
         self.bcs = tuple(bcs)
 
-    def GetAdvectionTerm(self,up):
+    def GetAdvectionTerm(self,up,InflowBc,Bcs):
 
         n = FacetNormal(self.mesh)
         #splitting u and p for programming purposes (unavoidable)
@@ -260,8 +261,15 @@ class rinsp:
         adv_byparts1 = inner(u, curl(cross(u, self.v)))*dx #This is the term from integration by parts of double curl
         adv_byparts2 = inner(U_upwind, 2*avg( perp(n, cross(u, self.v))))*dS #Second term over surface
         adv_grad_parts1 = 0.5*div(self.v)*inner(u,u)*dx #This is the term due to the integration by parts of grad u^2
-        adv_bdc1 = inner(self.u_0,perp(n,cross(self.u_0,self.v)))*ds #boundary version of adv_byparts2
-        adv_grad_parts2 = 1/2*inner(inner(self.u_0,self.u_0)*self.v,n)*ds #boundary term from grad u^2 integration by parts
+        if not InflowBc:
+            adv_bdc1 = inner(u,perp(n,cross(u,self.v)))*ds #boundary version of adv_byparts2
+            adv_grad_parts2 = 1/2*inner(inner(u,u)*self.v,n)*ds #boundary term from grad u^2 integration by parts
+        else:
+            adv_bdc1 = inner(u,perp(n,cross(u,self.v)))*ds(Bcs) #boundary version of adv_byparts2
+            adv_grad_parts2 = 1/2*inner(inner(u,u)*self.v,n)*ds(Bcs) #boundary term from grad u^2 integration by parts
+            adv_bdc1 +=  inner(self.u_0,perp(n,cross(self.u_0,self.v)))*ds(InflowBc) #boundary version of adv_byparts2
+            adv_grad_parts2 += 1/2*inner(inner(self.u_0,self.u_0)*self.v,n)*ds(InflowBc) #boundary term from grad u^2 integration by parts
+            
         advection_term = (
             adv_byparts1
             - adv_byparts2
