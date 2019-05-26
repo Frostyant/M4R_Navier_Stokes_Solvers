@@ -11,7 +11,7 @@ Q = FunctionSpace(mesh, "CG", 1)
 W = V*Q
 
 #setting up boundary conditions
-u_0 = as_vector([cos(y)*exp(x),-sin(y)*exp(x)])
+u_0 = as_vector([-sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
 p_0 = Constant(1)*sin(2*pi*x)**2*sin(2*pi*y)**2
 p_x = p_0.dx(0)
 p_y = p_0.dx(1)
