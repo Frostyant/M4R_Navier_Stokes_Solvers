@@ -47,6 +47,7 @@ RHS =  inner(v,F) * dx #q*Zero * dx
 # Form for use in constructing preconditioner matrix
 aP = inner(grad(u), grad(v))*dx + p*q*dx
 
+"""
 parameters = {
     "ksp_type": "gmres",
     "option" : None,
@@ -60,7 +61,9 @@ parameters = {
     "fieldsplit_0_pc_factor_mat_solver_package": "mumps",
     "fieldsplit_1_ksp_type": "preonly",
     "fieldsplit_1_pc_type": "lu"
-}
+}"""
+
+solver_parameters={'ksp_type': 'cg'}
 
 # assembling & solving
 Problem = LinearVariationalProblem(LHS, RHS, up, aP=aP, bcs = bcs)
