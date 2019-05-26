@@ -35,7 +35,7 @@ As seen in Common and Unusual Finite Elements [7], the lagrange finite element a
 For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first order lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points in it, the two edge points. Hence we get figure 1, where the blue curve indicates our approximation and the red one the exact function. In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
 \begin{figure}
   \includegraphics[width=\linewidth]{ex_1D_LG.png}
-  \caption{4 element First Order Interpolation Example}
+  \caption{4 Element First Order Interpolation Example and Comparaison to True Solution}
 \end{figure}
 \\
 It follows that we first cut up our domain into a mesh. Commonly these meshes are made up of triangles for simplicity, although squares or even curved elements for simulations on a sphere are also used. Then we approximate $u$ and $p$ using the lagrange element. Hence we get that for instance $u$ is the sum of a set of known piecewise linear functions (as they are determined by the mesh) but with unknown coefficients. The aim of the rest of the method is to determine these unknown coefficients.\\
@@ -69,13 +69,14 @@ We can solve this using a variety of linear systems solvers. Note in particular 
 While we locally enforced the divergence-free equation by including it in the weak form, the global flow may not be divergence-free. In order to achieve that more complex mathematical tools would be required.\\
 Now apply this to the manufactured solution :
 \begin{align*}
-u_x &=  sin(2 \pi y) cos(2 \pi y)  sin(2 \pi x)^2 \\
-u_y &= -sin(2 \pi x) cos(2 \pi x)  sin(2 \pi y)^2 \\
+u_x &=  -sin(2 \pi y) cos(2 \pi y)  sin(2 \pi x)^2 \\
+u_y &= sin(2 \pi x) cos(2 \pi x)  sin(2 \pi y)^2 \\
 p &= sin(2 \pi x)^2 sin(2 \pi y)^2 \\
 F &= \nabla p - \mu \nabla^2 u
 \end{align*}
 Where $F$ was selected specifically to ensure that any given $u$ and $p$ are solutions.
-Using the above and implementing it in firedrake we get figures .On a mesh with vertices we get an error of about.
+Using the above and implementing it in firedrake we get figures .On a mesh with vertices we get an error of about.\\
+However default implementation using the CG method is slow, hence we wish to improve on it.
 
 \section{Tools and Definitions}
 \subsection{Brezzi-Douglas-Marini Element}
@@ -84,7 +85,7 @@ This finite element, combined with the DG element for pressure, discretizes the 
 Additionally we will be able to employ an enhanced lagrangian preconditioner thanks to the global divergence free property [2].\\
 
 However unlike the lagrange elements we can no longer set a dirichelet boundary condition's tangential component. Therefore we need to find alternative approaches to enforce these conditions.
-Additionally some operations (such as the curl) are undefined in this space. Due to possible discontinuities at the boundaries we also have to be carefull with all boundary integrals.\\
+Additionally some operations (such as the weak form of the curl) are undefined in this space. Due to possible discontinuities at the boundaries we have to be carefull with all boundary integrals.\\
 
 In general the weak form will be far more involved.
 
@@ -267,7 +268,10 @@ We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$ via an Lu Factoriz
 \begin{align}
 \int_\Omega w \cdot F dx &= \int_\Omega \nabla \cdot (p v) dx - \int_\Omega ( p \nabla \cdot (v)) dx - \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu + \int_\Omega \gamma \nabla \cdot u \: \nabla \cdot v dx
 \end{align}
-This doesn't change the equation, thus should result in the same solution. However acoording to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. We then perform ILu in order to solve for $S^{-1}$. ILu performs the Lu Factorization on various blocks of the matrix, allowing it to be parallelised.
+This doesn't change the equation, thus should result in the same solution. However according to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. We then perform ILu in order to solve for $S^{-1}$. ILu performs the Lu Factorization on various blocks of the matrix, allowing it to be parallelised.\\
+Note that in theory we could have tried a similar method in the CG space.
+Testing shows however that this fails.
+TODO : EXPLAIN WHY
 
 \section{Full Navier Stokes}
 Now we include the advection term : 
@@ -331,8 +335,9 @@ Hence consider the modified equation :
 \begin{align}
 c (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
 \end{align}
-As mentioned in the Newton's method section, the newton's method converges only if the initial guess is within a certain ball around the solution. Hence we need to find a method to get our initial guess to be closer to the solution.\\
-We could use the stokes solution, which we can most likely solve. We then increase $c$ to $1$ and try to solve using the stokes solution as a guess. If it still fails we can reduce the step-size of $c$ and solve for $c = 0.5$ instead before solving for full advection. If necessary we can bring down the step-size multiple times until we reach a $c$ for which it works, after which we then gradually increase c using the same procedure until we solve for full advection.\\
+As mentioned in the Newton's Method section, the Newton's Method converges only if the initial guess is within a certain ball around the solution. Hence we need to find a method to get our initial guess to be closer to the solution.\\
+We could use the stokes solution as an initial guess, which we can most likely solve. We then increase $c$ to $1$ and try to solve using the stokes solution as a guess. \\
+If it still fails we can take $c =0.5$ before solving for full advection. If necessary we can bring downthe value of $c$ multiple times until our solver converges at an appropriate rate. Afterwards we then gradually increase c using the same procedure until we solve for full advection.\\
 \\
 However we can speed up this process in two ways.\\
 The first, very simple method, is adapting our step-size to the problem. Rather than starting with a step size of $1$ we can reduce the step size initially if the Reynolds number is high enough. In addition to reducing the stepsize if the newton iteration fails, we can increase step size if it succeeds. This should allow us to close in on the optimal step size rapidly. This allows us to reduce the total number of times we try to use the Newton's method.\\
@@ -441,6 +446,21 @@ The flow past a cylinder is a well-known and studied flow with interesting prope
 Hence we will see how our solver resolves this flow and compare results with other papers [14].
 
 \subsection{Known Case : Cylinder flow Stability}
+
+\section{Conclusion and Future Improvements}
+
+In this project we were interested in applications of the BDM/DG mixed finite element onto the steady navier-stokes equations.\\
+After briefly discussing the general finite element method and some introductory definitions and notations we descided to focus on the stokes equation. After assembling the weak form of the equation we then applied a Schur Preconditioner to  improve efficiency.\\
+We then assembled a weak form of the navier-stokes equation but noted that directly using it wasn't optimal. As such we developed a continuation method with variable step-size to improve the algorithm's speed and expand the number of problems which it can solve.\\
+After this we made a rudimentary time-stepping method to study the stability of any solutions obtained.\\
+Finally we tested all of the above and concluded that our algorithm worked as anticipated.\\
+\\
+However a number of improvements could be made.\\
+The Schur Preconditioner is not fully parallelizable. Further improvments could be made to determining $A^{-1}$. An example would be applying a patch preconditioning method.\\
+The variable step-size method is servicable but can be considerably improved. There are a number of methods which from local conditions of the function could more efficiently determine an appropriate step-size.\\
+Similarly the time-stepping method was designed exclusively for the stability test. For this purpose it works very well. However various improvements could be made for accuracy and speed. For instance we could follow up on the Picards iterations with a few Newton iterations. The Picards solver would have presumably brought us into the radius of convergence.\\
+
+
 \section{Citations}
 
 [1] Imperial College London \textit{Firedrake Project} Available from : https://www.firedrakeproject.org [Accessed througout 2018-2019]\\
