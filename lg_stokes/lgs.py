@@ -1,4 +1,5 @@
 from firedrake import *
+import numpy as np
 
 n = 16
 mu = 1
