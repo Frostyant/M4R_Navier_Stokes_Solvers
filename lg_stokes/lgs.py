@@ -82,3 +82,8 @@ uexact.project(u_0)
 error = np.log(norm(u-uexact))
 
 print(error)
+
+#saving exact values of the error
+valfile2 = open("error.txt","w+")
+valfile2.write(str(error))
+valfile2.close()
