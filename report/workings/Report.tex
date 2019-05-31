@@ -195,12 +195,12 @@ Hence this term becomes :
 \end{align*}
 $u$ should be continous in the physical space thus the added term will be $0$ in continuous space. Hence this does not change the equation in physical space.\\
 \\
-Now we also add the term $\alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS$. According to sources [3] provided that  $\alpha$ is larger than $10$ numerical stability is increased.\\
-$J$ is the jump notation.\\
+Now we also add the term $\alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS$. According to sources [3] provided that  $\alpha$ is larger than $10$ numerical stability is increased. 
+($J$ is the jump notation).\\
 The numerical value of $h$ is the average distance of a side. In our case we defined it as the average cell-volume over the length of the facettes between them for each individual facette element $\Gamma$.\\
-The $J(u_i)$ term makes this integral $0$ in continous space so this does not change the solution.\\
+ Presumably any flow studied with this algorithme will have a continuous velocity and pressure field. The $J(u_i)$ term makes this integral $0$ in continous space so this does not change the solution.\\
 \\
-As mentioned in the BDM definition section we cannot set the tangential component of a dirichelet boundary condition in the conventional finite element manner.  So instead we use penalty terms, which should be $0$. This pushes the solution towards respecting the boundary conditions. In practice this just means taking all the terms over the edge of a cell and considering them on the sections of the edge of the domain where dirichelet conditions apply instead.\\
+As mentioned in the BDM definition section we cannot set the tangential component of a dirichelet boundary condition in the conventional finite element manner.  So instead we use penalty terms, which should be $0$ when boundary conditions hold. This pushes the solution towards respecting the boundary conditions. In practice this just means taking all the terms over the edge of a cell and considering them on the sections of the edge of the domain where dirichelet conditions apply instead.\\
  Hence our final viscous term becomes :\\
 \begin{align*}
 &-  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e ( \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial v_i}{\partial x_j}\} dS \\
@@ -220,7 +220,7 @@ Multiplying by $q$ and integrating we get :
 \begin{align*}
 \int_\Omega q \nabla \cdot u dx = 0
 \end{align*}
-This is $0$, so we add this to the weak formulation $(3)$ we obtained, getting one weak formulation which includes both pressure and velocity while also keeping symmetry. \\
+This is $0$, so we add this to the weak formulation $(3)$ we obtained, getting one weak formulation which includes both pressure and velocity while also keeping symmetry. As seen in the appendix this is required to the usage of a mixed soace in ufl.\\
 We need this since we want to turn the entire system into a single matrix equation which includes all the conditions.\\
 Integrating by parts the pressure term get :
 \begin{align}
@@ -267,8 +267,8 @@ I & 0\\
 \end{bmatrix}
 $$
 Hence, if we can find $A^{-1}$ and $S^{-1}$ we can easily solve the equation. We solve both via a Lu factorization.\\
-We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$ via an Lu Factorization. The Lu factorization is a direct solver, and thus is innefficient. The algorithm would have to be performed in a sequential manner, preventing usage of parallelisation. We did mitigate this through the usage of the "mumps" sub-routine. Additionally there was an  However more efficient implementations would require this to be modified.\\
- However $S^{-1}$, the inverse of the shur complement is difficult to determine because it is usually dense. However research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (!). Note that this term is 0 in continuous space. We thus get : 
+We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$ via an Lu Factorization. The Lu factorization is a direct solver, and thus is innefficient. The algorithm would have to be performed in a sequential manner, preventing usage of parallelisation. We did mitigate this through the usage of the "mumps" sub-routine. We originally attempted to use ILu, which is more efficient, but this failed. This is because the viscous term makes A a less sparse matrix.\\
+ However $S^{-1}$, the inverse of the shur complement is difficult to determine because it is usually dense. However research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (14). Note that this term is 0 in continuous space. We thus get : 
 \begin{align}
 \int_\Omega w \cdot F dx &= \int_\Omega \nabla \cdot (p v) dx - \int_\Omega ( p \nabla \cdot (v)) dx - \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu + \int_\Omega \gamma \nabla \cdot u \: \nabla \cdot v dx
 \end{align}
@@ -308,7 +308,7 @@ Now consider the second term in (17)
 - \int_{\Omega} u \times (\nabla \times u) \cdot v \ dx &= \int_{\Omega} v \cdot (\nabla \times u) u \ dx   \\
 &=  \int_{\Omega} (\nabla \times u) \cdot (u \times v)  \ dx
 \end{align*}
-Next we use the results from source [?].\\
+Next we use the results from source [18].\\
 From this we obtain that via integration by parts on each individual element we get : 
 \begin{align*}
 \sum_e \int_e u \cdot (\nabla \times (u \times v) \ ) dx - \int_{\Gamma} \frac{1}{2}(\{u\} + sgn(u \cdot n)[u]) \cdot (n \times (u \cdot v) \ ) dS
@@ -334,7 +334,7 @@ We reordered some terms to be in-line with our code.
 
 \subsection{Continuation Method}
 
-Given the navier stokes equations we could try to naively solve directly applying the above preconditioning and discretization methods. However at high Reynolds number this approach quickly fails unless the mesh is refined or a better initial guess is given, leading to high computational cost.\\
+Given the navier stokes equations we could try to naively solve directly applying the above preconditioning and discretization methods. However at high Reynolds number this approach quickly fails unless the mesh is refined or a better initial guess is given, leading to high computational cost orinability to solve certain problems.\\
 Hence consider the modified equation :
 \begin{align}
 c (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
@@ -668,9 +668,12 @@ https://doi.org/10.1016/j.cam.2005.11.037.\\
 
 [15] Cockburn B, Kanschat G, Schötzau D. \textit{A note on discontinuous galerkin divergence-free solutions of the navier-stokes equations. Journal of Scientific Computing}. 2007 Jun 1;31(1-2):61-73. https://doi.org/10.1007/s10915-006-9107-7\\
 
-[16] Constantinescu V.N. (1995) \textit{Other Solutions of Navier-Stokes Equations (Steady Incompressible Flow).} In: Laminar Viscous Flow. Mechanical Engineering Series. Springer, New York, NY
+[16] Constantinescu V.N. (1995) \textit{Other Solutions of Navier-Stokes Equations (Steady Incompressible Flow).} In: Laminar Viscous Flow. Mechanical Engineering Series. Springer, New York, NY\\
 
-[17] Deuflhard P. (2011) Parameter Dependent Systems: Continuation Methods. In: \textit{Newton Methods for Nonlinear Problems}. Springer Series in Computational Mathematics, vol 35. Springer, Berlin, Heidelberg
+[17] Deuflhard P. (2011) Parameter Dependent Systems: Continuation Methods. In: \textit{Newton Methods for Nonlinear Problems}. Springer Series in Computational Mathematics, vol 35. Springer, Berlin, Heidelberg\\
+
+[18] Natale, Andrea, and Colin J. Cotter. \textit{Scale‐selective Dissipation in Energy‐conserving Finite‐element Schemes for Two‐dimensional Turbulence}  Quarterly Journal of the Royal Meteorological Society 143.705 (2017): 1734-745. Web.\\
+
 
 
 \end{document}
