@@ -42,16 +42,12 @@ for it,n in enumerate(Ns):
 
     #dealing with stokes error
     u, p = problem.up.split()
-    p_cheat = Constant(1)*sin(2*pi*x)**2*sin(2*pi*y)**2
     uexact = Function(V)
     pexact = Function(Q)
-    pcheat = Function(Q)
-    pcheat.project(p_cheat)
-    p -= pcheat
     uexact.project(u_0)
     pexact.project(p_0)
     errors[it] = norm(u-uexact)
-    ep[it] = norm(p-pexact) #adjusting constant
+    ep[it] = norm(p-pexact)-0.25 #adjusting constant
 
 plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
