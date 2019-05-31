@@ -188,7 +188,7 @@ Focusing on the viscosity, or second, term we get via integration by parts :
 \begin{align*}
 \int_e (v \cdot \nabla^2 u) dx = - \int_e \nabla_h(v) : \nabla_h(u) dx + \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS
 \end{align*}
-The first term can be summed up to an integral over $\Omega$ and the second one is asymmetrical. We can add a term to make it symetrical. This helps with numerical stability of the final matrix equation. Additionally some linear solvers take advantage of this structure.\\
+The first term can be summed up to an integral over $\Omega$ and the second one is asymmetrical. We can add a term to make it symetrical. This helps with numerical stability of the final matrix equation. Numerical stability ensures that if there are errors in the input values of the problem (such as the exact values of an inflow), they lessen as the algorithm progresses. This property is obviously desirable especially when considering experimental information. Additionally some linear solvers take advantage of this structure.\\
 Hence this term becomes :
 \begin{align*}
 -  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e( \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial v_i}{\partial x_j}\} dS)
