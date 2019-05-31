@@ -474,10 +474,35 @@ A significant part of this project was developing a python code using firedrake.
 Firedrake is a python project which aims to provide mathematicians, engineers and scientists with an automated system for solving partial differential equations.\\
 It does so by automatically generating code based on UFL expressions from the fenics project, a library of computational methods used for solving PDEs. This allows us to write out our equations in a fairly intuitive way while firedrake generates the background code needed to solve them.\\
 Our project comprises largely of one file containg the rinsp and rinspt classes, though various launching scripts and the lagrange script are also present. We will not discuss the entirety of either class, if the reader wants to have a detailed look he can go to the github repository containg it at https://github.com/Frostyant/M4R\_Navier\_Stokes\_Solvers once it has been made public.\\
-We will however discuss a handfull of code snippets, ranging from the parameters firedrake uses to the generate the code to the ufl expressions for the viscous, pressure and advection terms.
+We will however show a handfull of code snippets, ranging from the parameters firedrake uses to the generate the code to the ufl expressions for the viscous, pressure and advection terms.
+
+\subsubsection{Solver Paremeters}
+The parameters of our solver are :
+\begin{lstlisting}
+"ksp_type": "gmres",
+            "ksp_converged_reason": True,
+            "ksp_rtol": 1e-6,
+            "ksp_max_it": 50,
+            "pc_type": "fieldsplit",
+            "pc_fieldsplit_type": "schur", #use Schur preconditioner
+            "pc_fieldsplit_schur_fact_type": "full", #full preconditioner
+            "pc_fieldsplit_off_diag_use_amat": True,
+            "fieldsplit_0_ksp_type": "preonly",
+            "fieldsplit_0_pc_type": "lu",#use full LU factorization, ilu fails
+            "fieldsplit_0_pc_factor_mat_solver_type": "mumps",
+            "fieldsplit_1_ksp_type": "preonly",
+            "fieldsplit_1_pc_type": "bjacobi",
+            "fieldsplit_1_pc_sub_type": "ilu"#use incomplete LU factorization on the submatrix
+\end{lstlisting}
+GMRES indicates the solver used for the outer system.
+ It stands for generalized minimal residual method, and used due to nonsymmetric nature of our equation.\\
+ksp\_rtol indicates the relative tolerance above which we consider that the equation diverges.\\
+ksp\_max\_it is the maximal number of iterations for the linear GMRES solver. If above it the solver fails or, in the continuation method, reduces the advection term and tries again.\\
+"pc\_type": "fieldsplit" and "pc\_fieldsplit\_type": "schur" indicates we are using the Schur fieldsplit preconditioner.\\
+"fieldsplit\_0 options deal with finding $A^{-1}$ in the Schur Preconditioner wjile the fieldsplit\_1 options deal with the remaining part of the preconditioner.
 
 \subsubsection{Viscous Term}
-The code associated to the Viscous term is :
+The code associated to the viscous term is :
 \begin{lstlisting}
 def GetViscousTerm(self,u,p):
         """Gets Main Viscous Terms
