@@ -9,7 +9,9 @@
 
 
 \begin{document}
-\setcounter{secnumdepth}{0}
+\lstset{
+   basicstyle=\fontsize{8}{9}\selectfont\ttfamily}
+\setcounter{secnumdepth}{4}
 \title{M4R}
 \date{March 2nd, 2019}
 \author{Anthony Webster CID 01051827}
@@ -28,7 +30,7 @@ First we will describe the classic Finite Element Method, its advantages and dis
 \section{Classic Finite Elements Method}
 The finite element method (FEM) is a numerical method which approximates the solution to an exact partial differential equation [5]. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and in this project.\\
 \\
-We will now consider the case of applying the FEM to the stokes equations using the more classic lagrange finite element.\\
+We will now consider the case of applying the FEM to the stokes equations using the more classic lagrange finite element. This method is very common in research and industrial problems as such there are number of courses and books on the subject, such as \textit{Galerkin finite element methods for parabolic problems} if further explantion and theory is required.\\
 \begin{align}
 0 &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
@@ -93,7 +95,7 @@ In general the weak form will be far more involved.
 
 
 \subsection{Discontinous Galerkin and BDM-DG Mixed Space}
-The discontinous Galerkin Element space is the space of piecewise linear continuous functions.\\
+The discontinous Galerkin Element space is the space of piecewise linear continuous functions. An example applying this space on its own can be found [8].\\
 Combined with the BDM space we obtain a mixed finite element space which approximates the $H_{div}$ finite element space.\\
 
 \subsection{Newton's Method}
@@ -318,7 +320,6 @@ Hence get :
 \end{align}
 $u_{up}$ is the upwinding term mentioned in the paper.\\
 Note that it is equal to $u^+$ if $n$ is in the "positive" direction, and $u^-$ otherwise. (Reminder : the positive and negative direction are arbitrarily set when creating the mesh. They serve solely as markers for the software)\\
-TODO : CHECK BELOW\\
 Note that the second term becomes the following on the computational domain boundary :
 \begin{align*}
 - \int_{\delta \Omega} u_0 \cdot (n \times (u \cdot v) \ ) ds
@@ -342,7 +343,7 @@ As mentioned in the Newton's Method section, the Newton's Method converges only 
 We could use the stokes solution as an initial guess, which we can most likely solve. We then increase $c$ to $1$ and try to solve using the stokes solution as a guess. \\
 If it still fails we can take $c =0.5$ before solving for full advection. If necessary we can bring downthe value of $c$ multiple times until our solver converges at an appropriate rate. Afterwards we then gradually increase c using the same procedure until we solve for full advection.\\
 \\
-However we can speed up this process in two ways.\\
+We can speed up this process in two ways.\\
 The first, very simple method, is adapting our step-size to the problem. Rather than starting with a step size of $1$ we can reduce the step size initially if the Reynolds number is high enough. In addition to reducing the stepsize if the newton iteration fails, we can increase step size if it succeeds. This should allow us to close in on the optimal step size rapidly. This allows us to reduce the total number of times we try to use the Newton's method.\\
 The second involves approximating the $(u,p)$ at a subsequent step more accuratly. Rather than just using the prior value of $(u,p)$, call it $x_c$, we use taylor expansion. We can consider $x_c$ to be a function of $c$, hence get :
 $$
@@ -458,14 +459,142 @@ We then assembled a weak form of the Navier-Stokes equation but noted that direc
 After this we made a rudimentary time-stepping method to study the stability of any solutions obtained.\\
 Finally we tested all of the above and concluded that our algorithm worked as anticipated.\\
 \\
+\\
 However a number of future improvements could be made.\\
+\\
 We could use a multigrid method using our method as a smoother to get convergence to be less dependent on grid-size, dramatically reducing computational costs. Application of such a method was discussed, unfortunatly the tools required for it are not currently compatible with our problem set (specifically dirichelet boundary conditions).\\
-The variable step-size method is servicable but can be considerably improved to reduce the total number of iterations and thus computational cost. There are a number of methods which from local conditions of the function could more efficiently determine an appropriate step-size.\\
+The variable step-size method is servicable but can be considerably improved to reduce the total number of iterations and thus computational cost. There are a number of methods which from local conditions of the function could more efficiently determine an appropriate step-size. Our source on the continuation method [17] includes such improvements.\\
 Similarly the time-stepping method was designed exclusively for the stability test. For this purpose it works very well. However various improvements could be made for accuracy and speed. For instance we initially attempted to utilise a Newton iteration rather than a Picards iteration. However as the initial guess wasn't in the ball of convergence this method failed. Adding a few Newton iterations using the picards results as a starting point should give more accurate answers for time-dependent methods.\\
 Additionally the stability itself could be expanded to for instance consider the growth rate of an instability as well as determines unstable modes.\\
 In some flows we may have multiple solutions or a bifurcation (that is the case for the cylinder flow at high Reynolds number). In this case a deflation method may be usefull. In this method, after finding a solution we "substract" it from the equation and thus seek other solutions.
 
 \section{Appendix}
+\subsection{Discussing the Code}
+A significant part of this project was developing a python code using firedrake.
+Firedrake is a python project which aims to provide mathematicians, engineers and scientists with an automated system for solving partial differential equations.\\
+It does so by automatically generating code based on UFL expressions from the fenics project, a library of computational methods used for solving PDEs. This allows us to write out our equations in a fairly intuitive way while firedrake generates the background code needed to solve them.\\
+Our project comprises largely of one file containg the rinsp and rinspt classes, though various launching scripts and the lagrange script are also present. We will not discuss the entirety of either class, if the reader wants to have a detailed look he can go to the github repository containg it at https://github.com/Frostyant/M4R\_Navier\_Stokes\_Solvers once it has been made public.\\
+We will however discuss a handfull of code snippets, ranging from the parameters firedrake uses to the generate the code to the ufl expressions for the viscous, pressure and advection terms.
+
+\subsubsection{Viscous Term}
+The code associated to the Viscous term is :
+\begin{lstlisting}
+def GetViscousTerm(self,u,p):
+        """Gets Main Viscous Terms
+        Keyword arguments:
+        u -- velocity
+        p -- pressure
+        Outputs :
+        viscous_term -- RHS Viscous terms (ie they depend on up)
+        L -- LHS Viscous Terms (They do not depend on up)
+        """
+        c = Constant(20)
+        n = FacetNormal(self.mesh)
+        h = avg(CellVolume(self.mesh))/FacetArea(self.mesh)
+
+        if self.BcIds == False:
+            viscous_stab_L = c/(h)*inner(self.v,self.u_0)*ds
+            viscous_byparts2_ext_L = 1/2*(
+            + inner(outer(self.u_0,n),grad(v))*ds
+            + inner(outer(self.v,n),grad(self.u_0))*ds
+            )
+        else:
+            viscous_stab_L = c/(h)*inner(self.v,self.u_0)*ds(self.BcIds)
+            viscous_byparts2_ext_L = 1/2*(
+            + inner(outer(self.u_0,n),grad(self.v))*ds(self.BcIds)
+            + inner(outer(self.v,n),grad(self.u_0))*ds(self.BcIds)
+            )
+
+        L = viscous_stab_L + viscous_byparts2_ext_L
+
+        #Viscous Term parts
+        viscous_byparts1 = inner(grad(u), grad(self.v))*dx #this is the term over omega from the integration by parts
+        viscous_byparts2 = 2*inner(avg(outer(self.v,n)),avg(grad(u)))*dS #this the term over interior surfaces from integration by parts
+        viscous_symetry = 2*inner(avg(outer(u,n)),avg(grad(self.v)))*dS #this the term ensures symetry while not changing the continuous equation
+        viscous_stab = c*1/(h)*inner(jump(self.v),jump(u))*dS #stabilizes the equation
+        if self.BcIds == False:
+            viscous_byparts2_ext = 1/2*(inner(outer(self.v,n),grad(u)) + inner(outer(u,n),grad(self.v)))*ds #This deals with boundaries
+            viscous_ext =c/(h)*inner(self.v,u)*ds#this is a penalty term for the boundaries
+        else:
+            viscous_byparts2_ext = 1/2*(inner(outer(self.v,n),grad(u)) + inner(outer(u,n),grad(self.v)))*ds(self.BcIds) #This deals with boundaries
+            viscous_ext =c/(h)*inner(self.v,u)*ds(self.BcIds)#this is a penalty term for the boundaries
+        #Assembling Viscous Term
+        viscous_term = self.viscosity*(
+            viscous_byparts1
+            - viscous_byparts2
+            - viscous_symetry
+            + viscous_stab
+            - viscous_byparts2_ext
+            + viscous_ext
+        )
+
+        L = self.viscosity*L
+
+        return viscous_term,L
+\end{lstlisting}
+Note that in case we do not have dirichelet boundary conditions we obviously didn't integrate the exterior term over those boundaries (hence the ds(self.BcIds)).
+
+\subsubsection{Pressure Term}
+The code associated to the Pressure and graddiv term is :
+\begin{lstlisting}
+def GetBilinear(self,u,p,viscous_term):
+
+        #Setting up bilenar form
+        graddiv_term = self.gamma*div(self.v)*div(u)*dx
+        a_bilinear = (
+            viscous_term +
+            self.q * div(u) * dx - p * div(self.v) * dx #Pressure terms from second integ by parts
+            + graddiv_term
+        )
+        return a_bilinear,graddiv_term
+\end{lstlisting}
+Note that we needed to combine the two equations (continuity and momentum) to be able to use the mixed BDM/DG vector space.
+
+\subsubsection{Advection Term}
+The code associated to the Advection term is :
+\begin{lstlisting}
+def GetAdvectionTerm(self,up,InflowBc,Bcs):
+
+        n = FacetNormal(self.mesh)
+        #splitting u and p for programming purposes (unavoidable)
+        u, p = split(up)
+
+        #Re-Defining functions for use in Advection term
+        if self.twoD:
+            curl = lambda phi: as_vector([-phi.dx(1), phi.dx(0)])
+            cross = lambda u, w: -u[1]*w[0]+u[0]*w[1]
+            perp = lambda n, phi: as_vector([n[1]*phi, -n[0]*phi])
+        else:
+            perp = cross
+
+        #Defining upwind and U_upwind for use in advection
+        Upwind = 0.5*(sign(dot(u, n))+1)
+        U_upwind = Upwind('+')*u('+') + Upwind('-')*u('-')
+
+        #Assembling Advection Term
+        adv_byparts1 = inner(u, curl(cross(u, self.v)))*dx #This is the term from integration by parts of double curl
+        adv_byparts2 = inner(U_upwind, 2*avg( perp(n, cross(u, self.v))))*dS #Second term over surface
+        adv_grad_parts1 = 0.5*div(self.v)*inner(u,u)*dx #This is the term due to the integration by parts of grad u^2
+        if not InflowBc:
+            adv_bdc1 = inner(u,perp(n,cross(u,self.v)))*ds(Bcs) #boundary version of adv_byparts2
+            adv_grad_parts2 = 1/2*inner(inner(u,u)*self.v,n)*ds(Bcs) #boundary term from grad u^2 integration by parts
+        else:
+            adv_bdc1 = inner(u,perp(n,cross(u,self.v)))*ds(Bcs) #boundary version of adv_byparts2
+            adv_grad_parts2 = 1/2*inner(inner(u,u)*self.v,n)*ds(Bcs) #boundary term from grad u^2 integration by parts
+            adv_bdc1 +=  inner(self.u_0,perp(n,cross(self.u_0,self.v)))*ds(InflowBc) #boundary version of adv_byparts2
+            adv_grad_parts2 += 1/2*inner(inner(self.u_0,self.u_0)*self.v,n)*ds(InflowBc) #boundary term from grad u^2 integration by parts
+
+        advection_term = (
+            adv_byparts1
+            - adv_byparts2
+            - adv_grad_parts1
+            - adv_bdc1
+            + adv_grad_parts2
+        )
+
+        return advection_term
+\end{lstlisting}
+Note that inflow boundary conditions have to be treated separatly from no-slip boundary conditions.
 
 \section{Citations}
 
@@ -475,19 +604,19 @@ In some flows we may have multiple solutions or a bifurcation (that is the case 
  An Augmented Lagrangian Preconditioner For The 3D Stationary Incompressible Navier–Stokes Equation At High Reynolds Number
 \textit{SIAM J. Sci Comput 28(6)}2006\\
 
-[3]Arnold, Douglas N., et al. "Unified analysis of discontinuous Galerkin methods for elliptic problems." SIAM journal on numerical analysis 39.5 (2002): 1749-1779.\\
+[3] Arnold, Douglas N., et al. "Unified analysis of discontinuous Galerkin methods for elliptic problems." SIAM journal on numerical analysis 39.5 (2002): 1749-1779.\\
 
 [4] Vassilevski, Panayot S. Multilevel Block Factorization Preconditioners: Matrix-based Analysis and Algorithms for Solving Finite Element Equations. New York, NY: Springer New York, 2008. Web.\\
 
-[5]Ibrahimbegovic, Adnan. \textit{Nonlinear Solid Mechanics}. Vol. 160. Dordrecht: Springer Netherlands, 2009. Solid Mechanics and Its Applications. Web.\\
+[5] Ibrahimbegovic, Adnan. \textit{Nonlinear Solid Mechanics}. Vol. 160. Dordrecht: Springer Netherlands, 2009. Solid Mechanics and Its Applications. Web.\\
 
-[6]\\
+[6] Thomée, Vidar. (1986). \textit{Galerkin finite element methods for parabolic problems}. SERBIULA (sistema Librum 2.0). 25. 10.1007/978-3-662-03359-3. \\
 
 [7]  Kirby R.C., Logg A., Rognes M.E., Terrel A.R. (2012) \textit{Common and unusual finite elements}. In: Logg A., Mardal KA., Wells G. (eds) Automated Solution of Differential Equations by the Finite Element Method. Lecture Notes in Computational Science and Engineering, vol 84. Springer, Berlin, Heidelberg\\
 
-[8]\\
+[8] Hansbo, Peter \& Larson, Mats. (2003). \textit{Discontinuous Galerkin and the Crouzeix–Raviart element: Application to elasticity}. http://dx.doi.org/10.1051/m2an:2003020. 37. 10.1051/m2an:2003020. \\
 
-[9]\\
+[9] Olshanskii, Maxim \& Reusken, Arnold. (2004). \textit{Grad-div stabilization for Stokes equations}. Mathematics of Computation - Math. Comput.. 73. 1699-1718. \\
 
 [10] Huan Zhengda, \textit{The convergence ball of Newton's method and the uniqueness ball of equations under Hölder-type continuous derivatives},
 Computers \& Mathematics with Applications,
@@ -515,6 +644,8 @@ https://doi.org/10.1016/j.cam.2005.11.037.\\
 [15] Cockburn B, Kanschat G, Schötzau D. \textit{A note on discontinuous galerkin divergence-free solutions of the navier-stokes equations. Journal of Scientific Computing}. 2007 Jun 1;31(1-2):61-73. https://doi.org/10.1007/s10915-006-9107-7\\
 
 [16] Constantinescu V.N. (1995) \textit{Other Solutions of Navier-Stokes Equations (Steady Incompressible Flow).} In: Laminar Viscous Flow. Mechanical Engineering Series. Springer, New York, NY
+
+[17] Deuflhard P. (2011) Parameter Dependent Systems: Continuation Methods. In: \textit{Newton Methods for Nonlinear Problems}. Springer Series in Computational Mathematics, vol 35. Springer, Berlin, Heidelberg
 
 
 \end{document}
