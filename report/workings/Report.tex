@@ -17,7 +17,7 @@
 \author{Anthony Webster CID 01051827}
 \maketitle
 \section{Introduction}
-We seek to create an efficient solver of the steady Navier-Stokes equations, which describe a wide array of fluid interactions, in an arbitrary domain in $H_{div}$ space. The steady Navier Stokes equation are as follows : 
+We seek to create an efficient solver of the steady Navier-Stokes equations, which describe a wide array of fluid interactions, in an arbitrary domain in $H_{div}$ space. The steady Navier Stokes equation are as follows :
 \begin{align}
 (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
@@ -30,28 +30,28 @@ First we will describe the classic Finite Element Method, its advantages and dis
 \section{Classic Finite Elements Method}
 The finite element method (FEM) is a numerical method which approximates the solution to an exact partial differential equation [5]. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and in this project.\\
 \\
-We will now consider the case of applying the FEM to the stokes equations using the more classic lagrange finite element. This method is very common in research and industrial problems as such there are number of courses and books on the subject, such as \textit{Galerkin finite element methods for parabolic problems} if further explantion and theory is required.\\
+We will now consider the case of applying the FEM to the stokes equations using the more classic Lagrange finite element. This method is very common in research and industrial problems as such there are number of courses and books on the subject, such as \textit{Galerkin finite element methods for parabolic problems} if further explanation and theory is required.\\
 \begin{align}
 0 &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
 \end{align}
-As seen in Common and Unusual Finite Elements [7], the lagrange finite element approximates a function on a cell using polynomials of degree $q$ defined by their pointwise values at an array of points (such as a uniform lattice).\\
-For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first order lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points in it, the two edge points. Hence we get figure 1, where the blue curve indicates our approximation and the red one the exact function. In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
+As seen in Common and Unusual Finite Elements [7], the Lagrange finite element approximates a function on a cell using polynomials of degree $q$ defined by their pointwise values at an array of points (such as a uniform lattice).\\
+For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first order Lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points in it, the two edge points. Hence we get figure 1, where the blue curve indicates our approximation and the red one the exact function. In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
 \begin{figure}
   \includegraphics[width=\linewidth]{ex_1D_LG.png}
-  \caption{4 Element First Order Interpolation Example and Comparaison to True Solution}
+  \caption{4 Element First Order Interpolation Example and Comparison to True Solution}
 \end{figure}
 \\
-It follows that we first cut up our domain into a mesh. Commonly these meshes are made up of triangles for simplicity, although squares or even curved elements for simulations on a sphere are also used. Then we approximate $u$ and $p$ using the lagrange element. Hence we get that for instance $u$ is the sum of a set of known piecewise linear functions (as they are determined by the mesh) but with unknown coefficients. The aim of the rest of the method is to determine these unknown coefficients.\\
+It follows that we first cut up our domain into a mesh. Commonly these meshes are made up of triangles for simplicity, although squares or even curved elements for simulations on a sphere are also used. Then we approximate $u$ and $p$ using the Lagrange element. Hence we get that for instance $u$ is the sum of a set of known piecewise linear functions (as they are determined by the mesh) but with unknown coefficients. The aim of the rest of the method is to determine these unknown coefficients.\\
 For that end we need to find what is called the weak form of the equation. We multiply (3) by an arbitrary function $v$. Hence we get :
 \begin{align*}
 \int_{\omega} -v \cdot \nabla p + \mu v \cdot \nabla^2 u dx = -\int_{\omega} v \cdot F dx
 \end{align*}
-Since our domain $\omega$ is cut out into triangles we can cut the integral into triangles and work on each one individually. Hence for each cell $e$ in $\omega$ we get : 
+Since our domain $\omega$ is cut out into triangles we can cut the integral into triangles and work on each one individually. Hence for each cell $e$ in $\omega$ we get :
 \begin{align*}
 \int_{e} p \nabla \cdot v + \mu v \cdot \nabla^2 u dx =  -\int_{e} v \cdot F dx
 \end{align*}
-However since $u$ and $v$ will be approximated by functions which may be discontinuous in their derivatives $\nabla^2$ may not be defined. Hence we need to use integration by parts to get :  
+However since $u$ and $v$ will be approximated by functions which may be discontinuous in their derivatives $\nabla^2$ may not be defined. Hence we need to use integration by parts to get :
 \begin{align*}
 \int_{e} p \nabla \cdot v - \mu \nabla v \cdot \nabla u dx = -\int_{e} v \cdot F dx
 \end{align*}
@@ -86,16 +86,16 @@ However default implementation using the CG method is slow, hence we wish to imp
 \subsection{Brezzi-Douglas-Marini Element}
 The paper Common and Unusual Finite Elements [7] states that the BDM space on one triangle $K$ is composed by polynomials of order $q$ defined by the normal component on each edge. If $q > 1$ it is also defined using the integration against gradients of the polynomials on the triangle. If $q > 2$ we then also use the integration  against curls of $b_K P_{q-2}(K)$ where $b_{q-2}$ is the  cubic bubble function associated with $K$ and $P_{q}(K)$ is the set of polynomials defined on $K$.\\
 This finite element, combined with the DG element for pressure, discretizes the function space H(div). A property we thus get from simply working in BDM is that our solution will be exactly divergence free globally and locally.
-Additionally we will be able to employ an enhanced lagrangian preconditioner thanks to the global divergence free property [2].\\
+Additionally we will be able to employ an enhanced Lagrangian preconditioner thanks to the global divergence free property [2].\\
 
-However unlike the lagrange elements we can no longer set a dirichelet boundary condition's tangential component. Therefore we need to find alternative approaches to enforce these conditions.
-Additionally some operations (such as the weak form of the curl) are undefined in this space. Due to possible discontinuities at the boundaries we have to be carefull with all boundary integrals.\\
+However unlike the Lagrange elements we can no longer set a Dirichelet boundary condition's tangential component. Therefore we need to find alternative approaches to enforce these conditions.
+Additionally some operations (such as the weak form of the curl) are undefined in this space. Due to possible discontinuities at the boundaries we have to be careful with all boundary integrals.\\
 
 In general the weak form will be far more involved.
 
 
-\subsection{Discontinous Galerkin and BDM-DG Mixed Space}
-The discontinous Galerkin Element space is the space of piecewise linear continuous functions. An example applying this space on its own can be found [8].\\
+\subsection{Discontinuous Galerkin and BDM-DG Mixed Space}
+The discontinuous Galerkin Element space is the space of piecewise linear continuous functions. An example applying this space on its own can be found [8].\\
 Combined with the BDM space we obtain a mixed finite element space which approximates the $H_{div}$ finite element space.\\
 
 \subsection{Newton's Method}
@@ -105,22 +105,22 @@ $$
 F(x,y) = 0
 $$
 Where $F$ is a vector function and $x$ is vector of unknowns. Note that $F$ may be non-linear and have constant components.
-For instance we could have $ F = x^T A x + M x - b$, where A and M are constant matrices and b is a constant vector.\\ 
+For instance we could have $ F = x^T A x + M x - b$, where A and M are constant matrices and b is a constant vector.\\
 We start with a guess $x = x_0$ and then determine the Jacobian of $F(x)$, call it $DF(x)$.\\
-We determine the jacobian by calculating the Gateaux derivative, defined as follows [12] :
+We determine the Jacobian by calculating the Gateaux derivative, defined as follows [12] :
 \begin{align}
 DF_{x_n}(\Delta x) = lim_{t \rightarrow 0^+} \frac{F(x_n+ \epsilon \Delta x) - F(x_n)}{\epsilon}
 \end{align}
-We then use the vector taylor expansion :
+We then use the vector Taylor expansion :
 \begin{align*}
-F(x_{n+1}) = F(x_n) + DF_{x_n}(\Delta x) \Delta x 
+F(x_{n+1}) = F(x_n) + DF_{x_n}(\Delta x) \Delta x
 \end{align*}
 Hence we get the algorithm :
 \begin{align}
 DF_{x_n}(\Delta x) \Delta x = - F(x_n)\\
-x_{n+1} = x_n + \Delta x 
+x_{n+1} = x_n + \Delta x
 \end{align}
-We solve for $\Delta x$ using $x_n$ and the taylor expansion approximation and then use this result to determine $x_{n+1}$.
+We solve for $\Delta x$ using $x_n$ and the Taylor expansion approximation and then use this result to determine $x_{n+1}$.
 This is a linear problem which can be solved via an Lu Factorization for instance.\\
 Note that the Newton's method only converges and is unique if it is within a ball around the solution [10-11].
 
@@ -137,28 +137,28 @@ r = b - Mx
 $$
 We then use the resulting $r$ in order to provide a correction on our result.\\
 However $M$ may not be well-behaved. In fact in our problem we know it is usually not.\\
-In this case we use a preconditioning matrix, $P$ to map the system in such a way that $P^{-1}$ is cheap to compute, this operation can easily be parallelized and the condition number, the ratio of largest and smallest eigenvalue which describes the behaviour of the system [13], is lowered.
-We then numerically solve the transformed and hopefully better behaved system : 
+In this case we use a preconditioning matrix, $P$ to map the system in such a way that $P^{-1}$ is cheap to compute, this operation can easily be parallelized and the condition number, the ratio of largest and smallest eigenvalue which describes the behavior of the system [13], is lowered.
+We then numerically solve the transformed and hopefully better behaved system :
 $$
 P^{-1}(Mx-b) = 0
-$$ 
+$$
 
 \subsection{Notation}
 
 Regarding the meaning of $a_+$ and $a_-$.\\
-When the mesh is setup the software ensures each facette (ie edge of a triangle) in the mesh has a positive and negative side, and each cell agrees on which is which. We call this term on facette integrals, as otherwise it has no meaning. Then $a_+$ is the value of $a$ on the positive side $a_-$ on the negative side.\\
-It is important to note that the positive and negative side are completly arbitrary. They serve as markers for the software.\\
-For facettes which are facing the exterior domain the normal is always pointing outwards.\\
+When the mesh is setup the software ensures each facet (ie. edge of a triangle) in the mesh has a positive and negative side, and each cell agrees on which is which. We call this term on facet integrals, as otherwise it has no meaning. Then $a_+$ is the value of $a$ on the positive side $a_-$ on the negative side.\\
+It is important to note that the positive and negative side are completely arbitrary. They serve as markers for the software.\\
+For facet which are facing the exterior domain the normal is always pointing outwards.\\
 \\
 Let $\{ a \} = a_+ + a_-$. \\
-This is an average term. Due to discontinuities of our space on facette elements integrals over facets from integration by parts on an individual element will not dissappear necessarily, hence these terms remain. Additionally, since we cannot use dirichelet boundary conditions, weak penalty terms will also use this operation.\\
+This is an average term. Due to discontinuities of our space on facet elements integrals over facets from integration by parts on an individual element will not disappear necessarily, hence these terms remain. Additionally, since we cannot use Dirichelet boundary conditions, weak penalty terms will also use this operation.\\
 
-For integrals over outer facettes we explicitly write out the formula for clarity.\\
+For integrals over outer facet we explicitly write out the formula for clarity.\\
 \\
 Similarly let $J(a) = a_+ - a_-$\\
 This is a jump term. Note that this operation is $0$ in continuous space, which is where we assume the physical fluid velocity and pressure to be.\\
 \\
-We may have surface integrals over interior facettes and exterior facettes, which are on the computational boundaries.\\
+We may have surface integrals over interior facet and exterior facet, which are on the computational boundaries.\\
 In the first case the integral of $a$ is $\int_\Gamma a dS$ while in the latter we note $\int_{\delta \Omega} a ds$.\\
 This is used both for additional clarity and because it is the notation in the code.\\
 \\
@@ -195,12 +195,12 @@ Hence this term becomes :
 \end{align*}
 $u$ should be continous in the physical space thus the added term will be $0$ in continuous space. Hence this does not change the equation in physical space.\\
 \\
-Now we also add the term $\alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS$. According to sources [3] provided that  $\alpha$ is larger than $10$ numerical stability is increased. 
+Now we also add the term $\alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS$. According to sources [3] provided that  $\alpha$ is larger than $10$ numerical stability is increased.
 ($J$ is the jump notation).\\
-The numerical value of $h$ is the average distance of a side. In our case we defined it as the average cell-volume over the length of the facettes between them for each individual facette element $\Gamma$.\\
- Presumably any flow studied with this algorithme will have a continuous velocity and pressure field. The $J(u_i)$ term makes this integral $0$ in continous space so this does not change the solution.\\
+The numerical value of $h$ is the average distance of a side. In our case we defined it as the average cell-volume over the length of the facets between them for each individual facet element $\Gamma$.\\
+ Presumably any flow studied with this algorithm will have a continuous velocity and pressure field. The $J(u_i)$ term makes this integral $0$ in continuous space so this does not change the solution.\\
 \\
-As mentioned in the BDM definition section we cannot set the tangential component of a dirichelet boundary condition in the conventional finite element manner.  So instead we use penalty terms, which should be $0$ when boundary conditions hold. This pushes the solution towards respecting the boundary conditions. In practice this just means taking all the terms over the edge of a cell and considering them on the sections of the edge of the domain where dirichelet conditions apply instead.\\
+As mentioned in the BDM definition section we cannot set the tangential component of a Dirichelet boundary condition in the conventional finite element manner.  So instead we use penalty terms, which should be $0$ when boundary conditions hold. This pushes the solution towards respecting the boundary conditions. In practice this just means taking all the terms over the edge of a cell and considering them on the sections of the edge of the domain where Dirichelet conditions apply instead.\\
  Hence our final viscous term becomes :\\
 \begin{align*}
 &-  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e ( \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial v_i}{\partial x_j}\} dS \\
@@ -208,7 +208,7 @@ As mentioned in the BDM definition section we cannot set the tangential componen
 \end{align*}
 Where $u^0_i$ are the boundary values.
 We will call this term $\eta_\mu$.\\
-Back to our original equation we get : 
+Back to our original equation we get :
 \begin{align}
 \int_\Omega v \cdot F dx &= \int_\Omega v \cdot \nabla p dx - \eta_\mu
 \end{align}
@@ -220,7 +220,7 @@ Multiplying by $q$ and integrating we get :
 \begin{align*}
 \int_\Omega q \nabla \cdot u dx = 0
 \end{align*}
-This is $0$, so we add this to the weak formulation $(3)$ we obtained, getting one weak formulation which includes both pressure and velocity while also keeping symmetry. As seen in the appendix this is required to the usage of a mixed soace in ufl.\\
+This is $0$, so we add this to the weak formulation $(3)$ we obtained, getting one weak formulation which includes both pressure and velocity while also keeping symmetry. As seen in the appendix this is required to the usage of a mixed space in ufl.\\
 We need this since we want to turn the entire system into a single matrix equation which includes all the conditions.\\
 Integrating by parts the pressure term get :
 \begin{align}
@@ -234,56 +234,56 @@ But v is $0$ on all the boundaries, hence get :
 \subsection{Applying the Schur Preconditioner to our problem}
 In an effort to get our iteration count to be independent of mesh-size, we will apply a Schur preconditioner similarly described in chapter 3 of Multilevel Block Factorization Preconditioners [4] as well as in source [2].\\
 This is a well-known method, however as we will be modifying it, we will quickly describe it as well.
-Our sytem effectively amounts to solving a matrix equation of the form :
-$$ 
-\begin{bmatrix} 
+Our system effectively amounts to solving a matrix equation of the form :
+$$
+\begin{bmatrix}
 A         & B^{T}\\
 B         & 0 \\
 \end{bmatrix}
-\begin{bmatrix} 
+\begin{bmatrix}
 u    \\
-p     \\  
+p     \\
 \end{bmatrix}
 =
-\begin{bmatrix} 
+\begin{bmatrix}
 b    \\
-0     \\  
+0     \\
 \end{bmatrix}
 $$
 Where $B$ is the discretized divergence operator and $B^T$ the discrete gradient operator. $A$ contains the viscous term.
-Setting $S = - B A^{-1} B^{T}$, we can factorize the above and get an expression whose inverse is : 
+Setting $S = - B A^{-1} B^{T}$, we can factorize the above and get an expression whose inverse is :
 $$
-\begin{bmatrix} 
+\begin{bmatrix}
 I         & - A^{-1} B^{T}\\
 0         & I \\
 \end{bmatrix}
-\begin{bmatrix} 
+\begin{bmatrix}
 A^{-1}   & 0\\
 0       & S^{-1} \\
 \end{bmatrix}
-\begin{bmatrix} 
+\begin{bmatrix}
 I & 0\\
  - B A^{-1}       & I \\
 \end{bmatrix}
 $$
 Hence, if we can find $A^{-1}$ and $S^{-1}$ we can easily solve the equation. We solve both via a Lu factorization.\\
-We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$ via an Lu Factorization. The Lu factorization is a direct solver, and thus is innefficient. The algorithm would have to be performed in a sequential manner, preventing usage of parallelisation. We did mitigate this through the usage of the "mumps" sub-routine. We originally attempted to use ILu, which is more efficient, but this failed. This is because the viscous term makes A a less sparse matrix.\\
- However $S^{-1}$, the inverse of the shur complement is difficult to determine because it is usually dense. However research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (14). Note that this term is 0 in continuous space. We thus get : 
+We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$ via an Lu Factorization. The Lu factorization is a direct solver, and thus is inefficient. The algorithm would have to be performed in a sequential manner, preventing usage of parallelization. We did mitigate this through the usage of the "mumps" sub-routine. We originally attempted to use ILu, which is more efficient, but this failed. This is because the viscous term makes a less sparse matrix.\\
+ However $S^{-1}$, the inverse of the Schur complement is difficult to determine because it is usually dense. However research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (14). Note that this term is 0 in continuous space. We thus get :
 \begin{align}
 \int_\Omega w \cdot F dx &= \int_\Omega \nabla \cdot (p v) dx - \int_\Omega ( p \nabla \cdot (v)) dx - \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu + \int_\Omega \gamma \nabla \cdot u \: \nabla \cdot v dx
 \end{align}
-This doesn't change the equation, thus should result in the same solution. However according to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. We then perform ILu in order to solve for $S^{-1}$. ILu performs the Lu Factorization on various blocks of the matrix, allowing it to be parallelised.\\
+This doesn't change the equation, thus should result in the same solution. However according to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. We then perform ILu in order to solve for $S^{-1}$. ILu performs the Lu Factorization on various blocks of the matrix, allowing it to be parallelized.\\
 Note that in theory we could have tried a similar method in the CG space.
 Testing shows however that this fails.
 This makes sense as we utilized the exact divergence free-property of our space for the Schur complement.
 As a result in the CG space as gamma tends to infinity S does not exactly tend to the pressure mass matrix.
 
-\section{Full Navier Stokes}
-Now we include the advection term : 
+\section{Full Navier-Stokes}
+Now we include the advection term :
 \begin{align*}
 (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
 \end{align*}
-Note that this is equation is not linear, hence we will need to use Newton's method.\\ 
+Note that this is equation is not linear, hence we will need to use Newton's method.\\
 
 \subsection{Advection Weak Form}
 In order to solve the equation regardless of the method, we need to find the weak form of the advection term, $(u \cdot \nabla) u$.
@@ -293,9 +293,9 @@ Similarly to before we therefore take the inner product of the advection term wi
 \end{align}
 Consider the following vector identity :
 \begin{align*}
-\nabla (u \cdot u) = 2 (u \cdot \nabla) u + 2 u \times (\nabla \times u) 
+\nabla (u \cdot u) = 2 (u \cdot \nabla) u + 2 u \times (\nabla \times u)
 \end{align*}
-Hence get : 
+Hence get :
 \begin{align}
 \int_\Omega (u \cdot \nabla)u \cdot v \ dx = \frac{1}{2} \int_\Omega \nabla (u^2) \cdot v \ dx - \int_{\Omega} u \times (\nabla \times u) \cdot v \ dx
 \end{align}
@@ -309,7 +309,7 @@ Now consider the second term in (17)
 &=  \int_{\Omega} (\nabla \times u) \cdot (u \times v)  \ dx
 \end{align*}
 Next we use the results from source [18].\\
-From this we obtain that via integration by parts on each individual element we get : 
+From this we obtain that via integration by parts on each individual element we get :
 \begin{align*}
 \sum_e \int_e u \cdot (\nabla \times (u \times v) \ ) dx - \int_{\Gamma} \frac{1}{2}(\{u\} + sgn(u \cdot n)[u]) \cdot (n \times (u \cdot v) \ ) dS
 \end{align*}
@@ -324,11 +324,11 @@ Note that the second term becomes the following on the computational domain boun
 \begin{align*}
 - \int_{\delta \Omega} u_0 \cdot (n \times (u \cdot v) \ ) ds
 \end{align*}
-Hence the weak form of our advection term is : 
+Hence the weak form of our advection term is :
 \begin{align}
- Adv &= \int_\Omega u \cdot (\nabla \times (u \times v) \ ) dx - \int_{\Gamma} u_{up} \cdot (n \times (u \cdot v) \ ) dS \\ 
+ Adv &= \int_\Omega u \cdot (\nabla \times (u \times v) \ ) dx - \int_{\Gamma} u_{up} \cdot (n \times (u \cdot v) \ ) dS \\
 &- \frac{1}{2} \int_\Omega u^2 \nabla \cdot v \ dx - \int_{\delta \Omega} u_0 \cdot (n \times (u \cdot v) \ ) ds
-+ \frac{1}{2} \int_{\delta \Omega } u^2 v \cdot n \ ds 
++ \frac{1}{2} \int_{\delta \Omega } u^2 v \cdot n \ ds
 \end{align}
 We reordered some terms to be in-line with our code.
 
@@ -341,25 +341,25 @@ c (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
 \end{align}
 As mentioned in the Newton's Method section, the Newton's Method converges only if the initial guess is within a certain ball around the solution. Hence we need to find a method to get our initial guess to be closer to the solution.\\
 We could use the stokes solution as an initial guess, which we can most likely solve. We then increase $c$ to $1$ and try to solve using the stokes solution as a guess. \\
-If it still fails we can take $c =0.5$ before solving for full advection. If necessary we can bring downthe value of $c$ multiple times until our solver converges at an appropriate rate. Afterwards we then gradually increase c using the same procedure until we solve for full advection.\\
+If it still fails we can take $c =0.5$ before solving for full advection. If necessary we can bring down the value of $c$ multiple times until our solver converges at an appropriate rate. Afterwards we then gradually increase c using the same procedure until we solve for full advection.\\
 \\
 We can speed up this process in two ways.\\
-The first, very simple method, is adapting our step-size to the problem. Rather than starting with a step size of $1$ we can reduce the step size initially if the Reynolds number is high enough. In addition to reducing the stepsize if the newton iteration fails, we can increase step size if it succeeds. This should allow us to close in on the optimal step size rapidly. This allows us to reduce the total number of times we try to use the Newton's method.\\
-The second involves approximating the $(u,p)$ at a subsequent step more accuratly. Rather than just using the prior value of $(u,p)$, call it $x_c$, we use taylor expansion. We can consider $x_c$ to be a function of $c$, hence get :
+The first, very simple method, is adapting our step-size to the problem. Rather than starting with a step size of $1$ we can reduce the step size initially if the Reynolds number is high enough. In addition to reducing the step size if the newton iteration fails, we can increase step size if it succeeds. This should allow us to close in on the optimal step size rapidly. This allows us to reduce the total number of times we try to use the Newton's method.\\
+The second involves approximating the $(u,p)$ at a subsequent step more accuratly. Rather than just using the prior value of $(u,p)$, call it $x_c$, we use Taylor expansion. We can consider $x_c$ to be a function of $c$, hence get :
 $$
 x_{c+\Delta c} = x_c + \Delta c \frac{\partial x_c}{\partial c}
 $$
 Provided we can find $\frac{\partial x_c}{\partial c}$ this will give us a far more accurate solution.
 To find the derivative of $x_c$ with respect to $c$ we consider :\\
 
-Which we sp;ve via a newton iteration.\\
-In some circumstances however even with a variable step-size in $c$ we fail to obtain a solution within an acceptable time-frame. In our code if the step-size is below $10^{-3}$ our solver stops and fails. This usually happens for high Reynaulds number flows.
+Which we solve via a newton iteration.\\
+In some circumstances however even with a variable step-size in $c$ we fail to obtain a solution within an acceptable time-frame. In our code if the step-size is below $10^{-3}$ our solver stops and fails. This usually happens for high Reynolds number flows.
 
 \section{Stability Analysis}
 
-While we are mainly interested in the steady-state solution of the navier-stokes equation we also need to consider whether or not the solution is stable. To that end we need to solve a full navier stokes, including the time derivative. This will be used to determine if small perturbations of the solution die down.
+While we are mainly interested in the steady-state solution of the Navier-Stokes equation we also need to consider whether or not the solution is stable. To that end we need to solve a full Navier-Stokes, including the time derivative. This will be used to determine if small perturbations of the solution die down.
 \subsection{Time stepping method}
-In practice our problem amounts to the following, very generalized, equation : 
+In practice our problem amounts to the following, very generalized, equation :
 \begin{align}
 F(u) = 0
 \end{align}
@@ -368,12 +368,12 @@ If we add in the time-terms we get :
 \begin{align}
 \frac{\partial u}{\partial t} + F(u,p) = 0
 \end{align}
-While we could try and solve this equation directly using Backwards Euler or Midpoint Rule testing shows that this does not converge. Instead we use Picards iteration along with the Midpoint rule as described in the following equation :
+While we could try and solve this equation directly using Backwards Euler or Midpoint Rule testing shows that this does not converge. Instead we use Picard's iteration along with the Midpoint rule as described in the following equation :
 \begin{align}
 u^{n+1} - u^n + \Delta t (\frac{1}{2}G(u^n,p^n) + \frac{1}{2} G(u^{n+1},p^{n+1}) + ( u^n \cdot \nabla u^n) ) = 0
 \end{align}
 Here $G = RHS - LHS $. We applied the midpoint rule to the linear terms of the equation while the non-linear term, the advection term, was evaluated at the previous time step. Provided the time step is low enough this will always converge, regardless of inital guess.
-Optionally we could afterwards use the method we described first, Newton's method and Midpoint Rule, to get a more accurate result after a few Picards iterations.
+Optionally we could afterwards use the method we described first, Newton's method and Midpoint Rule, to get a more accurate result after a few Picard's iterations.
 \begin{align}
 u^{n+1} - u^n + \Delta t (\frac{1}{2}F(u^n,p^n) + \frac{1}{2} F(u^{n+1},p^{n+1})) = 0
 \end{align}
@@ -425,12 +425,12 @@ Figures and show us the convergence graphs in velocity and pressure.\\
 \end{figure}
 
 Note that we did not reuse the manufactured solution from the stokes convergence test for non-zero boundary conditions, as a matter of fact applying those we get figures and  for velocity and pressure. These show non-convergence, which is confirmed when considering the error graph in space in figure.\\
-While this might have indicated some error in the solver it turns out this is to be expected. In this scenario the equation is ill-posed. The exact reason is unkown, as this is still an active field of research. However a rule of thumb is that if you have dirichelet outflow the equation is ill-posed. An intuitive way of explaining this is that if we were to expand our domain the out of bounds flow might still be able to affect the flow in the computational domain (for instance trailing vorticies) in ways that we would thus not be able to capture if this region was excluded. 
+While this might have indicated some error in the solver it turns out this is to be expected. In this scenario the equation is ill-posed. The exact reason is unkown, as this is still an active field of research. However a rule of thumb is that if you have dirichelet outflow the equation is ill-posed. An intuitive way of explaining this is that if we were to expand our domain the out of bounds flow might still be able to affect the flow in the computational domain (for instance trailing vorticies) in ways that we would thus not be able to capture if this region was excluded.
 
 \subsection{Known Case : Flow between concentric circles}
 
 We will study this relatively simple problem as means to demonstrate the ability of our solver to work even on non-uniform arbitrary meshes and solve an unsteady problem.\\
-The problem takes place in the annulus between two concentric circles each rotating at a different speed. For our steady case we will consider unit circle rotating at speed $1$ and circle of radius $2$ rotating at speed $3$. 
+The problem takes place in the annulus between two concentric circles each rotating at a different speed. For our steady case we will consider unit circle rotating at speed $1$ and circle of radius $2$ rotating at speed $3$.
 From [16] we get that the general solution of the tangential velocity and pressure for this problem is of the form :
 \begin{align}
 u_{\phi} = C_1 r + \frac{C_2}{r} \\
@@ -438,7 +438,7 @@ p = \rho \int \frac{u_{\phi}^2}{r} dr + C
 \end{align}
 From the above boundary conditions are $u_{\phi}(r=1) = 1$, $u_{\phi}(r=2) = 3$. Hence get :
 \begin{align*}
-C_1 = 1 - C_2 
+C_1 = 1 - C_2
 \end{align*}
 Figures show pressure and velocity in this case.\\
 
@@ -460,21 +460,24 @@ After this we made a rudimentary time-stepping method to study the stability of 
 Finally we tested all of the above and concluded that our algorithm worked as anticipated.\\
 \\
 \\
-However a number of future improvements could be made.\\
+However a number of future improvements could be made.
+These would allow us to reduce computational cost, versatility and accuracy of our method.\\
 \\
 We could use a multigrid method using our method as a smoother to get convergence to be less dependent on grid-size, dramatically reducing computational costs. Application of such a method was discussed, unfortunatly the tools required for it are not currently compatible with our problem set (specifically dirichelet boundary conditions).\\
-The variable step-size method is servicable but can be considerably improved to reduce the total number of iterations and thus computational cost. There are a number of methods which from local conditions of the function could more efficiently determine an appropriate step-size. Our source on the continuation method [17] includes such improvements.\\
+The variable step-size method is serviceable and can be considerably improved to reduce the total number of iterations and thus computational cost. There are a number of methods which from local conditions of the function could more efficiently determine an appropriate step-size. Our source on the continuation method [17] includes such improvements.\\
 Similarly the time-stepping method was designed exclusively for the stability test. For this purpose it works very well. However various improvements could be made for accuracy and speed. For instance we initially attempted to utilise a Newton iteration rather than a Picards iteration. However as the initial guess wasn't in the ball of convergence this method failed. Adding a few Newton iterations using the picards results as a starting point should give more accurate answers for time-dependent methods.\\
 Additionally the stability itself could be expanded to for instance consider the growth rate of an instability as well as determines unstable modes.\\
-In some flows we may have multiple solutions or a bifurcation (that is the case for the cylinder flow at high Reynolds number). In this case a deflation method may be usefull. In this method, after finding a solution we "substract" it from the equation and thus seek other solutions.
+In some flows we may have multiple solutions or a bifurcation (that is the case for the cylinder flow at high Reynolds number). In this case a deflation method may be usefull. In this method, after finding a solution we "substract" it from the equation and thus seek other solutions.\\
+\\
+
 
 \section{Appendix}
 \subsection{Discussing the Code}
 A significant part of this project was developing a python code using firedrake.
 Firedrake is a python project which aims to provide mathematicians, engineers and scientists with an automated system for solving partial differential equations.\\
 It does so by automatically generating code based on UFL expressions from the fenics project, a library of computational methods used for solving PDEs. This allows us to write out our equations in a fairly intuitive way while firedrake generates the background code needed to solve them.\\
-Our project comprises largely of one file containg the rinsp and rinspt classes, though various launching scripts and the lagrange script are also present. We will not discuss the entirety of either class, if the reader wants to have a detailed look he can go to the github repository containg it at https://github.com/Frostyant/M4R\_Navier\_Stokes\_Solvers once it has been made public.\\
-We will however show a handfull of code snippets, ranging from the parameters firedrake uses to the generate the code to the ufl expressions for the viscous, pressure and advection terms.
+Our project comprises largely of one file containing the rinsp and rinspt classes, though various launching scripts and the Lagrange script are also present. We will not discuss the entirety of either class, if the reader wants to have a detailed look he can go to the github repository containg it at https://github.com/Frostyant/M4R\_Navier\_Stokes\_Solvers once it has been made public.\\
+We will however show a handful of code snippets, ranging from the parameters firedrake uses to the generate the code to the ufl expressions for the viscous, pressure and advection terms.
 
 \subsubsection{Solver Paremeters}
 The parameters of our solver are :
