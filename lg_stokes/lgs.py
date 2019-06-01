@@ -64,7 +64,10 @@ parameters = {
     "fieldsplit_1_pc_type": "lu"
 }"""
 
-solver_parameters={'ksp_type': 'cg'}
+solver_parameters={"ksp_type": "gmres",
+                             "mat_type": "aij",
+                             "pc_type": "lu",
+                             "pc_factor_mat_solver_type": "mumps"}
 
 # assembling & solving
 Problem = LinearVariationalProblem(LHS, RHS, up, aP=aP, bcs = bcs)
