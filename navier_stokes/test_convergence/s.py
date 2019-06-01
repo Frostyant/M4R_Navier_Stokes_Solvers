@@ -12,6 +12,8 @@ mu = 1
 Ns = [2**(n+3) for n in range(7)]
 errors = [0]*len(Ns)
 ep = [0]*len(Ns)
+#elinefit = [0]*len(Ns)
+#eplinefit = [0]*len(Ns)
 
 for it,n in enumerate(Ns):
     mesh = UnitSquareMesh(n, n)
@@ -23,7 +25,7 @@ for it,n in enumerate(Ns):
     #p_0 = sin(x*y)
     u_0 = as_vector([-sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
     u_1 = as_vector([-sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
-    p_0 = Constant(1)*exp(x*y)#sin(2*pi*x)**2*sin(2*pi*y)**2
+    p_0 = Constant(1)*sin(2*pi*x)*sin(2*pi*y)
     p_x = p_0.dx(0)
     p_y = p_0.dx(1)
     u_xx = u_0.dx(0).dx(0)
@@ -36,7 +38,7 @@ for it,n in enumerate(Ns):
     F.project(F_ + F_adv)
 
     problem = rins.rinsp(mesh,u_0,W,x,y, F = F,viscosity = mu,BcIds = (1,2,3,4),AdvectionSwitchStep = 0.25,AverageVelocity = AverageVelocity,LengthScale = 1)
-    problem.FullSolve(FullOutput = False,DisplayInfo = False, stokes = True, method = "direct")
+    problem.FullSolve(FullOutput = False,DisplayInfo = False, stokes = False, method = "direct")
     print("Reynolds Number =")
     print(problem.R)
 
@@ -49,6 +51,7 @@ for it,n in enumerate(Ns):
     errors[it] = norm(u-uexact)
     ep[it] = norm(p-pexact)-0.25 #adjusting constant
 
+elinefit[0] = errors[0]
 plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
 plt.loglog(Ns,errors)
