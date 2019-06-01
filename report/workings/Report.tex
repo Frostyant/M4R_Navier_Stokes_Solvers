@@ -447,7 +447,13 @@ Now consider the outer circle initially immobile, but slowly accelerating until 
 \subsection{Known Case : Flow Past a Cylinder}
 
 The flow past a cylinder is a well-known and studied flow with interesting properties, namely in stability of its steady solution.\\
-Hence we will see how our solver resolves this flow and compare results with other papers [14].
+Hence we will see how our solver resolves this flow and compare results with other papers [14].\\
+
+Figure shows the stokes solution to the problem.\\
+Similarly figures to show the solution with full advection at Reynolds numbers respectively.\\
+At Reynolds numbers higher than our solver starts requiring to use the continuation method multiple times (by default it always first finds the stokes solution). Eventually it the length of the continuation step goes below tolerance levels and our solver fails.\\
+However according to sources this corresponds to the Reynolds numbers where the solution becomes unstable.\\
+We reduce the Renolds number by reducing the viscosity. As expected this makes the boundary layer about the cylinder smaller and smaller. Note that we also needed to refine mesh during this process. Likely due to the critical velocity fluctuations on smaller and smaller scales about the cylinder. 
 
 \subsection{Known Case : Cylinder flow Stability}
 
