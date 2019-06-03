@@ -20,7 +20,11 @@
 \tableofcontents
 
 \section{Introduction}
-We seek to create an efficient solver of the steady Navier-Stokes equations, which describe a wide array of fluid interactions, in an arbitrary domain in $H_{div}$ space. The steady Navier Stokes equation are as follows :
+The steady Navier-Stokes equations govern steady state fluid interactions. These may arise due to lack of significant temporal changes of a system or at very long timescales where such changes fade out.\\
+We seek to create an efficient solver of the steady Navier-Stokes equations in an arbitrary domain.
+For this the Finite Element method is particularly suited, howver the standard CG method can be inefficient and is not globally divergence free.\\
+Using the $H_{div}$ space we get the global divergence free property. Additionally this allows us to use [2] and [9], which should give us an efficient and stable algorithm for solving whithin this space using the grad-div stabilisation method.\\
+The steady Navier Stokes equation are as follows :
 \begin{align}
 (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
