@@ -16,6 +16,9 @@
 \date{March 2nd, 2019}
 \author{Anthony Webster CID 01051827}
 \maketitle
+
+\tableofcontents
+
 \section{Introduction}
 We seek to create an efficient solver of the steady Navier-Stokes equations, which describe a wide array of fluid interactions, in an arbitrary domain in $H_{div}$ space. The steady Navier Stokes equation are as follows :
 \begin{align}
@@ -26,8 +29,9 @@ Note that from working in the $H_{div}$ space the second equation is naturally s
 \\
 First we will describe the classic Finite Element Method, its advantages and disadvantages, hence explaining why we are using a modified method. Secondly we will explain a number of definitions and tools used in the project and which may be unfamiliar to some readers. Then we will show how to find the weak form of the equations and build different parts of our solvers. Lastly we will consider some example cases and deduce that the algorithm converges to the right result at satisfactory rates.\\
 
+\section{Tools and Definitions}
 
-\section{Classic Finite Elements Method}
+\subsection{Classic Finite Elements Method}
 The finite element method (FEM) is a numerical method which approximates the solution to an exact partial differential equation [5]. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and in this project.\\
 We will now consider the case of applying the FEM to the stokes equations using the more classic Lagrange finite element. This method in particular is very common in research and industrial problems as such there are number of courses and books on the subject, such as \textit{Galerkin finite element methods for parabolic problems} if further explanation and theory is required.\\
 \\
@@ -83,7 +87,6 @@ Where $F$ was selected specifically to ensure that any given $u$ and $p$ are sol
 Using the above and implementing a solver using CG2 and CG1 in firedrake we get figures. On a mesh with 32 vertices we get an error of .\\
 However default implementation using the CG method is slow, hence we wish to improve on it.
 
-\section{Tools and Definitions}
 \subsection{Brezzi-Douglas-Marini Element}
 The paper Common and Unusual Finite Elements [7] states that the BDM space on one triangle $K$ is composed by polynomials of order $q$ defined by the normal component on each edge. If $q > 1$ it is also defined using the integration against gradients of the polynomials on the triangle. If $q > 2$ we then also use the integration  against curls of $b_K P_{q-2}(K)$ where $b_{q-2}$ is the  cubic bubble function associated with $K$ and $P_{q}(K)$ is the set of polynomials defined on $K$.\\
 
@@ -165,15 +168,15 @@ This is used both for additional clarity and because it is the notation in the c
 \\
 sgn(k) is the sign of scalar k.
 
-
-\section{Implementing the Stokes $H_{div}$ Solver}
+\section{$H_{div}$ Solver}
+\subsection{Steady Stokes}
 Since we have two problem terms we will deal with each separately. Hence we will first consider the stokes equation, ignoring the advection term and focusing on the viscosity term for now :
 \begin{align}
 0 &= -\nabla p + \mu \nabla^2 u + F  \\
 \nabla \cdot u &= 0
 \end{align}
 
-\subsection{Weak Stokes Equation}
+\subsubsection{Weak Stokes Equation}
 We start off by cutting our computational domain $\Omega$ into a set of cells $e$. As discussed above it is now required to find the weak form of equations (9) and (10) in the BDM/DG space.
 For this purpose let us introduce two test functions, $w$ in BDM for velocity and $q$ in DG for pressure.
 Let us multiply equation (9) by $v$ and integrate over the domain as seen in the first section.
@@ -233,7 +236,7 @@ But v is $0$ on all the boundaries, hence get :
 \int_\Omega v \cdot F dx &= - \int_\Omega  p ( \nabla \cdot v) dx + \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu
 \end{align}
 
-\subsection{Applying the Schur Preconditioner to our problem}
+\subsubsection{Schur Preconditioner}
 In an effort to get our iteration count to be independent of mesh-size, we will apply a Schur preconditioner similarly described in chapter 3 of Multilevel Block Factorization Preconditioners [4] as well as in source [2].\\
 This is a well-known method, however as we will be modifying it, we will quickly describe it as well.
 Our system effectively amounts to solving a matrix equation of the form :
@@ -280,14 +283,14 @@ Testing shows however that this fails.
 This makes sense as we utilized the exact divergence free-property of our space for the Schur complement.
 As a result in the CG space as gamma tends to infinity S does not exactly tend to the pressure mass matrix.
 
-\section{Full Navier-Stokes}
+\subsection{Steady Navier-Stokes}
 Now we include the advection term :
 \begin{align*}
 (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
 \end{align*}
 Note that this is equation is not linear, hence we will need to use Newton's method.\\
 
-\subsection{Advection Weak Form}
+\subsubsection{Advection Weak Form}
 In order to solve the equation regardless of the method, we need to find the weak form of the advection term, $(u \cdot \nabla) u$.
 Similarly to before we therefore take the inner product of the advection term with $q$ and integrate over the domain.
 \begin{align}
@@ -334,7 +337,7 @@ Hence the weak form of our advection term is :
 \end{align}
 We reordered some terms to be in-line with our code.
 
-\subsection{Continuation Method}
+\subsubsection{Continuation Method}
 
 Given the navier stokes equations we could try to naively solve directly applying the above preconditioning and discretization methods. However at high Reynolds number this approach quickly fails unless the mesh is refined or a better initial guess is given, leading to high computational cost orinability to solve certain problems.\\
 Hence consider the modified equation :
@@ -357,10 +360,10 @@ To find the derivative of $x_c$ with respect to $c$ we consider :\\
 Which we solve via a newton iteration.\\
 In some circumstances however even with a variable step-size in $c$ we fail to obtain a solution within an acceptable time-frame. In our code if the step-size is below $10^{-3}$ our solver stops and fails. This usually happens for high Reynolds number flows.
 
-\section{Stability Analysis}
+\subsection{Unsteady Navier-Stokes}
 
 While we are mainly interested in the steady-state solution of the Navier-Stokes equation we also need to consider whether or not the solution is stable. To that end we need to solve a full Navier-Stokes, including the time derivative. This will be used to determine if small perturbations of the solution die down.
-\subsection{Time stepping method}
+\subsubsection{Time Stepping}
 In practice our problem amounts to the following, very generalized, equation :
 \begin{align}
 F(u) = 0
@@ -380,7 +383,7 @@ Optionally we could afterwards use the method we described first, Newton's metho
 u^{n+1} - u^n + \Delta t (\frac{1}{2}F(u^n,p^n) + \frac{1}{2} F(u^{n+1},p^{n+1})) = 0
 \end{align}
 
-\subsection{Perturbation}
+\subsubsection{Stability Analysis}
 
 When interested in the stability of a solution analytically we commonly first determine the solution. We would then consider the normal modes form of the equation before perturbing it. After some algebra we determine the most unstable mode and deduce from that.\\
 While there are methods to determine these unstable modes numerically we will not use either of these methods here.\\
@@ -429,7 +432,7 @@ Figures and show us the convergence graphs in velocity and pressure.\\
 Note that we did not reuse the manufactured solution from the stokes convergence test for non-zero boundary conditions, as a matter of fact applying those we get figures and  for velocity and pressure. These show non-convergence, which is confirmed when considering the error graph in space in figure.\\
 While this might have indicated some error in the solver it turns out this is to be expected. In this scenario the equation is ill-posed. The exact reason is unkown, as this is still an active field of research. However a rule of thumb is that if you have dirichelet outflow the equation is ill-posed. An intuitive way of explaining this is that if we were to expand our domain the out of bounds flow might still be able to affect the flow in the computational domain (for instance trailing vorticies) in ways that we would thus not be able to capture if this region was excluded.
 
-\subsection{Known Case : Flow between concentric circles}
+\subsection{Flow Between Concentric Circles}
 
 We will study this relatively simple problem as means to demonstrate the ability of our solver to work even on non-uniform arbitrary meshes and solve an unsteady problem.\\
 The problem takes place in the annulus between two concentric circles each rotating at a different speed. For our steady case we will consider unit circle rotating at speed $1$ and circle of radius $2$ rotating at speed $3$.
@@ -446,7 +449,7 @@ Figures show pressure and velocity in this case.\\
 
 Now consider the outer circle initially immobile, but slowly accelerating until it reaches tangential speed of $3$. The velocity solution at different time steps is shown in figures.
 
-\subsection{Known Case : Flow Past a Cylinder}
+\subsection{Flow Past a Cylinder}
 
 The flow past a cylinder is a well-known and studied flow with interesting properties, namely in stability of its steady solution.\\
 Hence we will see how our solver resolves this flow and compare results with other papers [14].\\
@@ -457,7 +460,7 @@ At Reynolds numbers higher than our solver starts requiring to use the continuat
 However according to sources this corresponds to the Reynolds numbers where the solution becomes unstable.\\
 We reduce the Renolds number by reducing the viscosity. As expected this makes the boundary layer about the cylinder smaller and smaller. Note that we also needed to refine mesh during this process. Likely due to the critical velocity fluctuations on smaller and smaller scales about the cylinder.
 
-\subsection{Known Case : Cylinder flow Stability}
+\subsection{Cylinder flow Stability}
 
 \section{Conclusion and Future Improvements}
 
