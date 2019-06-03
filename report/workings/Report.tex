@@ -29,13 +29,14 @@ First we will describe the classic Finite Element Method, its advantages and dis
 
 \section{Classic Finite Elements Method}
 The finite element method (FEM) is a numerical method which approximates the solution to an exact partial differential equation [5]. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and in this project.\\
+We will now consider the case of applying the FEM to the stokes equations using the more classic Lagrange finite element. This method in particular is very common in research and industrial problems as such there are number of courses and books on the subject, such as \textit{Galerkin finite element methods for parabolic problems} if further explanation and theory is required.\\
 \\
-We will now consider the case of applying the FEM to the stokes equations using the more classic Lagrange finite element. This method is very common in research and industrial problems as such there are number of courses and books on the subject, such as \textit{Galerkin finite element methods for parabolic problems} if further explanation and theory is required.\\
+The Stokes equation is :
 \begin{align}
 0 &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
 \end{align}
-As seen in Common and Unusual Finite Elements [7], the Lagrange finite element approximates a function on a cell using polynomials of degree $q$ defined by their pointwise values at an array of points (such as a uniform lattice).\\
+As seen in Common and Unusual Finite Elements [7], the Lagrange finite element approximates a function on a cell using polynomials of degree $q$ defined by their pointwise values at an array of points. Maximal global continuity is kept by making sure  that multiple cells agree on their respective edges.\\
 For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first order Lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points in it, the two edge points. Hence we get figure 1, where the blue curve indicates our approximation and the red one the exact function. In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
 \begin{figure}
   \includegraphics[width=\linewidth]{ex_1D_LG.png}
@@ -68,18 +69,18 @@ Combining all the triangles we can eventually turn our problem into a matrix equ
 \begin{align}
 M x = b
 \end{align}
-Where x is a vector of coefficients of $u$ and $p$.\\
+Where $x$ is a vector of coefficients of $u$ and $p$.\\
 We can solve this using a variety of linear systems solvers. Note in particular that since the majority of basis functions $\Phi$ and $\phi$ are $0$ in any given triangle the matrix $M$ will be sparse.\\
 While we locally enforced the divergence-free equation by including it in the weak form, the global flow may not be divergence-free. In order to achieve that more complex mathematical tools would be required.\\
 Now apply this to the manufactured solution :
 \begin{align*}
 u_x &=  -sin(2 \pi y) cos(2 \pi y)  sin(2 \pi x)^2 \\
 u_y &= sin(2 \pi x) cos(2 \pi x)  sin(2 \pi y)^2 \\
-p &= sin(2 \pi x)^2 sin(2 \pi y)^2 \\
+p &= sin(2 \pi x) sin(2 \pi y) \\
 F &= \nabla p - \mu \nabla^2 u
 \end{align*}
 Where $F$ was selected specifically to ensure that any given $u$ and $p$ are solutions.
-Using the above and implementing it in firedrake we get figures .On a mesh with vertices we get an error of about.\\
+Using the above and implementing a solver using CG2 and CG1 in firedrake we get figures. On a mesh with 32 vertices we get an error of .\\
 However default implementation using the CG method is slow, hence we wish to improve on it.
 
 \section{Tools and Definitions}
@@ -173,7 +174,7 @@ Since we have two problem terms we will deal with each separately. Hence we will
 \end{align}
 
 \subsection{Weak Stokes Equation}
-We start off by cutting our computational domain $\Omega$ into a set of cells $e$. As discussed above it is now required to find the weak form of equations (9) and (10).
+We start off by cutting our computational domain $\Omega$ into a set of cells $e$. As discussed above it is now required to find the weak form of equations (9) and (10) in the BDM/DG space.
 For this purpose let us introduce two test functions, $w$ in BDM for velocity and $q$ in DG for pressure.
 Let us multiply equation (9) by $v$ and integrate over the domain as seen in the first section.
 \begin{align*}
@@ -188,13 +189,13 @@ Focusing on the viscosity, or second, term we get via integration by parts :
 \begin{align*}
 \int_e (v \cdot \nabla^2 u) dx = - \int_e \nabla_h(v) : \nabla_h(u) dx + \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS
 \end{align*}
-The first term can be summed up to an integral over $\Omega$ and the second one is asymmetrical. We can add a term to make it symetrical. This helps with numerical stability of the final matrix equation. Numerical stability ensures that if there are errors in the input values of the problem (such as the exact values of an inflow), they lessen as the algorithm progresses. This property is obviously desirable especially when considering experimental information. Most measurment devices have a certain tolerance below which the measured value is uncertain. Additionally some linear solvers take advantage of this structure.\\
+The first term can be summed up to an integral over $\Omega$ and the second one is asymmetrical. We can add a term to make it symmetrical. This helps with numerical stability of the final matrix equation. Numerical stability ensures that if there are errors in the input values of the problem (such as the exact values of an inflow), they lessen as the algorithm progresses. This property is obviously desirable especially when considering experimental information. Most measurment devices have a certain tolerance below which the measured value is uncertain. Additionally some linear solvers take advantage of this structure.\\
 Hence this term becomes :
 \begin{align*}
 -  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e( \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial v_i}{\partial x_j}\} dS)
 \end{align*}
 Our physical velocity field is presumably continuous.
-So $u$ should be continous in the physical space thus the added term will be $0$ in continuous space. Hence this does not change the equation in physical space as added terms amount to $0$ physically.\\
+So $u$ should be continuous in the physical space thus the added term will be $0$ in continuous space. Hence this does not change the equation in physical space as added terms amount to $0$ physically.\\
 \\
 Now we also add the term $\alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS$. According to sources [3] provided that  $\alpha$ is larger than $10$ numerical stability is increased.
 ($J$ is the jump notation).\\
@@ -410,7 +411,7 @@ This shows that the preconditioning and discretisation holds as expected for the
 \subsection{Navier-Stokes Convergence}
 
 We again use a manufactured solution to determine the convergence rate of our solver.
-We can re-use the first solution in the stokes convergence test, $u_x = sin(2 \pi y) cos(2 \pi y)sin(2 \pi x)^2$, $u_y= -sin(2 \pi x) cos(2 \pi x) sin(2 \pi y)^2$ and $p = sin(2 \pi x) sin(2 \pi y)$.\\
+We can re-use the first solution in the stokes convergence test, $u_x = sin(2 \pi y) cos(2 \pi y)sin(2 \pi x)^2$, $u_y= -sin(2 \pi x) cos(2 \pi x) sin(2 \pi y)^2$ and $p = sin(2 \pi x)^2 sin(2 \pi y)^2$.\\
 However the forcing term will now be $F = \nabla p - \mu \nabla^2 u + u \cdot \nabla u$.
 Plugging this into the equations we get that these do indeed solve the navier-stokes equations.\\
 Figures and show us the convergence graphs in velocity and pressure.\\
@@ -454,7 +455,7 @@ Figure shows the stokes solution to the problem.\\
 Similarly figures to show the solution with full advection at Reynolds numbers respectively.\\
 At Reynolds numbers higher than our solver starts requiring to use the continuation method multiple times (by default it always first finds the stokes solution). Eventually it the length of the continuation step goes below tolerance levels and our solver fails.\\
 However according to sources this corresponds to the Reynolds numbers where the solution becomes unstable.\\
-We reduce the Renolds number by reducing the viscosity. As expected this makes the boundary layer about the cylinder smaller and smaller. Note that we also needed to refine mesh during this process. Likely due to the critical velocity fluctuations on smaller and smaller scales about the cylinder. 
+We reduce the Renolds number by reducing the viscosity. As expected this makes the boundary layer about the cylinder smaller and smaller. Note that we also needed to refine mesh during this process. Likely due to the critical velocity fluctuations on smaller and smaller scales about the cylinder.
 
 \subsection{Known Case : Cylinder flow Stability}
 
@@ -631,6 +632,29 @@ def GetAdvectionTerm(self,up,InflowBc,Bcs):
 \end{lstlisting}
 Note that inflow boundary conditions have to be treated separatly from no-slip boundary conditions.
 
+\subsection{Selecting the Manufactured Solution}
+Firstly any manufactured solution needs to actually solve the equations. For simplicity we eliminate the continuity equation by considering the stream function rather than the velocity field. Where the stream function is defined is :
+\begin{align*}
+\frac{ \partial \psi}{\partial y} = u_x \\
+-\frac{\partial \psi}{\partial x} = u_y
+\end{align*} 
+When selecting the manufactured solution we want one which is preferably as simple as possible and easy to check. For instance we always started with $0$ boundary conditions in velocity. This both made determining errors on the boundaries easy and avoided a lot of the issues that come with outflows and inflows for the navier stokes equations. For the streamfunction this implies that the derivatives are 0 at the boundaries. We can easily resolve this by setting $\psi = sin(2 \pi x)^n sin(2 \pi y)^n$ with n greater than 2.\\
+Another thing to consider is the pressure conditions. We technically did not force any, but the equation naturally has them. Consider dotting the navier-stokes equations with the normal at the boundaries :
+\begin{align*}
+\nabla p \cdot n &= -(u \cdot \nabla) u \cdot n  + \mu \nabla^2 u \cdot n + F \cdot n \\
+x \in \delta \Omega
+\end{align*}
+Thus the dirichelet normal boundary conditions imply conditions on $\frac{\partial p}{\partial n}$.\\
+For simplicity we want this to be $0$ too.\\
+Note how every term on the left-hand side is either proportional to $\psi$, one of its derivatives or a sum of those. Hence all these terms become $0$ at all the boundaries if $n$ is large enough (as we would have $ sin(2 \pi x) sin(2 \pi y$ terms).\\
+This can be verified, as when failing to get a large enough $n$ and attempting to solve for the $0$ pressure solution we will get a trigonometric structure on the boundaries in the pressure error as seen in figure.\\
+As for setting the pressure, we need to ensure that $\frac{\partial p} {\partial n} = 0$, using a similar method to above we can consider $p =  sin(2 \pi x)^2 sin(2 \pi y)^2$.\\
+Hence we get our standard manufactured solution :
+\begin{align}
+u_x = sin(2 \pi y)^3 cos(2 \pi y)sin(2 \pi x)^4 \\
+u_y= -sin(2 \pi x)^3 cos(2 \pi x) sin(2 \pi y)^4 \\
+p = sin(2 \pi x)^2 sin(2 \pi y)^2
+\end{align}
 \section{Citations}
 
 [1] Imperial College London \textit{Firedrake Project} Available from : https://www.firedrakeproject.org [Accessed througout 2018-2019]\\
