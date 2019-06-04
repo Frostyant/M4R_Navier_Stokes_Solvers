@@ -1,4 +1,4 @@
-\documentclass[11pt,twoside,a4paper]{article}
+utilizewithinroughly\documentclass[11pt,twoside,a4paper]{article}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{mathrsfs}
@@ -22,9 +22,9 @@
 \section{Introduction}
 The steady Navier-Stokes equations govern steady state fluid interactions. These may arise due to lack of significant temporal changes of a system or at very long timescales where such changes fade out.\\
 We seek to create an efficient solver of the steady Navier-Stokes equations in an arbitrary domain.
-For this the Finite Element method is particularly suited, howver the standard CG method can be inefficient and is not globally divergence free.\\
-Using the $H_{div}$ space we get the global divergence free property. Additionally this allows us to use [2] and [9], which should give us an efficient and stable algorithm for solving whithin this space using the grad-div stabilisation method.\\
-The steady Navier Stokes equation are as follows :
+For this the Finite Element method is particularly suited, however the standard CG method can be inefficient and is not globally divergence free.\\
+Using the $H_{div}$ space we get the global divergence free property. Additionally this allows us to use [2] and [9], which should give us an efficient and stable algorithm for solving whithin this space using the grad-div stabilization method.\\
+The steady Navier-Stokes equation are as follows :
 \begin{align}
 (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
@@ -107,7 +107,7 @@ This finite element, combined with the BDM element for velocity, discretizes the
 Additionally we will be able to employ an enhanced Lagrangian preconditioner thanks to the global divergence free property [2].\\
 
 \subsection{Newton's Method}
-The Navier-Stokes equations have a non-linear part in the advection term for the velocity component. Hence we will need an algorithm to solve such equations. As discussed in the Classic Finite Element section we will obtain a matrix equation. Therefore we will conside the Newton's method applied to an arbitrary matrix equation.\\
+The Navier-Stokes equations have a non-linear part in the advection term for the velocity component. Hence we will need an algorithm to solve such equations. As discussed in the Classic Finite Element section we will obtain a matrix equation. Therefore we will consider the Newton's method applied to an arbitrary matrix equation.\\
 \\
 Consider a non-linear equation of the form :
 $$
@@ -155,7 +155,7 @@ $$
 This procedure allows us to transform a computationally ill-behaved matrix equation to an easier one.
 
 \subsection{Notation}
-Various notations are used throughout this paper. Although they are fairly common amongst papers in the subject we will re-introduce them here. Additionally this will allow us to explain some concepts which may not be familiar readers unfamiliar with discontinous finite elements.\\
+Various notations are used throughout this paper. Although they are fairly common amongst papers in the subject we will re-introduce them here. Additionally this will allow us to explain some concepts which may not be familiar readers unfamiliar with discontinuous finite elements.\\
 \\
 Let us define $a_+$ and $a_-$.\\
 When the mesh is setup the software ensures each facet (ie. edge of a triangle) in the mesh has a positive and negative side, and each cell agrees on which is which. We call this term on facet integrals, as otherwise it has no meaning. Then $a_+$ is the value of $a$ on the positive side $a_-$ on the negative side. The normal usually points from the negative to the positive side. However, when we consider for instance $(n \cdot a)_+$ we consider the whole expression on the "positive side" including the normal, which, with respect to any given cell, always points out of the cell, and hence may point in the opposite direction of the standard normal of the facet.\\
@@ -176,7 +176,7 @@ This is used both for additional clarity and because it is the notation in the c
 sgn(k) is the sign of scalar k.
 
 \section{$H_{div}$ Solver}
-This section will explain the solver setup of the Navier-Stokes Equation. First we will deal with discretising the steady Stokes equation, which is linear and explain how to implement a Schur Complement to improve performance. Then we will move on to the steady Navier-Stokes, first finding the weak form of the advection before introducing the continuation method. Lastly we will discuss a time stepping solver for the unsteady Navier-Stokes in order to study stability of solutions obtained from prior methods.
+This section will explain the solver setup of the Navier-Stokes Equation. First we will deal with discretizing the steady Stokes equation, which is linear and explain how to implement a Schur Complement to improve performance. Then we will move on to the steady Navier-Stokes, first finding the weak form of the advection before introducing the continuation method. Lastly we will discuss a time stepping solver for the unsteady Navier-Stokes in order to study stability of solutions obtained from prior methods.
 \subsection{Steady Stokes}
 The linear nature of the Stokes equation makes it easier to solve, hence we considered it first.\\
 The steady Stokes equation is, in it's standard strong form :
@@ -282,19 +282,19 @@ I & 0\\
 \end{bmatrix}
 $$
 Hence, if we can find $A^{-1}$ and $S^{-1}$ we can easily solve the equation. We solve both via a Lu factorization.\\
-We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$ via an Lu Factorization. The Lu factorization is a direct solver, and thus is inefficient. The algorithm would have to be performed in a sequential manner, preventing usage of parallelization. We did mitigate this through the usage of the "mumps" sub-routine. We originally attempted to use ILu, which is more efficient, but this failed. This is because the viscous term makes a less sparse matrix.\\
+We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$ via an Lu Factorization. The Lu factorization is a direct solver, and thus is inefficient. The algorithm would have to be performed in a sequential manner, preventing usage of parallelization. We did mitigate this through the usage of the "mumps" sub-routine. We originally attempted to use ILU, which is more efficient, but this failed. This is because the viscous term makes a less sparse matrix.\\
  However $S^{-1}$, the inverse of the Schur complement is difficult to determine because it is usually dense. However research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (14). Note that this term is 0 in continuous space. We thus get :
 \begin{align}
 \int_\Omega w \cdot F dx &= \int_\Omega \nabla \cdot (p v) dx - \int_\Omega ( p \nabla \cdot (v)) dx - \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu + \int_\Omega \gamma \nabla \cdot u \: \nabla \cdot v dx
 \end{align}
-This doesn't change the equation, thus should result in the same solution. However according to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. We then perform ILu in order to solve for $S^{-1}$. ILu performs the Lu Factorization on various blocks of the matrix independently. This allows us to parallelize the process, reducing overall computing time by splitting the work onto multiple computing machines.\\
+This doesn't change the equation, thus should result in the same solution. However according to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. We then perform ILU in order to solve for $S^{-1}$. ILU performs the Lu Factorization on various blocks of the matrix independently. This allows us to parallelize the process, reducing overall computing time by splitting the work onto multiple computing machines.\\
 Note that in theory we could have tried a similar method in the CG space.
 Testing shows however that this fails.
 This makes sense as we utilized the exact divergence free-property of our space for the Schur complement.
 As a result in the CG space as gamma tends to infinity S does not exactly tend to the pressure mass matrix.
 
 \subsection{Steady Navier-Stokes}
-We now have a discretisation of the Stokes equation and an efficient Preconditioner for it.
+We now have a discretization of the Stokes equation and an efficient Preconditioner for it.
 Our aim is to solve the steady Navier Stokes equations, hence we will now include it, and thus get for the velocity equation :
 \begin{align*}
 (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
@@ -351,7 +351,7 @@ We reordered some terms to be in-line with our code.
 
 \subsubsection{Continuation Method}
 
-Given the navier stokes equations we could try to naively solve directly applying the above preconditioning and discretization methods. However at high Reynolds number this approach quickly fails unless the mesh is refined or a better initial guess is given, leading to high computational cost or inability to solve certain problems.\\
+Given the Navier-Stokes equations we could try to naively solve directly applying the above preconditioning and discretization methods. However at high Reynolds number this approach quickly fails unless the mesh is refined or a better initial guess is given, leading to high computational cost or inability to solve certain problems.\\
 Hence consider the modified equation :
 \begin{align}
 c (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
@@ -363,7 +363,7 @@ In effect we are parametrizing the equation with $c$ and are gradually going fro
 \\
 We can speed up this process in two ways.\\
 The first, very simple method, is adapting our step-size to the problem. Rather than starting with a step size of $1$ we can reduce the step size initially if the Reynolds number is high enough. In addition to reducing the step size if the newton iteration fails, we can increase step size if it succeeds. This should allow us to close in on the optimal step size rapidly. This allows us to reduce the total number of times we try to use the Newton's method.\\
-The second involves approximating the $(u,p)$ at a subsequent step more accuratly. Rather than just using the prior value of $(u,p)$, call it $x_c$, we use Taylor expansion. We can consider $x_c$ to be a function of $c$, hence get :
+The second involves approximating the $(u,p)$ at a subsequent step more accurately. Rather than just using the prior value of $(u,p)$, call it $x_c$, we use Taylor expansion. We can consider $x_c$ to be a function of $c$, hence get :
 $$
 x_{c+\Delta c} = x_c + \Delta c \frac{\partial x_c}{\partial c}
 $$
@@ -392,7 +392,7 @@ While we could try and solve this equation directly using Backwards Euler or Mid
 \begin{align}
 u^{n+1} - u^n + \Delta t (\frac{1}{2}G(u^n,p^n) + \frac{1}{2} G(u^{n+1},p^{n+1}) + ( u^n \cdot \nabla u^n) ) = 0
 \end{align}
-Here $G = RHS - LHS $. We applied the midpoint rule to the linear terms of the equation while the non-linear term, the advection term, was evaluated at the previous time step. Provided the time step is low enough this will always converge, regardless of inital guess.\\
+Here $G = RHS - LHS $. We applied the midpoint rule to the linear terms of the equation while the non-linear term, the advection term, was evaluated at the previous time step. Provided the time step is low enough this will always converge, regardless of initial guess.\\
 Optionally we could afterwards use the method we described first, Newton's method and Midpoint Rule, to get a more accurate result after a few Picard's iterations.
 \begin{align}
 u^{n+1} - u^n + \Delta t (\frac{1}{2}F(u^n,p^n) + \frac{1}{2} F(u^{n+1},p^{n+1})) = 0
@@ -406,7 +406,7 @@ Instead we will use a far simpler algorithm.
 We will consider random perturbations and then use the time stepping method above to see if they grow.
 
 \section{Test Cases}
-In this section we will consider various test cases to verify convergence of the algorithm at expected rates and demonstrate its ability to resolve various complex problems in complex non-uniform domains. 
+In this section we will consider various test cases to verify convergence of the algorithm at expected rates and demonstrate its ability to resolve various complex problems in complex non-uniform domains.
 \subsection{Stokes Convergence}
 
 Once again we will primarily focus on the stokes equation (9-10) in order to verify that this part of our discretization is working as intended.\\
@@ -414,17 +414,17 @@ We will consider a manufactured solution, an artificial solution we selected in 
 We then adjust the boundary conditions and forcing term appropriately for this solution to hold.\\
  The forcing term thus becomes :$F = \nabla p - \mu \nabla^2 u$.\\
 Figures and show us the convergence graphs in velocity and pressure.\\
-This shows that the preconditioning and discretisation holds as expected for the stokes equation if boundary conditions are $0$.
+This shows that the preconditioning and discretization holds as expected for the stokes equation if boundary conditions are $0$.
 \\
 
 \begin{figure}
   \includegraphics[width=\linewidth]{stokes_convergence_dbc0.png}
-  \caption{DG2-BDM1 Stokes velocity Convergence Graph. As expected the velocity error has an order 2 convergence}
+  \caption{DG2-BDM1 Stokes velocity convergence plot of velocity error against resolution. As expected the velocity error decreases with a logarithimic slope of rougly 2, indicating order 2 convergence as expected.}
 \end{figure}
 
 \begin{figure}
 \includegraphics[width=\linewidth]{stokes_pressure_convergence_dbc0.png}
-  \caption{DG2-BDM1 Stokes velocity Convergence Grap. As expected the pressure error has an order 2 convergence}
+  \caption{DG2-BDM1 Stokes pressure convergence plot of pressure error against resolution. As expected the pressure error decreases with a logarithimic slope of rougly 2, indicating order 2 convergence as expected.}
 \end{figure}
 
 \subsection{Navier-Stokes Convergence}
@@ -432,21 +432,18 @@ This shows that the preconditioning and discretisation holds as expected for the
 We again use a manufactured solution to determine the convergence rate of our solver.
 We can re-use the first solution in the stokes convergence test, $u_x = sin(2 \pi y) cos(2 \pi y)sin(2 \pi x)^2$, $u_y= -sin(2 \pi x) cos(2 \pi x) sin(2 \pi y)^2$ and $p = sin(2 \pi x)^2 sin(2 \pi y)^2$.\\
 However the forcing term will now be $F = \nabla p - \mu \nabla^2 u + u \cdot \nabla u$.
-Plugging this into the equations we get that these do indeed solve the navier-stokes equations.\\
+Plugging this into the equations we get that these do indeed solve the Navier-Stokes equations.\\
 Figures and show us the convergence graphs in velocity and pressure.\\
 
 \begin{figure}
   \includegraphics[width=\linewidth]{navier_stokes_convergence_dbc0.png}
-  \caption{DG2-BDM1 Navier Stokes velocity Convergence Graph. As expected the velocity error has an order 2 convergence}
+  \caption{DG2-BDM1 Navier-Stokes velocity convergence plot of velocity error against resolution. As expected the velocity error decreases with a logarithmic slope of roughly 2, indicating order 2 convergence as expected. We used the direct solver, not applying the continuation solver.}
 \end{figure}
 
 \begin{figure}
 \includegraphics[width=\linewidth]{navier_stokes_pressure_convergence_dbc0.png}
-  \caption{DG2-BDM1 Navier Stokes velocity Convergence Grap. As expected the pressure error has an order 2 convergence}
+  \caption{DG2-BDM1 Stokes pressure convergence plot of pressure error against resolution. As expected the pressure error decreases with a logarithmic slope of roughly 2, indicating order 2 convergence as expected. We used the direct solver, not applying the continuation solver.}
 \end{figure}
-
-Note that we did not reuse the manufactured solution from the stokes convergence test for non-zero boundary conditions, as a matter of fact applying those we get figures and  for velocity and pressure. These show non-convergence, which is confirmed when considering the error graph in space in figure.\\
-While this might have indicated some error in the solver it turns out this is to be expected. In this scenario the equation is ill-posed. The exact reason is unkown, as this is still an active field of research. However a rule of thumb is that if you have dirichelet outflow the equation is ill-posed. An intuitive way of explaining this is that if we were to expand our domain the out of bounds flow might still be able to affect the flow in the computational domain (for instance trailing vorticies) in ways that we would thus not be able to capture if this region was excluded.
 
 \subsection{Flow Between Concentric Circles}
 
@@ -474,14 +471,14 @@ Figure shows the stokes solution to the problem.\\
 Similarly figures to show the solution with full advection at Reynolds numbers respectively.\\
 At Reynolds numbers higher than our solver starts requiring to use the continuation method multiple times (by default it always first finds the stokes solution). Eventually it the length of the continuation step goes below tolerance levels and our solver fails.\\
 However according to sources this corresponds to the Reynolds numbers where the solution becomes unstable.\\
-We reduce the Renolds number by reducing the viscosity. As expected this makes the boundary layer about the cylinder smaller and smaller. Note that we also needed to refine mesh during this process. Likely due to the critical velocity fluctuations on smaller and smaller scales about the cylinder.
+We reduce the Reynold's number by reducing the viscosity. As expected this makes the boundary layer about the cylinder smaller and smaller. Note that we also needed to refine mesh during this process. Likely due to the critical velocity fluctuations on smaller and smaller scales about the cylinder.
 
 \subsection{Cylinder flow Stability}
 
 \section{Conclusion and Future Improvements}
 
-In this project we were interested in applications of the BDM/DG mixed finite element onto the steady navier-stokes equations.\\
-After briefly discussing the general finite element method and some introductory definitions and notations we descided to focus on the stokes equation. After assembling the weak form of the equation we then applied a Schur preconditioner to  improve efficiency.\\
+In this project we were interested in applications of the BDM/DG mixed finite element onto the steady Navier-Stokes equations.\\
+After briefly discussing the general finite element method and some introductory definitions and notations we decided to focus on the stokes equation. After assembling the weak form of the equation we then applied a Schur preconditioner to  improve efficiency.\\
 We then assembled a weak form of the Navier-Stokes equation but noted that directly using it wasn't optimal. As such we developed a continuation method with variable step-size to improve the algorithm's speed and expand the number of problems which it can solve.\\
 After this we made a rudimentary time-stepping method to study the stability of any solutions obtained.\\
 Finally we tested all of the above and concluded that our algorithm worked as anticipated.\\
@@ -490,7 +487,7 @@ Finally we tested all of the above and concluded that our algorithm worked as an
 However a number of future improvements could be made.
 These would allow us to reduce computational cost, versatility and accuracy of our method.\\
 \\
-We could use a multigrid method using our method as a smoother to get convergence to be less dependent on grid-size, dramatically reducing computational costs. Application of such a method was discussed, unfortunatly the tools required for it are not currently compatible with our problem set (specifically dirichelet boundary conditions).\\
+We could use a multigrid method using our method as a smoother to get convergence to be less dependent on grid-size, dramatically reducing computational costs. Application of such a method was discussed, unfortunately the tools required for it are not currently compatible with our problem set (specifically dirichelet boundary conditions).\\
 The variable step-size method is serviceable and can be considerably improved to reduce the total number of iterations and thus computational cost. There are a number of methods which from local conditions of the function could more efficiently determine an appropriate step-size. Our source on the continuation method [17] includes such improvements.\\
 Similarly the time-stepping method was designed exclusively for the stability test. For this purpose it works very well. However various improvements could be made for accuracy and speed. For instance we initially attempted to utilise a Newton iteration rather than a Picards iteration. However as the initial guess wasn't in the ball of convergence this method failed. Adding a few Newton iterations using the picards results as a starting point should give more accurate answers for time-dependent methods.\\
 Additionally the stability itself could be expanded to for instance consider the growth rate of an instability as well as determines unstable modes.\\
@@ -587,7 +584,7 @@ def GetViscousTerm(self,u,p):
 
         return viscous_term,L
 \end{lstlisting}
-Note that in case we do not have dirichelet boundary conditions we obviously didn't integrate the exterior term over those boundaries (hence the ds(self.BcIds)).
+Note that in case we do not have Dirichelet boundary conditions we obviously didn't integrate the exterior term over those boundaries (hence the ds(self.BcIds)).
 
 \subsubsection{Pressure Term}
 The code associated to the Pressure and graddiv term is :
@@ -649,21 +646,21 @@ def GetAdvectionTerm(self,up,InflowBc,Bcs):
 
         return advection_term
 \end{lstlisting}
-Note that inflow boundary conditions have to be treated separatly from no-slip boundary conditions.
+Note that inflow boundary conditions have to be treated separately from no-slip boundary conditions.
 
 \subsection{Selecting the Manufactured Solution}
 Firstly any manufactured solution needs to actually solve the equations. For simplicity we eliminate the continuity equation by considering the stream function rather than the velocity field. Where the stream function is defined is :
 \begin{align*}
 \frac{ \partial \psi}{\partial y} = u_x \\
 -\frac{\partial \psi}{\partial x} = u_y
-\end{align*} 
+\end{align*}
 When selecting the manufactured solution we want one which is preferably as simple as possible and easy to check. For instance we always started with $0$ boundary conditions in velocity. This both made determining errors on the boundaries easy and avoided a lot of the issues that come with outflows and inflows for the navier stokes equations. For the streamfunction this implies that the derivatives are 0 at the boundaries. We can easily resolve this by setting $\psi = sin(2 \pi x)^n sin(2 \pi y)^n$ with n greater than 2.\\
 Another thing to consider is the pressure conditions. We technically did not force any, but the equation naturally has them. Consider dotting the navier-stokes equations with the normal at the boundaries :
 \begin{align*}
 \nabla p \cdot n &= -(u \cdot \nabla) u \cdot n  + \mu \nabla^2 u \cdot n + F \cdot n \\
 x \in \delta \Omega
 \end{align*}
-Thus the dirichelet normal boundary conditions imply conditions on $\frac{\partial p}{\partial n}$.\\
+Thus the Dirichelet normal boundary conditions imply conditions on $\frac{\partial p}{\partial n}$.\\
 For simplicity we want this to be $0$ too.\\
 Note how every term on the left-hand side is either proportional to $\psi$, one of its derivatives or a sum of those. Hence all these terms become $0$ at all the boundaries if $n$ is large enough (as we would have $ sin(2 \pi x) sin(2 \pi y$ terms).\\
 This can be verified, as when failing to get a large enough $n$ and attempting to solve for the $0$ pressure solution we will get a trigonometric structure on the boundaries in the pressure error as seen in figure.\\
