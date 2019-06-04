@@ -1,7 +1,7 @@
 from firedrake import *
 import numpy as np
 
-n = 16
+n = 32
 mu = 1
 
 #setting up function spaces and mesh
@@ -12,8 +12,8 @@ Q = FunctionSpace(mesh, "CG", 1)
 W = V*Q
 
 #setting up boundary conditions
-u_0 = as_vector([-sin(2*pi*y)*cos(2*pi*y)*sin(2*pi*x)**2,sin(2*pi*x)*cos(2*pi*x)*sin(2*pi*y)**2])
-p_0 = Constant(1)*sin(2*pi*x)**2*sin(2*pi*y)**2
+u_0 = as_vector([-sin(2*pi*y)**5*cos(2*pi*y)*sin(2*pi*x)**6,sin(2*pi*x)**5*cos(2*pi*x)*sin(2*pi*y)**6])
+p_0 = Constant(1)*sin(2*pi*x)**3*sin(2*pi*y)**3
 p_x = p_0.dx(0)
 p_y = p_0.dx(1)
 u_x = u_0.dx(0)
