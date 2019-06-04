@@ -34,10 +34,11 @@ Note that from working in the $H_{div}$ space the second equation is naturally s
 First we will describe the classic Finite Element Method, its advantages and disadvantages, hence explaining why we are using a modified method. Secondly we will explain a number of definitions and tools used in the project and which may be unfamiliar to some readers. Then we will show how to find the weak form of the equations and build different parts of our solvers. Lastly we will consider some example cases and deduce that the algorithm converges to the right result at satisfactory rates.\\
 
 \section{Tools and Definitions}
-
+A number of well-known methods, algorithms and definitions are used in this report. This section serves to quickly introduce these concepts for latter use in our work.
 \subsection{Classic Finite Elements Method}
-The finite element method (FEM) is a numerical method which approximates the solution to an exact partial differential equation [5]. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and in this project.\\
-We will now consider the case of applying the FEM to the stokes equations using the more classic Lagrange finite element. This method in particular is very common in research and industrial problems as such there are number of courses and books on the subject, such as \textit{Galerkin finite element methods for parabolic problems} if further explanation and theory is required.\\
+The Finite Element Method (FEM) is a numerical method which approximates the solution to an exact partial differential equation [5]. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and in this project.\\
+We will now consider the case of applying the FEM to the stokes equations using the more classic Lagrange finite element. We do this to explain how conventionally this problem would have been solved, and how our method will improve on it.\\
+This method in particular is very common in research and industrial problems as such there are number of courses and books on the subject, such as \textit{Galerkin finite element methods for parabolic problems} if further explanation and theory is required.\\
 \\
 The Stokes equation is :
 \begin{align}
@@ -91,23 +92,24 @@ Where $F$ was selected specifically to ensure that any given $u$ and $p$ are sol
 Using the above and implementing a solver using CG2 and CG1 in firedrake we get figures. On a mesh with 32 vertices we get an error of .\\
 However default implementation using the CG method is slow, hence we wish to improve on it.
 
-\subsection{Brezzi-Douglas-Marini Element}
-The paper Common and Unusual Finite Elements [7] states that the BDM space on one triangle $K$ is composed by polynomials of order $q$ defined by the normal component on each edge. If $q > 1$ it is also defined using the integration against gradients of the polynomials on the triangle. If $q > 2$ we then also use the integration  against curls of $b_K P_{q-2}(K)$ where $b_{q-2}$ is the  cubic bubble function associated with $K$ and $P_{q}(K)$ is the set of polynomials defined on $K$.\\
+\subsection{BDM-DG Mixed Space}
+Let us introduce the mixed space we will be working in for the rest of the paper. We will first define Brezzi-Douglas-Marini and explain the restrictions that come with it, then the discontinuous Galerkin and how combined with the BDM space we have an $H_{div}$ space.\\
+\\
+The paper Common and Unusual Finite Elements [7] states that the BDM space on one triangle $K$ is composed by polynomials of order $q$ defined by the normal component on each edge. If $q > 1$ it is also defined using the integration against gradients of the polynomials on the triangle. If $q > 2$ we then also use the integration  against curls of $b_K P_{q-2}(K)$ where $b_{q-2}$ is the cubic bubble function associated with $K$ and $P_{q}(K)$ is the set of polynomials defined on $K$.\\
 
 However unlike the Lagrange elements we can no longer set a Dirichelet boundary condition's tangential component. Therefore we need to find alternative approaches to enforce these conditions.
-Additionally some operations (such as the weak form of the curl) are undefined in this space. Due to possible discontinuities at the boundaries we have to be careful with all boundary integrals.\\
+Additionally some operations (such as the weak form of the curl) are undefined in this space. Due to possible discontinuities at the boundaries we have to be careful with all boundary integrals.
+In general the weak form will be far more involved.\\
+\\
 
-In general the weak form will be far more involved.
-
-
-\subsection{Discontinuous Galerkin and BDM-DG Mixed Space}
-The discontinuous Galerkin Element space is the space of piecewise linear continuous functions. An example applying this space on its own can be found [8].\\
+The discontinuous Galerkin Element space is the space of piecewise linear discontinuous functions. An example applying this space on its own can be found in [8].\\
 This finite element, combined with the BDM element for velocity, discretizes the function space $H_{div}$. A property we thus get from simply working in BDM is that our solution will be exactly divergence free globally and locally.
 Additionally we will be able to employ an enhanced Lagrangian preconditioner thanks to the global divergence free property [2].\\
 
 \subsection{Newton's Method}
-
-Newton's method is a generalized method for solving non-linear matrix equations of the form :
+The Navier-Stokes equations have a non-linear part in the advection term for the velocity component. Hence we will need an algorithm to solve such equations. As discussed in the Classic Finite Element section we will obtain a matrix equation. Therefore we will conside the Newton's method applied to an arbitrary matrix equation.\\
+\\
+Consider a non-linear equation of the form :
 $$
 F(x,y) = 0
 $$
@@ -128,11 +130,12 @@ DF_{x_n}(\Delta x) \Delta x = - F(x_n)\\
 x_{n+1} = x_n + \Delta x
 \end{align}
 We solve for $\Delta x$ using $x_n$ and the Taylor expansion approximation and then use this result to determine $x_{n+1}$.
-This is a linear problem which can be solved via an Lu Factorization for instance.\\
+This is a linear problem which can be solved via an LU Factorization for instance.\\
 Note that the Newton's method only converges and is unique if it is within a ball around the solution [10-11]. Other methods may be required to get to that point.
 
 \subsection{Preconditioners}
-
+Computational cost of an algorithm is an important limitation which we want to limit as much as possible. This is especially true given that many experimental and industrial applications will require very high resolution to take into account the complex shapes and boundary layers involved. As such we utilized a Schur Preconditioner to keep the computational costs down. This section will introduce the general concept of Preconditioners.\\
+\\
 We will first describe how preconditioners, such as the Schur Preconditioner work in general. We see this in the book Multilevel Block Factorization Preconditioners [4] on pages 49 to 51.\\
 Take the system :\\
 $$
@@ -152,18 +155,18 @@ $$
 This procedure allows us to transform a computationally ill-behaved matrix equation to an easier one.
 
 \subsection{Notation}
-
-Regarding the meaning of $a_+$ and $a_-$.\\
+Various notations are used throughout this paper. Although they are fairly common amongst papers in the subject we will re-introduce them here. Additionally this will allow us to explain some concepts which may not be familiar readers unfamiliar with discontinous finite elements.\\
+\\
+Let us define $a_+$ and $a_-$.\\
 When the mesh is setup the software ensures each facet (ie. edge of a triangle) in the mesh has a positive and negative side, and each cell agrees on which is which. We call this term on facet integrals, as otherwise it has no meaning. Then $a_+$ is the value of $a$ on the positive side $a_-$ on the negative side. The normal usually points from the negative to the positive side. However, when we consider for instance $(n \cdot a)_+$ we consider the whole expression on the "positive side" including the normal, which, with respect to any given cell, always points out of the cell, and hence may point in the opposite direction of the standard normal of the facet.\\
 It is important to note that the positive and negative side are completely arbitrary. They serve as markers for the software. Obviously these terms do not appear in the continuous finite element spaces.\\
 For facet which are facing the exterior domain we usually consider the equations separately.\\
 \\
 Let $\{ a \} = a_+ + a_-$. \\
 This is an average term. Due to discontinuities of our space on facet elements integrals over facets from integration by parts on an individual element will not disappear necessarily, hence these terms remain. Additionally, since we cannot use Dirichelet boundary conditions, weak penalty terms will also use this operation.\\
-
 For integrals over outer facet we explicitly write out the formula for clarity.\\
 \\
-Similarly let $J(a) = a_+ - a_-$\\
+Let $J(a) = a_+ - a_-$\\
 This is a jump term. Note that this operation is $0$ in continuous space, which is where we assume the physical fluid velocity and pressure to be.\\
 \\
 We may have surface integrals over interior facet and exterior facet, which are on the computational boundaries.\\
@@ -173,14 +176,17 @@ This is used both for additional clarity and because it is the notation in the c
 sgn(k) is the sign of scalar k.
 
 \section{$H_{div}$ Solver}
+This section will explain the solver setup of the Navier-Stokes Equation. First we will deal with discretising the steady Stokes equation, which is linear and explain how to implement a Schur Complement to improve performance. Then we will move on to the steady Navier-Stokes, first finding the weak form of the advection before introducing the continuation method. Lastly we will discuss a time stepping solver for the unsteady Navier-Stokes in order to study stability of solutions obtained from prior methods.
 \subsection{Steady Stokes}
-Since we have two problem terms we will deal with each separately. Hence we will first consider the stokes equation, ignoring the advection term and focusing on the viscosity term for now :
+The linear nature of the Stokes equation makes it easier to solve, hence we considered it first.\\
+The steady Stokes equation is, in it's standard strong form :
 \begin{align}
 0 &= -\nabla p + \mu \nabla^2 u + F  \\
 \nabla \cdot u &= 0
 \end{align}
 
 \subsubsection{Weak Stokes Equation}
+In this section we aim to find the weak form of the steady stokes equation, required for building the matrix system as seen in the classic FEM.\\
 We start off by cutting our computational domain $\Omega$ into a set of cells $e$. As discussed above it is now required to find the weak form of equations (9) and (10) in the BDM/DG space.
 For this purpose let us introduce two test functions, $w$ in BDM for velocity and $q$ in DG for pressure.
 Let us multiply equation (9) by $v$ and integrate over the domain as seen in the first section.
@@ -209,7 +215,7 @@ Now we also add the term $\alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS$. Acc
 The numerical value of $h$ is the average distance of a side. In our case we defined it as the average cell-volume over the length of the facets between them for each individual facet element $\Gamma$.\\
 Again, any flow studied with this algorithm will have a continuous velocity and pressure fields. The $J(u_i)$ term makes this integral $0$ in continuous space so this does not change the solution.\\
 \\
-As mentioned in the BDM definition section we cannot set the tangential component of a Dirichelet boundary condition in the conventional finite element manner.  So instead we use penalty terms, which should be $0$ when boundary conditions hold. This pushes the solution towards respecting the boundary conditions. In practice this just means taking all the terms over the edge of a cell and considering them on the sections of the edge of the domain where Dirichelet conditions apply instead.\\
+As mentioned in the BDM definition section we cannot set the tangential component of a Dirichelet boundary condition in the conventional finite element manner.  So instead we use penalty terms. These push the solution towards respecting the boundary conditions. In practice this just means taking all the terms over the edge of a cell and considering them on the sections of the edge of the domain where Dirichelet conditions apply instead.\\
  Hence our final viscous term becomes :\\
 \begin{align*}
 &-  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e ( \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial v_i}{\partial x_j}\} dS \\
@@ -241,7 +247,7 @@ But v is $0$ on all the boundaries, hence get :
 \end{align}
 
 \subsubsection{Schur Preconditioner}
-In an effort to get our iteration count to be independent of mesh-size, we will apply a Schur preconditioner similarly described in chapter 3 of Multilevel Block Factorization Preconditioners [4] as well as in source [2].\\
+In an effort to get our iteration count to be independent of mesh-size, we will apply a Schur preconditioner similarly described in chapter 3 of Multilevel Block Factorization Preconditioners [4] as well as in source [2]. This will dramatically reduce the computational cost of the solver.\\
 This is a well-known method, however as we will be modifying it, we will quickly describe it as well.
 Our system effectively amounts to solving a matrix equation of the form :
 $$
@@ -288,14 +294,16 @@ This makes sense as we utilized the exact divergence free-property of our space 
 As a result in the CG space as gamma tends to infinity S does not exactly tend to the pressure mass matrix.
 
 \subsection{Steady Navier-Stokes}
-Now we include the advection term :
+We now have a discretisation of the Stokes equation and an efficient Preconditioner for it.
+Our aim is to solve the steady Navier Stokes equations, hence we will now include it, and thus get for the velocity equation :
 \begin{align*}
 (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
 \end{align*}
 Note that this is equation is not linear, hence we will need to use Newton's method.\\
+We will first focus on finding the weak form of the advection term in order to add it to the previously obtained results. Testing however showed that this does not always converge due to the initial guess being outside of the Newton ball of convergence. Hence we will also build a continuation solver avoid that issue.
 
 \subsubsection{Advection Weak Form}
-In order to solve the equation regardless of the method, we need to find the weak form of the advection term, $(u \cdot \nabla) u$.
+In order to solve the equation, we need to find the weak form of the advection term, $(u \cdot \nabla) u$, which we will then add to the stokes weak form.\\
 Similarly to before we therefore take the inner product of the advection term with $q$ and integrate over the domain.
 \begin{align}
 \int_\Omega (u \cdot \nabla)u \cdot v \ dx
@@ -343,7 +351,7 @@ We reordered some terms to be in-line with our code.
 
 \subsubsection{Continuation Method}
 
-Given the navier stokes equations we could try to naively solve directly applying the above preconditioning and discretization methods. However at high Reynolds number this approach quickly fails unless the mesh is refined or a better initial guess is given, leading to high computational cost orinability to solve certain problems.\\
+Given the navier stokes equations we could try to naively solve directly applying the above preconditioning and discretization methods. However at high Reynolds number this approach quickly fails unless the mesh is refined or a better initial guess is given, leading to high computational cost or inability to solve certain problems.\\
 Hence consider the modified equation :
 \begin{align}
 c (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
@@ -351,6 +359,7 @@ c (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
 As mentioned in the Newton's Method section, the Newton's Method converges only if the initial guess is within a certain ball around the solution. Hence we need to find a method to get our initial guess to be closer to the solution.\\
 We could use the stokes solution as an initial guess, which we can most likely solve. We then increase $c$ to $1$ and try to solve using the stokes solution as a guess. \\
 If it still fails we can take $c =0.5$ before solving for full advection. If necessary we can bring down the value of $c$ multiple times until our solver converges at an appropriate rate. Afterwards we then gradually increase c using the same procedure until we solve for full advection.\\
+In effect we are parametrizing the equation with $c$ and are gradually going from the simpler Stokes equation to the full Navier-Stokes equation, using the prior steps as initial guesses. This method, and similar algorithms, are described in [17].\\
 \\
 We can speed up this process in two ways.\\
 The first, very simple method, is adapting our step-size to the problem. Rather than starting with a step size of $1$ we can reduce the step size initially if the Reynolds number is high enough. In addition to reducing the step size if the newton iteration fails, we can increase step size if it succeeds. This should allow us to close in on the optimal step size rapidly. This allows us to reduce the total number of times we try to use the Newton's method.\\
@@ -366,22 +375,24 @@ In some circumstances however even with a variable step-size in $c$ we fail to o
 
 \subsection{Unsteady Navier-Stokes}
 
-While we are mainly interested in the steady-state solution of the Navier-Stokes equation we also need to consider whether or not the solution is stable. To that end we need to solve a full Navier-Stokes, including the time derivative. This will be used to determine if small perturbations of the solution die down.
+While we are mainly interested in the steady-state solution of the Navier-Stokes equation we also may want to consider whether or not the solution is stable. To that end we need to solve a full unsteady Navier-Stokes, including the time derivative. This will be used to determine if small perturbations of the solution die down or blow up.
+
 \subsubsection{Time Stepping}
+First we need to write an algorithm which can time-step on the unsteady Navier-Stokes equations.\\
 In practice our problem amounts to the following, very generalized, equation :
 \begin{align}
 F(u) = 0
 \end{align}
-Where F is some function. this is in practice how the firedrake non-linear solver solves the equation.\\
+Where F is some function.\\
 If we add in the time-terms we get :
 \begin{align}
 \frac{\partial u}{\partial t} + F(u,p) = 0
 \end{align}
-While we could try and solve this equation directly using Backwards Euler or Midpoint Rule testing shows that this does not converge. Instead we use Picard's iteration along with the Midpoint rule as described in the following equation :
+While we could try and solve this equation directly using Backwards Euler or Midpoint Rule along with a Newton iteration testing shows that this does not converge. Instead we use Picard's iteration along with the Midpoint rule as described in the following equation :
 \begin{align}
 u^{n+1} - u^n + \Delta t (\frac{1}{2}G(u^n,p^n) + \frac{1}{2} G(u^{n+1},p^{n+1}) + ( u^n \cdot \nabla u^n) ) = 0
 \end{align}
-Here $G = RHS - LHS $. We applied the midpoint rule to the linear terms of the equation while the non-linear term, the advection term, was evaluated at the previous time step. Provided the time step is low enough this will always converge, regardless of inital guess.
+Here $G = RHS - LHS $. We applied the midpoint rule to the linear terms of the equation while the non-linear term, the advection term, was evaluated at the previous time step. Provided the time step is low enough this will always converge, regardless of inital guess.\\
 Optionally we could afterwards use the method we described first, Newton's method and Midpoint Rule, to get a more accurate result after a few Picard's iterations.
 \begin{align}
 u^{n+1} - u^n + \Delta t (\frac{1}{2}F(u^n,p^n) + \frac{1}{2} F(u^{n+1},p^{n+1})) = 0
@@ -392,9 +403,10 @@ u^{n+1} - u^n + \Delta t (\frac{1}{2}F(u^n,p^n) + \frac{1}{2} F(u^{n+1},p^{n+1})
 When interested in the stability of a solution analytically we commonly first determine the solution. We would then consider the normal modes form of the equation before perturbing it. After some algebra we determine the most unstable mode and deduce from that.\\
 While there are methods to determine these unstable modes numerically we will not use either of these methods here.\\
 Instead we will use a far simpler algorithm.
-We will consider random perturbations and then use the time stepping method to see if they grow.
+We will consider random perturbations and then use the time stepping method above to see if they grow.
 
 \section{Test Cases}
+In this section we will consider various test cases to verify convergence of the algorithm at expected rates and demonstrate its ability to resolve various complex problems in complex non-uniform domains. 
 \subsection{Stokes Convergence}
 
 Once again we will primarily focus on the stokes equation (9-10) in order to verify that this part of our discretization is working as intended.\\
