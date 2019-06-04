@@ -12,8 +12,6 @@ mu = 1
 Ns = [2**(n+3) for n in range(7)]
 errors = [0]*len(Ns)
 ep = [0]*len(Ns)
-#elinefit = [0]*len(Ns)
-#eplinefit = [0]*len(Ns)
 
 for it,n in enumerate(Ns):
     mesh = UnitSquareMesh(n, n)
@@ -50,6 +48,16 @@ for it,n in enumerate(Ns):
     pexact.project(p_0)
     errors[it] = norm(u-uexact)
     ep[it] = norm(p-pexact)-0.25 #adjusting constant
+
+"""
+def FitLogLine(e0,Ns,coef):
+    c = np.log(e0) - coef * np.log(Ns[0])
+    ls = [np.exp(c+coef*np.log(n)) for n in Ns]
+    return ls
+
+ls = FitLogLine(errors[0],Ns,2)
+pls = FitLogLine(ep[0],Ns,2)
+"""
 
 elinefit[0] = errors[0]
 plt.xlabel('o(n)')
