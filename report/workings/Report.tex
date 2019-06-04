@@ -157,8 +157,13 @@ This procedure allows us to transform a computationally ill-behaved matrix equat
 \subsection{Notation}
 Various notations are used throughout this paper. Although they are fairly common amongst papers in the subject we will re-introduce them here. Additionally this will allow us to explain some concepts which may not be familiar readers unfamiliar with discontinuous finite elements.\\
 \\
+$\Omega$ is the computational domain we are working on (this may be the unit square or an annulus for instance).\\
+$\partial \Omega$ denotes the boundary of that domian.\\
+$e$ denotes an individual triangle composing the mesh which forms $\Omega$. In this context $\sum_e$ denotes a sum over all triangles of the mesh.\\
+$\Gamma$ denotes the boundary of an individual triangle $e$.\\
+\\
 Let us define $a_+$ and $a_-$.\\
-When the mesh is setup the software ensures each facet (ie. edge of a triangle) in the mesh has a positive and negative side, and each cell agrees on which is which. We call this term on facet integrals, as otherwise it has no meaning. Then $a_+$ is the value of $a$ on the positive side $a_-$ on the negative side. The normal usually points from the negative to the positive side. However, when we consider for instance $(n \cdot a)_+$ we consider the whole expression on the "positive side" including the normal, which, with respect to any given cell, always points out of the cell, and hence may point in the opposite direction of the standard normal of the facet.\\
+When the mesh is setup we ensure each facet (ie. edge of a triangle) in the mesh has a positive and negative side, and each cell agrees on which is which. We call these terms on facet integrals, as otherwise they have no meaning. Then $a_+$ is the value of $a$ on the positive side $a_-$ on the negative side. The normal usually points from the negative to the positive side. However, when we consider for instance $(n \cdot a)_+$ we consider the whole expression on the "positive side" including the normal, which, with respect to any given cell, always points out of the cell, and hence may point in the opposite direction of the standard normal of the facet.\\
 It is important to note that the positive and negative side are completely arbitrary. They serve as markers for the software. Obviously these terms do not appear in the continuous finite element spaces.\\
 For facet which are facing the exterior domain we usually consider the equations separately.\\
 \\
