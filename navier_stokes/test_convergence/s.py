@@ -49,7 +49,6 @@ for it,n in enumerate(Ns):
     errors[it] = norm(u-uexact)
     ep[it] = norm(p-pexact)-0.25 #adjusting constant
 
-"""
 def FitLogLine(e0,Ns,coef):
     c = np.log(e0) - coef * np.log(Ns[0])
     ls = [np.exp(c+coef*np.log(n)) for n in Ns]
@@ -57,19 +56,18 @@ def FitLogLine(e0,Ns,coef):
 
 ls = FitLogLine(errors[0],Ns,2)
 pls = FitLogLine(ep[0],Ns,2)
-"""
 
 elinefit[0] = errors[0]
 plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
-plt.loglog(Ns,errors)
+plt.loglog(Ns,errors,ls)
 plt.title('Stokes Velocity Convergence Graph')
 plt.savefig('stokes_convergence.png')
 
 plt.figure()
 plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
-plt.loglog(Ns,ep)
+plt.loglog(Ns,ep,pls)
 plt.title('Stokes Pressure Convergence Graph')
 plt.savefig('stokes_pressure_convergence.png')
 
