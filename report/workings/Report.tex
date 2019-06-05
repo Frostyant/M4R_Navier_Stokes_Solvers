@@ -152,7 +152,7 @@ We then numerically solve the transformed and hopefully better behaved system :
 $$
 P^{-1}(Mx-b) = 0
 $$
-This procedure allows us to transform a computationally ill-behaved matrix equation to an easier one.
+This procedure allows us to transform a computationally ill-behaved matrix equation (unstable, non-sparse,etc.) to an easier one.
 
 \subsection{Notation}
 Various notations are used throughout this paper. Although they are fairly common amongst papers in the subject we will re-introduce them here. Additionally this will allow us to explain some concepts which may not be familiar readers unfamiliar with discontinuous finite elements.\\
@@ -374,7 +374,13 @@ x_{c+\Delta c} = x_c + \Delta c \frac{\partial x_c}{\partial c}
 $$
 Provided we can find $\frac{\partial x_c}{\partial c}$ this will give us a far more accurate solution.
 To find the derivative of $x_c$ with respect to $c$ we consider :\\
-
+\begin{align}
+\frac{\partial H (\frac{\partial x_c}{\partial c},c)}{\partial \frac{\partial x_c}{\partial c}}  = - \frac{\partial H}{\partial c}(x_c,c)
+\end{align}
+Where $H$ is a function of $u$, $c$ and $p$ such that the following is equivalent to (23)
+\begin{align*}
+H(u,c) = 0
+\end{align*}
 Which we solve via a newton iteration.\\
 In some circumstances however even with a variable step-size in $c$ we fail to obtain a solution within an acceptable time-frame. In our code if the step-size is below $10^{-3}$ our solver stops and fails. This usually happens for high Reynolds number flows.
 
@@ -383,22 +389,24 @@ In some circumstances however even with a variable step-size in $c$ we fail to o
 While we are mainly interested in the steady-state solution of the Navier-Stokes equation we also may want to consider whether or not the solution is stable. To that end we need to solve a full unsteady Navier-Stokes, including the time derivative. This will be used to determine if small perturbations of the solution die down or blow up.
 
 \subsubsection{Time Stepping}
-First we need to write an algorithm which can time-step on the unsteady Navier-Stokes equations.\\
+First we need to write an algorithm which can time-step the unsteady Navier-Stokes equations.\\
 In practice our problem amounts to the following, very generalized, equation :
+\begin{align*}
+H(u) = 0
+\end{align*}
+Where H is some function.\\
+If we add in the unsteady term we get :
 \begin{align}
-F(u) = 0
+\frac{\partial u}{\partial t} + H(u,p) = 0
 \end{align}
-Where F is some function.\\
-If we add in the time-terms we get :
-\begin{align}
-\frac{\partial u}{\partial t} + F(u,p) = 0
-\end{align}
-While we could try and solve this equation directly using Backwards Euler or Midpoint Rule along with a Newton iteration testing shows that this does not converge. Instead we use Picard's iteration along with the Midpoint rule as described in the following equation :
+Initially we discretized the unsteady term using backwards Euler or the Midpoint rule (effectively adding a forcing term) and then used the solvers from 3.1 and 3.2. However this did not converge, due to the fact that the our initial guess tended to be ourside of the radius of convergence of the Newton's method.\\
+Instead we use Picard's iteration along with the Midpoint rule as described in the following equation :
 \begin{align}
 u^{n+1} - u^n + \Delta t (\frac{1}{2}G(u^n,p^n) + \frac{1}{2} G(u^{n+1},p^{n+1}) + ( u^n \cdot \nabla u^n) ) = 0
 \end{align}
-Here $G = RHS - LHS $. We applied the midpoint rule to the linear terms of the equation while the non-linear term, the advection term, was evaluated at the previous time step. Provided the time step is low enough this will always converge, regardless of initial guess.\\
-Optionally we could afterwards use the method we described first, Newton's method and Midpoint Rule, to get a more accurate result after a few Picard's iterations.
+Here $G = RHS - LHS $. We applied the midpoint rule to the linear terms of the equation while the non-linear term, the advection term, was evaluated at the previous time step.\\
+Provided the time step is low enough this will converge, regardless of initial guess. However Picard's iterations has a lower order of convergence than Newton's method, and as such will be less accurate for same computational cost [19].\\
+Optionally we could afterwards use the method we described first, Newton's method and Midpoint Rule, to get a more accurate result after a few Picard's iterations. Presumably these would get us whithin the radius of convergence.
 \begin{align}
 u^{n+1} - u^n + \Delta t (\frac{1}{2}F(u^n,p^n) + \frac{1}{2} F(u^{n+1},p^{n+1})) = 0
 \end{align}
@@ -668,6 +676,8 @@ https://doi.org/10.1016/j.cam.2005.11.037.\\
 [17] Deuflhard P. (2011) Parameter Dependent Systems: Continuation Methods. In: \textit{Newton Methods for Nonlinear Problems}. Springer Series in Computational Mathematics, vol 35. Springer, Berlin, Heidelberg\\
 
 [18] Natale, Andrea, and Colin J. Cotter. \textit{Scale‐selective Dissipation in Energy‐conserving Finite‐element Schemes for Two‐dimensional Turbulence}  Quarterly Journal of the Royal Meteorological Society 143.705 (2017): 1734-745. Web.\\
+
+[19] Paniconi, C., and Putti, M. ( 1994), \textit{A comparison of Picard and Newton iteration in the numerical solution of multidimensional variably saturated flow problems}, Water Resour. Res., 30( 12), 3357– 3374, doi:10.1029/94WR02046.
 
 
 
