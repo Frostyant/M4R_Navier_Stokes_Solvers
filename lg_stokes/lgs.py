@@ -42,24 +42,7 @@ nullspace = MixedVectorSpaceBasis(
 
 #setting up problem proper
 LHS = inner(grad(u), grad(v)) * dx - div(v) * p * dx + q * div(u) * dx
-Zero = Function(Q)
-RHS =  inner(v,F) * dx #q*Zero * dx
-
-"""
-parameters = {
-    "ksp_type": "gmres",
-    "option" : None,
-    "ksp_rtol": 1e-8,
-    "pc_type": "fieldsplit",
-    "pc_fieldsplit_type": "schur",
-    "pc_fieldsplit_schur_fact_type": "full",
-    "pc_fieldsplit_off_diag_use_amat": True,
-    "fieldsplit_0_ksp_type": "preonly",
-    "fieldsplit_0_pc_type": "lu",
-    "fieldsplit_0_pc_factor_mat_solver_package": "mumps",
-    "fieldsplit_1_ksp_type": "preonly",
-    "fieldsplit_1_pc_type": "lu"
-}"""
+RHS =  inner(v,F) * dx
 
 solver_parameters={"ksp_type": "gmres",
                              "mat_type": "aij",
@@ -67,7 +50,7 @@ solver_parameters={"ksp_type": "gmres",
                              "pc_factor_mat_solver_type": "mumps"}
 
 # assembling & solving
-Problem = LinearVariationalProblem(LHS, RHS, up, aP=aP, bcs = bcs)
+Problem = LinearVariationalProblem(LHS, RHS, up, bcs = bcs)
 Solver = LinearVariationalSolver(Problem, nullspace=nullspace,solver_parameters = parameters)
 Solver.solve()
 
