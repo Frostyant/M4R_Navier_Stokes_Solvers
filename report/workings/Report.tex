@@ -6,6 +6,7 @@
 \usepackage{float}
 \usepackage[parfill]{parskip}
 \usepackage{listings}
+\linespread{1.3}
 
 
 \begin{document}
@@ -32,7 +33,8 @@ The steady Navier-Stokes equation are as follows :
 First we will describe the classic continuous galerkin (CG) finite element method, its advantages and disadvantages, hence explaining why we are using a modified method. Secondly we will explain a number of definitions and tools used in the project and which may be unfamiliar to some readers. Then we will show how to find the weak form of the equations and build different parts of our solvers. Lastly we will consider some example cases and deduce that the algorithm converges to the right result at satisfactory rates.\\
 
 \section{Tools and Definitions}
-A number of well-known methods, algorithms and definitions are used in this report. This section serves to quickly introduce these concepts for latter use in our work.
+A number of well-known methods, algorithms and definitions are used in this report. This section serves to quickly introduce these concepts for latter use in our work. We will first start by explaining the general finite element method, specifically the most commonly used continuous galerkin method. We then will explain Newton's method for non-linear matrix equations which arise from the finite element discretisation of the navier stokes equation. Then we explain the general concept of preconditioners. Lastly we will define the various notations involved in this project.
+
 \subsection{Classic Finite Elements Method}
 The Finite Element Method (FEM) is a numerical method which approximates the solution to an exact partial differential equation [5]. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and in this project.\\
 We will now consider the case of applying the FEM to the stokes equations using the more classic continuous Galerkin method. We do this to explain how conventionally this problem would have been solved, and how our method will improve on it.\\
@@ -87,8 +89,16 @@ p &= sin(2 \pi x) sin(2 \pi y) \\
 F &= \nabla p - \mu \nabla^2 u
 \end{align*}
 Where $F$ was selected specifically to ensure that any given $u$ and $p$ are solutions.
-Using the above and implementing a solver using CG2 and CG1 in firedrake we get figures. On a mesh with 64 vertices we get an error of $10^{-11}$.\\
+Using the above and implementing a solver using CG2 and CG1 in firedrake we get figures. On a mesh with 64x64 vertices we get an error of $10^{-11}$ for velocity and $10^{-10}$ for pressure.\\
 However default implementation using the CG method is slow, hence we wish to improve on it.
+\begin{figure}
+  \includegraphics[width=\linewidth]{lgv.png}
+  \caption{Standard velocity CG solution in a 64x64 vertex uniform square. We obtained a velocity error of order $10^{-11}$.}
+\end{figure}
+\begin{figure}
+  \includegraphics[width=\linewidth]{lgp.png}
+  \caption{Standard pressure CG solution in a 64x64 vertex uniform square. We obtained a velocity error of order $10^{-10}$.}
+\end{figure}
 
 \subsection{BDM-DG Mixed Space}
 Let us introduce the mixed space we will be working in for the rest of the paper. We will first define Brezzi-Douglas-Marini and explain the restrictions that come with it, then the discontinuous Galerkin and how combined with the BDM space we have an $H_{div}$ space.\\
@@ -105,7 +115,7 @@ This finite element, combined with the BDM element for velocity, discretizes the
 Additionally we will be able to employ an enhanced Lagrangian preconditioner thanks to the global divergence free property [2].\\
 
 \subsection{Newton's Method}
-The Navier-Stokes equations have a non-linear part in the advection term for the velocity component. Hence we will need an algorithm to solve such equations. As discussed in the Classic Finite Element section we will obtain a matrix equation. Therefore we will consider the Newton's method applied to an arbitrary matrix equation.\\
+The Navier-Stokes equations have a non-linear part in the advection term for the velocity component. Hence we will need an algorithm to solve non-linear equations. As discussed in the Classic Finite Element section we will obtain a matrix equation. Therefore we will explain the Newton's method applied to a matrix equation in this section.\\
 \\
 Consider a non-linear equation of the form :
 $$
@@ -250,7 +260,7 @@ But v is $0$ on all the boundaries, hence get :
 \end{align}
 
 \subsubsection{Schur Preconditioner}
-In an effort to get our iteration count to be independent of mesh-size, we will apply a Schur preconditioner similarly described in chapter 3 of Multilevel Block Factorization Preconditioners [4] as well as in source [2]. This will dramatically reduce the computational cost of the solver.\\
+In an effort to get our iteration count to be independent of mesh-size, we will apply a Schur preconditioner similarly described in chapter 3 of Multilevel Block Factorization Preconditioners [4] and applied to our problem in [2] and [9]. This will dramatically reduce the computational cost of the solver.\\
 This is a well-known method, however as we will be modifying it, we will quickly describe it as well.
 Our system effectively amounts to solving a matrix equation of the form :
 $$
