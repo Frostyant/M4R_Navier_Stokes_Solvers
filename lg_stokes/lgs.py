@@ -79,11 +79,15 @@ File("stokes.pvd").write(u, p)
 
 uexact = Function(V)
 uexact.project(u_0)
+pexact = Function(Q)
+pexact.project(p_0)
 error = np.log(norm(u-uexact))
+perror = np.log(norm(p-pexact))
 
 print(error)
+print(perror)
 
 #saving exact values of the error
 valfile2 = open("error.txt","w+")
-valfile2.write(str(error))
+valfile2.write(str(error) + " " + str(perror))
 valfile2.close()
