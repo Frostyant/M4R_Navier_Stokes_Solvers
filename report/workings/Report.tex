@@ -35,15 +35,15 @@ First we will describe the classic continuous galerkin (CG) finite element metho
 A number of well-known methods, algorithms and definitions are used in this report. This section serves to quickly introduce these concepts for latter use in our work.
 \subsection{Classic Finite Elements Method}
 The Finite Element Method (FEM) is a numerical method which approximates the solution to an exact partial differential equation [5]. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and in this project.\\
-We will now consider the case of applying the FEM to the stokes equations using the more classic Lagrange finite element. We do this to explain how conventionally this problem would have been solved, and how our method will improve on it.\\
-This method in particular is very common in research and industrial problems as such there are number of courses and books on the subject, such as \textit{Galerkin finite element methods for parabolic problems} if further explanation and theory is required.\\
+We will now consider the case of applying the FEM to the stokes equations using the more classic continuous Galerkin method. We do this to explain how conventionally this problem would have been solved, and how our method will improve on it.\\
+This method in particular is very common in research and industrial problems as such there are number of courses and books on the subject, such as \textit{Galerkin finite element methods for parabolic problems} [6] if further explanation and theory is required.\\
 \\
 The Stokes equation is :
 \begin{align}
 0 &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
 \end{align}
-As seen in Common and Unusual Finite Elements [7], the Lagrange finite element approximates a function on a cell using polynomials of degree $q$ defined by their pointwise values at an array of points. Maximal global continuity is kept by making sure  that multiple cells agree on their respective edges.\\
+As seen in Common and Unusual Finite Elements [7], the Lagrange finite element used in CG approximates a function on a cell using polynomials of degree $q$ defined by their pointwise values at an array of points. Maximal global continuity is kept by making sure  that multiple cells agree on their respective edges.\\
 For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first order Lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points in it, the two edge points. Hence we get figure 1, where the blue curve indicates our approximation and the red one the exact function. In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
 \begin{figure}
   \includegraphics[width=\linewidth]{ex_1D_LG.png}
@@ -87,7 +87,7 @@ p &= sin(2 \pi x) sin(2 \pi y) \\
 F &= \nabla p - \mu \nabla^2 u
 \end{align*}
 Where $F$ was selected specifically to ensure that any given $u$ and $p$ are solutions.
-Using the above and implementing a solver using CG2 and CG1 in firedrake we get figures. On a mesh with 32 vertices we get an error of .\\
+Using the above and implementing a solver using CG2 and CG1 in firedrake we get figures. On a mesh with 64 vertices we get an error of $10^{-11}$.\\
 However default implementation using the CG method is slow, hence we wish to improve on it.
 
 \subsection{BDM-DG Mixed Space}
@@ -564,25 +564,25 @@ def GetAdvectionTerm(self,up,InflowBc,Bcs):
         U_upwind = Upwind('+')*u('+') + Upwind('-')*u('-')
 
         #Assembling Advection Term
-        adv_byparts1 = inner(u, curl(cross(u, self.v)))*dx 
+        adv_byparts1 = inner(u, curl(cross(u, self.v)))*dx
 	#This is the term from integration by parts of double curl
-        adv_byparts2 = inner(U_upwind, 2*avg( perp(n, cross(u, self.v))))*dS 
+        adv_byparts2 = inner(U_upwind, 2*avg( perp(n, cross(u, self.v))))*dS
 	#Second term over surface
-        adv_grad_parts1 = 0.5*div(self.v)*inner(u,u)*dx 
+        adv_grad_parts1 = 0.5*div(self.v)*inner(u,u)*dx
 	#This is the term due to the integration by parts of grad u^2
         if not InflowBc:
-            adv_bdc1 = inner(u,perp(n,cross(u,self.v)))*ds(Bcs) 
+            adv_bdc1 = inner(u,perp(n,cross(u,self.v)))*ds(Bcs)
 	#boundary version of adv_byparts2
-            adv_grad_parts2 = 1/2*inner(inner(u,u)*self.v,n)*ds(Bcs) 
+            adv_grad_parts2 = 1/2*inner(inner(u,u)*self.v,n)*ds(Bcs)
 	#boundary term from grad u^2 integration by parts
         else:
-            adv_bdc1 = inner(u,perp(n,cross(u,self.v)))*ds(Bcs) 
+            adv_bdc1 = inner(u,perp(n,cross(u,self.v)))*ds(Bcs)
 	#boundary version of adv_byparts2
-            adv_grad_parts2 = 1/2*inner(inner(u,u)*self.v,n)*ds(Bcs) 
+            adv_grad_parts2 = 1/2*inner(inner(u,u)*self.v,n)*ds(Bcs)
 	#boundary term from grad u^2 integration by parts
-            adv_bdc1 +=  inner(self.u_0,perp(n,cross(self.u_0,self.v)))*ds(InflowBc) 
+            adv_bdc1 +=  inner(self.u_0,perp(n,cross(self.u_0,self.v)))*ds(InflowBc)
 	#boundary version of adv_byparts2
-            adv_grad_parts2 += 1/2*inner(inner(self.u_0,self.u_0)*self.v,n)*ds(InflowBc) 
+            adv_grad_parts2 += 1/2*inner(inner(self.u_0,self.u_0)*self.v,n)*ds(InflowBc)
 	#boundary term from grad u^2 integration by parts
 
         advection_term = (
@@ -599,7 +599,7 @@ Note that inflow boundary conditions have to be treated separately from no-slip 
 Additionally note that we had to specify a special case for 2D. While most of the ufl code works in 2D and 3D in the same way, the cross product is ill defined purely in 2D. Hence we needed to define special operiations for each possible instance of the cross product.\\
 
 \subsection{Selecting the Manufactured Solution}
-The method of manufactured solution, which we used multiple times to determine the accuracy and rate of convergence of the various computational methods discussed. While the method primarily involves artificially creating a solution to the equation by adjusting the forcing term some though has to be put into selecting the solution. Otherwise we may find that the algorithms do not converge.\\ 
+The method of manufactured solution, which we used multiple times to determine the accuracy and rate of convergence of the various computational methods discussed. While the method primarily involves artificially creating a solution to the equation by adjusting the forcing term some though has to be put into selecting the solution. Otherwise we may find that the algorithms do not converge.\\
 Firstly any manufactured solution needs to actually solve the equations. For simplicity we eliminate the continuity equation by considering the stream function rather than the velocity field. Where the stream function is defined is :
 \begin{align*}
 \frac{ \partial \psi}{\partial y} = u_x \\
