@@ -6,7 +6,6 @@
 \usepackage{float}
 \usepackage[parfill]{parskip}
 \usepackage{listings}
-\linespread{1.3}
 
 
 \begin{document}
@@ -19,18 +18,18 @@
 \maketitle
 \clearpage
 \section{Abstract}
-The aim of this project is to build on previous research and develop an efficient steady Navier-Stokes solver. Utilizing a Lagragian preconditioner described in [2], the grad-div stabilization method described in [9] and the BDM/DG discretization of the $H_{div}$ space we obtained a working Stokes and Navier-Stokes solver and discussed the derivation of it's weak form.\\
-The primary advantage of the $H_{div}$ space is that the divergence free requirement of the continuity equation is satisfied exactly globally. This allows the Schur Complement to be exactly determined rather than approximated as in [2].
+The aim of this project is to build on previous research and develop an efficient steady Navier-Stokes solver. Utilizing a Lagragian preconditioner described Patrick et al in \textit{An Augmented Lagrangian Preconditioner For The 3D Stationary Incompressible Navier–Stokes Equation At High Reynolds Number}, the grad-div stabilization method described by Olshanskii et al in \textit{Grad-div stabilization for Stokes equations} and the BDM/DG discretization of the $H_{div}$ space we obtained a working Stokes and Navier-Stokes solver and discussed the derivation of it's weak form.\\
+The primary advantage of the $H_{div}$ space is that the divergence free requirement of the continuity equation is satisfied exactly globally. This allows the Schur Complement to be exactly determined rather than approximated as in Patrick et al's paper.
 We then noticed that at high Reynold's number the Navier-Stokes solver tended to fail. Hence we developed a continuation method which decreases computational cost and extends the Reynold's number for which the solver works.\\
 We demonstrated all of the above in various test cases. \\
-Finally gave a short summary of possible future improvements.
+Finally we gave a summary of possible future improvements.
 \clearpage
 
 \tableofcontents
 \clearpage
 
 \section{Introduction}
-The steady Navier-Stokes equations govern steady state fluid interactions. These may arise due to lack of significant temporal changes of a system or at very long timescales where such changes fade out. Examples are pipe flows and flows past a cylinder at long time-scales and low Reynold's number.\\
+The steady Navier-Stokes equations govern steady state fluid interactions. These may arise due to lack of significant temporal changes of a system but one of the primary motivations of study is whether or not these form stable solutions to the full Navier-Stokes solution. In this context this project provides the base flows on which the stability analysis would then be performed. Examples of particular interest are steady flows are pipe flows and flows past a cylinder.\\
 We seek to create an efficient solver of the steady Navier-Stokes equations in an arbitrary domain. For this the Finite Element method is particularly suited, and has been used for this purpose in the past [20]. \\
 Recent papers [2,9] have demonstrated the use of a Lagrangian preconditioner along with a grad-div stabilization method to be highly efficient. We seek to combine this with a discretization in a globally divergence free [18] space. This allows us to exactly get the Schur complement mentioned in [2] as it will lie in the $H_{div}$ space rather than approximating it.\\
 \\
@@ -81,7 +80,7 @@ Finally multiplying (4) by a similar pressure test function $q$ and adding it to
 Now we use the fact that $q$, $v$, $F$, $u$ and $p$ are a sum of known linear functions and coefficients.\\
 Pulling out and removing the coefficients of $v$ we get that :
 \begin{align*}
- \int_{e} \sum_i \sum_j (  p_j \phi_j \nabla  \cdot \Phi_i - \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = -\int_{e} \sum_i \phi_i F_i \phi_i dx
+ \int_{e} \sum_i \sum_j (  p_j \phi_j \nabla  \cdot \Phi_i - \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = -\int_{e} \sum_i \Phi_i \cdot F_i \Phi_i dx
 \end{align*}
 Combining all the triangles we can eventually turn our problem into a matrix equation of the form :
 \begin{align}
@@ -124,11 +123,11 @@ This finite element, combined with the BDM element for velocity, discretizes the
 Additionally we will be able to employ an enhanced Lagrangian preconditioner thanks to the global divergence free property [2].\\
 
 \subsection{Newton's Method}
-The Navier-Stokes equations have a non-linear part in the advection term for the velocity component. Hence we will need an algorithm to solve non-linear equations. As discussed in the Classic Finite Element section we will obtain a matrix equation. Therefore we will explain the Newton's method applied to a matrix equation in this section.\\
+The Navier-Stokes equations have a non-linear part in the advection term for the velocity component. Hence we will need an algorithm to solve non-linear equations. We will thus describe Newton's method in this section.\\
 \\
 Consider a non-linear equation of the form :
 $$
-F(x,y) = 0
+F(x) = 0
 $$
 Where $F$ is a vector function and $x$ is vector of unknowns. Note that $F$ may be non-linear and have constant components.
 For instance we could have $ F = x^T A x + M x - b$, where A and M are constant matrices and b is a constant vector.\\
@@ -309,8 +308,7 @@ We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$ via an Lu Factoriz
 \begin{align}
 \int_\Omega w \cdot F dx &= \int_\Omega \nabla \cdot (p v) dx - \int_\Omega ( p \nabla \cdot (v)) dx - \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu + \int_\Omega \gamma \nabla \cdot u \: \nabla \cdot v dx
 \end{align}
-This doesn't change the equation, thus should result in the same solution. However according to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. We then perform ILU in a block by block menner order to solve for $S^{-1}$. This allows us to parallelize the process, reducing overall computing time by splitting the work onto multiple computing machines.\\
-ILU is similar to the LU factorization method except that it forcibly makes the resulting matrices sparse, either setting terms to be $0$ if they are below tolerance or if they don't fit the sparsity motif of the original matrix. In our case we used the latter.\\
+This doesn't change the equation, thus should result in the same solution. However according to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. Due to the fact that the pressure mass matrix is block diagonal we can easily invert it to find $S^{-1}$
 \\
 Note that in theory we could have tried a similar method in the CG space.
 Testing shows however that this fails.
@@ -405,7 +403,7 @@ In some circumstances however even with a variable step-size in $c$ we fail to o
 
 \subsection{Unsteady Navier-Stokes}
 
-While we are mainly interested in the steady-state solution of the Navier-Stokes equation we also may want to consider whether or not the solution is stable. To that end we need to solve a full unsteady Navier-Stokes, including the time derivative. This will be used to determine if small perturbations of the solution die down or blow up.
+While we are mainly interested in the steady-state solution of the Navier-Stokes equation we also may want to consider whether or not the solution is stable. To that end we need to solve a full unsteady Navier-Stokes, including the time derivative. This will be used to determine if small perturbations of the solution die down or blow up. Unfortunately we were unsuccesfull in our attempt at writing the time-stepping method. We will still describe the theory and aims for future research.
 
 \subsubsection{Time Stepping}
 First we need to write an algorithm which can time-step the unsteady Navier-Stokes equations.\\
@@ -451,12 +449,12 @@ This shows that the preconditioning and discretization holds as expected for the
 
 \begin{figure}
   \includegraphics[width=\linewidth]{stokes_convergence_dbc0.png}
-  \caption{DG2-BDM1 Stokes velocity convergence plot of velocity error against resolution. As expected the velocity error decreases with a logarithimic slope of rougly 2, indicating order 2 convergence as expected.}
+  \caption{DG1-BDM2 Stokes velocity convergence plot of velocity error against resolution. We expected order 2 convergence and obtained order 3 convergence. The super convergence is likely due to the symmetric nature of the test solution and the regulare mesh.}
 \end{figure}
 
 \begin{figure}
 \includegraphics[width=\linewidth]{stokes_pressure_convergence_dbc0.png}
-  \caption{DG2-BDM1 Stokes pressure convergence plot of pressure error against resolution. As expected the pressure error decreases with a logarithimic slope of rougly 2, indicating order 2 convergence as expected.}
+  \caption{DG1-BDM2 Stokes pressure convergence plot of pressure error against resolution. We expected order 2 convergence and obtained order 3 convergence. The super convergence is likely due to the symmetric nature of the test solution and the regulare mesh.}
 \end{figure}
 
 \subsection{Navier-Stokes Convergence}
@@ -469,12 +467,12 @@ Figures and show us the convergence graphs in velocity and pressure.\\
 
 \begin{figure}
   \includegraphics[width=\linewidth]{navier_stokes_convergence_dbc0.png}
-  \caption{DG2-BDM1 Navier-Stokes velocity convergence plot of velocity error against resolution. As expected the velocity error decreases with a logarithmic slope of roughly 2, indicating order 2 convergence as expected. We used the direct solver, not applying the continuation solver.}
+  \caption{DG1-BDM2 Navier-Stokes velocity convergence plot of velocity error against resolution. As expected the velocity error decreases with a logarithmic slope of roughly 2, indicating order 2 convergence. We used the direct solver, not applying the continuation solver.}
 \end{figure}
 
 \begin{figure}
 \includegraphics[width=\linewidth]{navier_stokes_pressure_convergence_dbc0.png}
-  \caption{DG2-BDM1 Stokes pressure convergence plot of pressure error against resolution. As expected the pressure error decreases with a logarithmic slope of roughly 2, indicating order 2 convergence as expected. We used the direct solver, not applying the continuation solver.}
+  \caption{DG1-BDM2 Stokes pressure convergence plot of pressure error against resolution. As expected the pressure error decreases with a logarithmic slope of roughly 2, indicating order 2 convergence. We used the direct solver, not applying the continuation solver.}
 \end{figure}
 
 \subsection{Flow Between Concentric Circles}
@@ -504,8 +502,6 @@ Similarly figures to show the solution with full advection at Reynolds numbers r
 At Reynolds numbers higher than our solver starts requiring to use the continuation method multiple times (by default it always first finds the Stokes solution). Eventually it the length of the continuation step goes below tolerance levels and our solver fails.\\
 However according to sources this corresponds to the Reynolds numbers where the solution becomes unstable.\\
 We reduce the Reynold's number by reducing the viscosity. As expected this makes the boundary layer about the cylinder smaller and smaller. Note that we also needed to refine mesh during this process. Likely due to the critical velocity fluctuations on smaller and smaller scales about the cylinder.
-
-\subsection{Cylinder flow Stability}
 
 \section{Conclusion and Future Improvements}
 
@@ -647,13 +643,13 @@ p = sin(2 \pi x)^2 sin(2 \pi y)^2
 
 [1] Imperial College London \textit{Firedrake Project} Available from : https://www.firedrakeproject.org [Accessed throughout 2018-2019]\\
 
-[2] Patrick E. Farrell, Lawrence Mitchell, Florian Wechsung
- An Augmented Lagrangian Preconditioner For The 3D Stationary Incompressible Navier–Stokes Equation At High Reynolds Number
-\textit{SIAM J. Sci Comput 28(6)}2006\\
+[2] Patrick E. Farrell, Lawrence Mitchell, Florian Wechsung 
+textit{ An Augmented Lagrangian Preconditioner For The 3D Stationary Incompressible Navier–Stokes Equation At High Reynolds Number}
+SIAM J. Sci Comput 28(6)2006\\
 
-[3] Arnold, Douglas N., et al. "Unified analysis of discontinuous Galerkin methods for elliptic problems." SIAM journal on numerical analysis 39.5 (2002): 1749-1779.\\
+[3] Arnold, Douglas N., et al. \textit{Unified analysis of discontinuous Galerkin methods for elliptic problems.} SIAM journal on numerical analysis 39.5 (2002): 1749-1779.\\
 
-[4] Vassilevski, Panayot S. Multilevel Block Factorization Preconditioners: Matrix-based Analysis and Algorithms for Solving Finite Element Equations. New York, NY: Springer New York, 2008. Web.\\
+[4] Vassilevski, Panayot S. \textit{Multilevel Block Factorization Preconditioners: Matrix-based Analysis and Algorithms for Solving Finite Element Equations.} New York, NY: Springer New York, 2008. Web.\\
 
 [5] Ibrahimbegovic, Adnan. \textit{Nonlinear Solid Mechanics}. Vol. 160. Dordrecht: Springer Netherlands, 2009. Solid Mechanics and Its Applications. Web.\\
 
