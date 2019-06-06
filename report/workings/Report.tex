@@ -1,4 +1,4 @@
-\documentclass[11pt,twoside,a4paper]{article}
+discretization\documentclass[11pt,twoside,a4paper]{article}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{mathrsfs}
@@ -17,13 +17,21 @@
 \date{March 2nd, 2019}
 \author{Anthony Webster CID 01051827}
 \maketitle
+\clearpage
+\section{Abstract}
+The aim of this project is to build on previous research and develop an efficient steady Navier-Stokes solver. Utilizing a Lagragian preconditioner described in [2], the grad-div stabilization method described in [9] and the BDM/DG discretization of the $H_{div}$ space we obtained a working Stokes and Navier-Stokes solver and discussed the derivation of it's weak form.\\
+The primary advantage of the $H_{div}$ space is that the divergence free requirement of the continuity equation is satisfied exactly globally. This allows the Schur Complement to be exactly determined rather than approximated as in [2].
+We then noticed that at high Reynold's number the Navier-Stokes solver tended to fail. Hence we developed a continuation method which decreases computational cost and extends the Reynold's number for which the solver works.\\
+Finally we demonstrated all of the above and gave a short summary of possible future improvements
+\clearpage
 
 \tableofcontents
+\clearpage
 
 \section{Introduction}
 The steady Navier-Stokes equations govern steady state fluid interactions. These may arise due to lack of significant temporal changes of a system or at very long timescales where such changes fade out. Examples are pipe flows and flows past a cylinder at long time-scales and low Reynold's number.\\
 We seek to create an efficient solver of the steady Navier-Stokes equations in an arbitrary domain. For this the Finite Element method is particularly suited, and has been used for this purpose in the past [20]. \\
-Recent papers [2,9] have demonstrated the use of a lagrangian preconditioner along with a grad-div stabilisation method to be highly efficient. We seek to combine this with a discretisation in a globally divergence free [18] space. This allows us to exactly get the Schur complement mentioned in [2] as it will lie in the $H_{div}$ space rather than approximating it.\\
+Recent papers [2,9] have demonstrated the use of a Lagrangian preconditioner along with a grad-div stabilization method to be highly efficient. We seek to combine this with a discretization in a globally divergence free [18] space. This allows us to exactly get the Schur complement mentioned in [2] as it will lie in the $H_{div}$ space rather than approximating it.\\
 \\
 The steady Navier-Stokes equation are as follows :
 \begin{align}
