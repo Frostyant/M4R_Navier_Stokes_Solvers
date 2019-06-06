@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 AverageVelocity = 1
 mu = 1
 
-Ns = [2**(n+3) for n in range(7)]
+Ns = [2**(n+5) for n in range(5)]
 errors = [0]*len(Ns)
 ep = [0]*len(Ns)
 
@@ -23,7 +23,7 @@ for it,n in enumerate(Ns):
     #p_0 = sin(x*y)
     u_0 = as_vector([-sin(2*pi*y)**5*cos(2*pi*y)*sin(2*pi*x)**6,sin(2*pi*x)**5*cos(2*pi*x)*sin(2*pi*y)**6])
     u_1 = as_vector([-sin(2*pi*y)**5*cos(2*pi*y)*sin(2*pi*x)**6,sin(2*pi*x)**5*cos(2*pi*x)*sin(2*pi*y)**6])
-    p_0 = Constant(1)*sin(2*pi*x)**3*sin(2*pi*y)**3
+    p_0 = Constant(0)*sin(2*pi*x)**3*sin(2*pi*y)**3
     p_x = p_0.dx(0)
     p_y = p_0.dx(1)
     u_xx = u_0.dx(0).dx(0)
