@@ -20,18 +20,16 @@
 \tableofcontents
 
 \section{Introduction}
-The steady Navier-Stokes equations govern steady state fluid interactions. These may arise due to lack of significant temporal changes of a system or at very long timescales where such changes fade out.\\
-We seek to create an efficient solver of the steady Navier-Stokes equations in an arbitrary domain.
-For this the Finite Element method is particularly suited, however the standard CG method can be inefficient and is not globally divergence free.\\
-Using the $H_{div}$ space we get the global divergence free property. Additionally this allows us to use [2] and [9], which should give us an efficient and stable algorithm for solving whithin this space using the grad-div stabilization method.\\
+The steady Navier-Stokes equations govern steady state fluid interactions. These may arise due to lack of significant temporal changes of a system or at very long timescales where such changes fade out. Examples are pipe flows and flows past a cylinder at long time-scales and low Reynold's number.\\
+We seek to create an efficient solver of the steady Navier-Stokes equations in an arbitrary domain. For this the Finite Element method is particularly suited, and has been used for this purpose in the past [20]. \\
+Recent papers [2,9] have demonstrated the use of a lagrangian preconditioner along with a grad-div stabilisation method to be highly efficient. We seek to combine this with a discretisation in a globally divergence free [18] space. This allows us to exactly get the Schur complement mentioned in [2] as it will lie in the $H_{div}$ space rather than approximating it.\\
+\\
 The steady Navier-Stokes equation are as follows :
 \begin{align}
 (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
 \end{align}
-Note that from working in the $H_{div}$ space the second equation is naturally satisfied globally.
-\\
-First we will describe the classic Finite Element Method, its advantages and disadvantages, hence explaining why we are using a modified method. Secondly we will explain a number of definitions and tools used in the project and which may be unfamiliar to some readers. Then we will show how to find the weak form of the equations and build different parts of our solvers. Lastly we will consider some example cases and deduce that the algorithm converges to the right result at satisfactory rates.\\
+First we will describe the classic continuous galerkin (CG) finite element method, its advantages and disadvantages, hence explaining why we are using a modified method. Secondly we will explain a number of definitions and tools used in the project and which may be unfamiliar to some readers. Then we will show how to find the weak form of the equations and build different parts of our solvers. Lastly we will consider some example cases and deduce that the algorithm converges to the right result at satisfactory rates.\\
 
 \section{Tools and Definitions}
 A number of well-known methods, algorithms and definitions are used in this report. This section serves to quickly introduce these concepts for latter use in our work.
@@ -422,7 +420,7 @@ We will consider random perturbations and then use the time stepping method abov
 In this section we will consider various test cases to verify convergence of the algorithm at expected rates and demonstrate its ability to resolve various complex problems in complex non-uniform domains.
 \subsection{Stokes Convergence}
 
-Once again we will primarily focus on the stokes equation (9-10) in order to verify that this part of our discretization is working as intended.\\
+Once again we will primarily focus on the stokes equation (9-10) in order to verify that this part of our discretization is working as intended and has the required convergence rate.\\
 We will consider a manufactured solution, an artificial solution we selected in advance. Take $u_x = sin(2 \pi y) cos(2 \pi y)*sin(2 \pi x)^2$, $u_y= -sin(2 \pi x) cos(2 \pi x) sin(2 \pi y)^2$ and $p = sin(2 \pi x) sin(2 \pi y)$.\\
 We then adjust the boundary conditions and forcing term appropriately for this solution to hold.\\
  The forcing term thus becomes :$F = \nabla p - \mu \nabla^2 u$.\\
@@ -677,7 +675,17 @@ https://doi.org/10.1016/j.cam.2005.11.037.\\
 
 [18] Natale, Andrea, and Colin J. Cotter. \textit{Scale‐selective Dissipation in Energy‐conserving Finite‐element Schemes for Two‐dimensional Turbulence}  Quarterly Journal of the Royal Meteorological Society 143.705 (2017): 1734-745. Web.\\
 
-[19] Paniconi, C., and Putti, M. ( 1994), \textit{A comparison of Picard and Newton iteration in the numerical solution of multidimensional variably saturated flow problems}, Water Resour. Res., 30( 12), 3357– 3374, doi:10.1029/94WR02046.
+[19] Paniconi, C., and Putti, M. ( 1994), \textit{A comparison of Picard and Newton iteration in the numerical solution of multidimensional variably saturated flow problems}, Water Resour. Res., 30( 12), 3357– 3374, doi:10.1029/94WR02046.\\
+
+[20] Hui Xu, Yinnian He,
+\textit{Some iterative finite element methods for steady Navier–Stokes equations with different viscosities},
+Journal of Computational Physics,
+Volume 232, Issue 1,
+2013,
+Pages 136-152,
+ISSN 0021-9991,
+https://doi.org/10.1016/j.jcp.2012.07.020.
+(http://www.sciencedirect.com/science/article/pii/S0021999112003932)
 
 
 
