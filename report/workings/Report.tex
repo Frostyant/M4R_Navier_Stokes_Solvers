@@ -1,4 +1,4 @@
-discretization\documentclass[11pt,twoside,a4paper]{article}
+\documentclass[11pt,twoside,a4paper]{article}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{mathrsfs}
@@ -22,7 +22,8 @@ discretization\documentclass[11pt,twoside,a4paper]{article}
 The aim of this project is to build on previous research and develop an efficient steady Navier-Stokes solver. Utilizing a Lagragian preconditioner described in [2], the grad-div stabilization method described in [9] and the BDM/DG discretization of the $H_{div}$ space we obtained a working Stokes and Navier-Stokes solver and discussed the derivation of it's weak form.\\
 The primary advantage of the $H_{div}$ space is that the divergence free requirement of the continuity equation is satisfied exactly globally. This allows the Schur Complement to be exactly determined rather than approximated as in [2].
 We then noticed that at high Reynold's number the Navier-Stokes solver tended to fail. Hence we developed a continuation method which decreases computational cost and extends the Reynold's number for which the solver works.\\
-Finally we demonstrated all of the above and gave a short summary of possible future improvements
+We demonstrated all of the above in various test cases. \\
+Finally gave a short summary of possible future improvements.
 \clearpage
 
 \tableofcontents
@@ -304,11 +305,13 @@ I & 0\\
 $$
 Hence, if we can find $A^{-1}$ and $S^{-1}$ we can easily solve the equation. We solve both via a Lu factorization.\\
 We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$ via an Lu Factorization. The Lu factorization is a direct solver, and thus is inefficient. The algorithm would have to be performed in a sequential manner, preventing usage of parallelization. We did mitigate this through the usage of the "mumps" sub-routine. We originally attempted to use ILU, which is more efficient, but this failed. This is because the viscous term makes a less sparse matrix.\\
- However $S^{-1}$, the inverse of the Schur complement is difficult to determine because it is usually dense. However research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (14). Note that this term is 0 in continuous space. We thus get :
+ However $S^{-1}$, the inverse of the Schur complement is difficult to determine because it is usually dense. However research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (14). Note that this term is 0 if the terms were continuous, as they should be physically. We thus get :
 \begin{align}
 \int_\Omega w \cdot F dx &= \int_\Omega \nabla \cdot (p v) dx - \int_\Omega ( p \nabla \cdot (v)) dx - \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu + \int_\Omega \gamma \nabla \cdot u \: \nabla \cdot v dx
 \end{align}
-This doesn't change the equation, thus should result in the same solution. However according to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. We then perform ILU in order to solve for $S^{-1}$. ILU performs the Lu Factorization on various blocks of the matrix independently. This allows us to parallelize the process, reducing overall computing time by splitting the work onto multiple computing machines.\\
+This doesn't change the equation, thus should result in the same solution. However according to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. We then perform ILU in a block by block menner order to solve for $S^{-1}$. This allows us to parallelize the process, reducing overall computing time by splitting the work onto multiple computing machines.\\
+ILU is similar to the LU factorization method except that it forcibly makes the resulting matrices sparse, either setting terms to be $0$ if they are below tolerance or if they don't fit the sparsity motif of the original matrix. In our case we used the latter.\\
+\\
 Note that in theory we could have tried a similar method in the CG space.
 Testing shows however that this fails.
 This makes sense as we utilized the exact divergence free-property of our space for the Schur complement.
