@@ -60,8 +60,8 @@ for it,n in enumerate(Ns):
     ep[it] = norm(p-pexact)-0.25 #adjusting constant
 
 def FitLogLine(e0,Ns,coef):
-    c = np.log(e0) - coef * np.log(Ns[0])
-    ls = [np.exp(c+coef*np.log(n)) for n in Ns]
+    c = np.log10(e0) - coef * np.log10(Ns[0])
+    ls = [10**(c+coef*np.log10(n)) for n in Ns]
     return ls
 
 ls = FitLogLine(errors[0],Ns,2)
