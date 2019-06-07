@@ -54,7 +54,7 @@ The Stokes equation is :
 \nabla \cdot u &= 0
 \end{align}
 As seen in Common and Unusual Finite Elements [7], the Lagrange finite element used in CG approximates a function on a cell using polynomials of degree $q$ defined by their pointwise values at an array of points. Maximal global continuity is kept by making sure  that multiple cells agree on their respective edges.\\
-For instance let us approximate $f = sin(x)$ from $0$ to $2 \pi$ using 1D first order Lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points in it, the two edge points. Hence we get figure 1, where the blue curve indicates our approximation and the red one the exact function. In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
+For instance let us approximate $f = \sin(x)$ from $0$ to $2 \pi$ using 1D first order Lagrange finite elements. We approximate the function on each of the four cells by a linear function. This linear function is defined on each cell using two points in it, the two edge points. Hence we get figure 1, where the blue curve indicates our approximation and the red one the exact function. In practice one can consider $f$ to be the sum of these linear functions. Note that this element is continuous across the "edges" of a cell, since regardless of cell the value of the interpolated function at the "edge" will be identical. This concept can be extended to 2D.\\
 \begin{figure}
   \includegraphics[width=\linewidth]{ex_1D_LG.png}
   \caption{4 Element First Order Interpolation Example and Comparison to True Solution}
@@ -91,9 +91,9 @@ We can solve this using a variety of linear systems solvers. Note in particular 
 While we locally enforced the divergence-free equation by including it in the weak form, the global flow may not be divergence-free. In order to achieve that more complex mathematical tools would be required.\\
 Now apply this to the manufactured solution :
 \begin{align*}
-u_x &=  -sin(2 \pi y)^5 cos(2 \pi y)  sin(2 \pi x)^6 \\
-u_y &= sin(2 \pi x)^5 cos(2 \pi x)  sin(2 \pi y)^6 \\
-p &= 10^{-2} sin(2 \pi x)^2 sin(2 \pi y)^2 \\
+u_x &=  -\sin(2 \pi y)^5 \cos(2 \pi y)  \sin(2 \pi x)^6 \\
+u_y &= \sin(2 \pi x)^5 \cos(2 \pi x)  \sin(2 \pi y)^6 \\
+p &= 10^{-2} \sin(2 \pi x)^2 \sin(2 \pi y)^2 \\
 F &= \nabla p - \mu \nabla^2 u
 \end{align*}
 Where $F$ was selected specifically to ensure that any given $u$ and $p$ are solutions.
@@ -442,7 +442,7 @@ In this section we will consider various test cases to verify convergence of the
 \subsection{Stokes Convergence}
 
 Once again we will primarily focus on the Stokes equation (9-10) in order to verify that this part of our discretization is working as intended and has the required convergence rate.\\
-We will consider a manufactured solution, an artificial solution we selected in advance. Take $u_x = sin(2 \pi y) cos(2 \pi y)*sin(2 \pi x)^2$, $u_y= -sin(2 \pi x) cos(2 \pi x) sin(2 \pi y)^2$ and $p = sin(2 \pi x) sin(2 \pi y)$.\\
+We will consider a manufactured solution, an artificial solution we selected in advance. Take $u_x = \sin(2 \pi y) \cos(2 \pi y)*\sin(2 \pi x)^2$, $u_y= -\sin(2 \pi x) \cos(2 \pi x) \sin(2 \pi y)^2$ and $p = \sin(2 \pi x) \sin(2 \pi y)$.\\
 We then adjust the boundary conditions and forcing term appropriately for this solution to hold.\\
  The forcing term thus becomes :$F = \nabla p - \mu \nabla^2 u$.\\
 Figures and show us the convergence graphs in velocity and pressure.\\
@@ -462,7 +462,7 @@ This shows that the preconditioning and discretization holds as expected for the
 \subsection{Navier-Stokes Convergence}
 
 We again use a manufactured solution to determine the convergence rate of our solver.
-We can re-use the first solution in the Stokes convergence test, $u_x = sin(2 \pi y) cos(2 \pi y)sin(2 \pi x)^2$, $u_y= -sin(2 \pi x) cos(2 \pi x) sin(2 \pi y)^2$ and $p = sin(2 \pi x)^2 sin(2 \pi y)^2$.\\
+We can re-use the first solution in the Stokes convergence test, $u_x = \sin(2 \pi y) \cos(2 \pi y)\sin(2 \pi x)^2$, $u_y= -\sin(2 \pi x) \cos(2 \pi x) \sin(2 \pi y)^2$ and $p = \sin(2 \pi x)^2 \sin(2 \pi y)^2$.\\
 However the forcing term will now be $F = \nabla p - \mu \nabla^2 u + u \cdot \nabla u$.
 Plugging this into the equations we get that these do indeed solve the Navier-Stokes equations.\\
 Figures and show us the convergence graphs in velocity and pressure.\\
@@ -640,7 +640,7 @@ Firstly any manufactured solution needs to actually solve the equations. For sim
 \frac{ \partial \psi}{\partial y} = u_x \\
 -\frac{\partial \psi}{\partial x} = u_y
 \end{align*}
-When selecting the manufactured solution we want one which is preferably as simple as possible and easy to check. For instance we always started with $0$ boundary conditions in velocity. This both made determining errors on the boundaries easy and avoided a lot of the issues that come with outflows and inflows for the Navier-Stokes equations. For the streamfunction this implies that the derivatives are 0 at the boundaries. We can easily resolve this by setting $\psi = sin(2 \pi x)^n sin(2 \pi y)^n$ with n greater than 2.\\
+When selecting the manufactured solution we want one which is preferably as simple as possible and easy to check. For instance we always started with $0$ boundary conditions in velocity. This both made determining errors on the boundaries easy and avoided a lot of the issues that come with outflows and inflows for the Navier-Stokes equations. For the streamfunction this implies that the derivatives are 0 at the boundaries. We can easily resolve this by setting $\psi = \sin(2 \pi x)^n \sin(2 \pi y)^n$ with n greater than 2.\\
 Another thing to consider is the pressure conditions. We technically did not force any, but the equation naturally has them. Consider dotting the Navier-Stokes equations with the normal at the boundaries :
 \begin{align*}
 \nabla p \cdot n &= -(u \cdot \nabla) u \cdot n  + \mu \nabla^2 u \cdot n + F \cdot n \\
@@ -648,20 +648,20 @@ x \in \delta \Omega
 \end{align*}
 Thus the Dirichelet normal boundary conditions imply conditions on $\frac{\partial p}{\partial n}$.\\
 For simplicity we want this to be $0$ too.\\
-Note how every term on the left-hand side is either proportional to $\psi$, one of its derivatives or a sum of those. Hence all these terms become $0$ at all the boundaries if $n$ is large enough (as we would have $ sin(2 \pi x) sin(2 \pi y$ terms).\\
+Note how every term on the left-hand side is either proportional to $\psi$, one of its derivatives or a sum of those. Hence all these terms become $0$ at all the boundaries if $n$ is large enough (as we would have $ \sin(2 \pi x) \sin(2 \pi y$ terms).\\
 This can be verified, as when failing to get a large enough $n$ and attempting to solve for the $0$ pressure solution we will get a trigonometric structure on the boundaries in the pressure error as seen in figure.\\
-As for setting the pressure, we need to ensure that $\frac{\partial p} {\partial n} = 0$, using a similar method to above we can consider $p =  sin(2 \pi x)^2 sin(2 \pi y)^2$.\\
+As for setting the pressure, we need to ensure that $\frac{\partial p} {\partial n} = 0$, using a similar method to above we can consider $p =  \sin(2 \pi x)^2 \sin(2 \pi y)^2$.\\
 Hence we get our standard manufactured solution :
 \begin{align}
-u_x = sin(2 \pi y)^3 cos(2 \pi y)sin(2 \pi x)^4 \\
-u_y= -sin(2 \pi x)^3 cos(2 \pi x) sin(2 \pi y)^4 \\
-p = sin(2 \pi x)^2 sin(2 \pi y)^2
+u_x = \sin(2 \pi y)^3 \cos(2 \pi y)\sin(2 \pi x)^4 \\
+u_y= -\sin(2 \pi x)^3 \cos(2 \pi x) \sin(2 \pi y)^4 \\
+p = \sin(2 \pi x)^2 \sin(2 \pi y)^2
 \end{align}
 \section{Citations}
 
 [1] Imperial College London \textit{Firedrake Project} Available from : https://www.firedrakeproject.org [Accessed throughout 2018-2019]\\
 
-[2] Patrick E. Farrell, Lawrence Mitchell, Florian Wechsung 
+[2] Patrick E. Farrell, Lawrence Mitchell, Florian Wechsung
 textit{ An Augmented Lagrangian Preconditioner For The 3D Stationary Incompressible Navier–Stokes Equation At High Reynolds Number}
 SIAM J. Sci Comput 28(6)2006\\
 
