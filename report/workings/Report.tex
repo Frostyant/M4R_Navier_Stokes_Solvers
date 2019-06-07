@@ -91,12 +91,17 @@ We can solve this using a variety of linear systems solvers. Note in particular 
 While we locally enforced the divergence-free equation by including it in the weak form, the global flow may not be divergence-free. In order to achieve that more complex mathematical tools would be required.\\
 Now apply this to the manufactured solution :
 \begin{align*}
-u_x &=  -\sin(2 \pi y)^5 \cos(2 \pi y)  \sin(2 \pi x)^6 \\
-u_y &= \sin(2 \pi x)^5 \cos(2 \pi x)  \sin(2 \pi y)^6 \\
-p &= 10^{-2} \sin(2 \pi x)^2 \sin(2 \pi y)^2 \\
-F &= \nabla p - \mu \nabla^2 u
+u_x =  &-\sin(2 \pi y)^5 \cos(2 \pi y)  \sin(2 \pi x)^6, \\
+u_y = &\sin(2 \pi x)^5 \cos(2 \pi x)  \sin(2 \pi y)^6, \\
+p = &10^{-2} \sin(2 \pi x)^2 \sin(2 \pi y)^2, \\
+F_x =& -(2 \pi \cdot 10^{-2} \cdot \sin( 2 \pi x) \cos(2 \pi x) \sin(2 \pi y)^2 \\
+	&- 8 \pi^2 \sin(2 \pi x)^4 \sin(2 \pi y)^3 \cos(2 \pi y)(-11 \sin(2 \pi x)^2 \sin(2 \pi y)^2 + 10 \sin(2 \pi x)^2 \cos(2 \pi y)^2 \\
+	& + 15 \cos(2 \pi x)^2 \sin(2 \pi y)^2 )),\\
+F_y = &-(2 \pi \cdot 10^{-2} \cdot \sin( 2 \pi y) \cos(2 \pi y) \sin(2 \pi x)^2 \\
+	&+ 8 \pi^2 \sin(2 \pi y)^4 \sin(2 \pi x)^3 \cos(2 \pi x)(-11 \sin(2 \pi y)^2 \sin(2 \pi x)^2 + 10 \sin(2 \pi y)^2 \cos(2 \pi x)^2 \\
+	&+ 15 \cos(2 \pi y)^2 \sin(2 \pi x)^2 )).
 \end{align*}
-Where $F$ was selected specifically to ensure that any given $u$ and $p$ are solutions.
+$F$ was selected specifically to ensure that any given $u$ and $p$ are solutions. We can verify this by checinkg that $F = \nabla p - \nabla^2 u$ 
 Using the above and implementing a solver using CG2 and CG1 in firedrake we get figures. On a mesh with 64x64 vertices we get an error of $10^{-11}$ for velocity and $10^{-10}$ for pressure.\\
 However default implementation using the CG method is slow, hence we wish to improve on it.\\
 Additionally we had to modify our problem for the solver to converge at all. If we were to increase the order of magnitude of $p$ (and adjusted $F_x$ and $F_y$ accordingly) the solver failed in tests. It is likely that the CG solver described failed due to these terms making the matrix equation ill-behaved  when attempting LU factorization.
@@ -573,8 +578,9 @@ ksp\_rtol indicates the relative tolerance above which we consider that the equa
 ksp\_max\_it is the maximal number of iterations for the linear GMRES solver. If above it the solver fails or, in the continuation method, reduces the advection term and tries again.\\
 "pc\_type": "fieldsplit" tells the algorithm that the matrix has a block structure as describe in the Schur preconditioner section.\\
 "pc\_fieldsplit\_type": "schur" indicates we are using the Schur fieldsplit preconditioner.\\
-"pc\_fieldsplit\_off\_diag\_use\_amat": True indicates that the offdiagonal terms, ie the $B$ and $B^T$ described in section 3.1.2 \\
+"pc\_fieldsplit\_off\_diag\_use\_amat": True indicates that the offdiagonal terms, ie the $B$ and $B^T$ described in section 3.1.2, whould be taken from the original matrix directly. \\
 "fieldsplit\_0 options deal with finding $A^{-1}$ in the Schur Preconditioner while the fieldsplit\_1 options deal with the remaining part of the preconditioner.\\
+ "fieldsplit\_1\_pc\_sub\_type": "ilu is how we indicate the direct inversion of the block diagonal pressure-mass matrix approximating $S$.
 
 \subsubsection{Advection Term}
 The ufl plugin allows us to write out our weak equations almost directly into code. Pieces of code can thus be deduced directly from the weak forms determined in sections 3.1.1, 3.2.1 and 3.3.1. We display the advection term here both to display an example as well as to discuss some specifics when dealing with 2D problems.\\
