@@ -91,14 +91,15 @@ We can solve this using a variety of linear systems solvers. Note in particular 
 While we locally enforced the divergence-free equation by including it in the weak form, the global flow may not be divergence-free. In order to achieve that more complex mathematical tools would be required.\\
 Now apply this to the manufactured solution :
 \begin{align*}
-u_x &=  -sin(2 \pi y) cos(2 \pi y)  sin(2 \pi x)^2 \\
-u_y &= sin(2 \pi x) cos(2 \pi x)  sin(2 \pi y)^2 \\
-p &= sin(2 \pi x) sin(2 \pi y) \\
+u_x &=  -sin(2 \pi y)^5 cos(2 \pi y)  sin(2 \pi x)^6 \\
+u_y &= sin(2 \pi x)^5 cos(2 \pi x)  sin(2 \pi y)^6 \\
+p &= 10^{-2} sin(2 \pi x)^2 sin(2 \pi y)^2 \\
 F &= \nabla p - \mu \nabla^2 u
 \end{align*}
 Where $F$ was selected specifically to ensure that any given $u$ and $p$ are solutions.
 Using the above and implementing a solver using CG2 and CG1 in firedrake we get figures. On a mesh with 64x64 vertices we get an error of $10^{-11}$ for velocity and $10^{-10}$ for pressure.\\
-However default implementation using the CG method is slow, hence we wish to improve on it.
+However default implementation using the CG method is slow, hence we wish to improve on it.\\
+Additionally we had to modify our problem for the solver to converge at all. If we were to increase the order of magnitude of $p$ (and adjusted $F_x$ and $F_y$ accordingly) the solver failed in tests. It is likely that the CG solver described failed due to these terms making the matrix equation ill-behaved  when attempting LU factorization.
 \begin{figure}
   \includegraphics[width=\linewidth]{lgv.png}
   \caption{Standard velocity CG solution in a 64x64 vertex uniform square. We obtained a velocity error of order $10^{-11}$.}
@@ -236,7 +237,7 @@ Now we also add the term $\alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS$. Acc
 The numerical value of $h$ is the average distance of a side. In our case we defined it as the average cell-volume over the length of the facets between them for each individual facet element $\Gamma$.\\
 Again, any flow studied with this algorithm will have a continuous velocity and pressure fields. The $J(u_i)$ term makes this integral $0$ in continuous space so this does not change the solution.\\
 \\
-As mentioned in the BDM definition section we cannot set the tangential component of a Dirichelet boundary condition in the conventional finite element manner.  So instead we use penalty terms. These push the solution towards respecting the boundary conditions. In practice this just means taking all the terms over the edge of a cell and considering them on the sections of the edge of the domain where Dirichelet conditions apply instead.\\
+As mentioned in the BDM definition section we cannot set the tangential component of a Dirichelet boundary condition in the conventional manner.  So instead we use penalty terms. These push the solution towards respecting the boundary conditions. In practice this means that when considering the edge integrals for facets facing the exterior of the domain, we set $u$ equal to the dirichelet boundary condition there.\\
  Hence our final viscous term becomes :\\
 \begin{align*}
 &-  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e ( \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial v_i}{\partial x_j}\} dS \\
@@ -313,7 +314,8 @@ This doesn't change the equation, thus should result in the same solution. Howev
 Note that in theory we could have tried a similar method in the CG space.
 Testing shows however that this fails.
 This makes sense as we utilized the exact divergence free-property of our space for the Schur complement.
-As a result in the CG space as gamma tends to infinity S does not exactly tend to the pressure mass matrix.
+As a result in the CG space as gamma tends to infinity S does not exactly tend to the pressure mass matrix.\\
+This obviously makes our assumption invalid and finding $S^{-1}$ considerably harder.
 
 \subsection{Steady Navier-Stokes}
 We now have a discretization of the Stokes equation and an efficient Preconditioner for it.
@@ -494,14 +496,30 @@ Now consider the outer circle initially immobile, but slowly accelerating until 
 
 \subsection{Flow Past a Cylinder}
 
-The flow past a cylinder is a well-known and studied flow with interesting properties, namely in stability of its steady solution.\\
-Hence we will see how our solver resolves this flow and compare results with other papers [14].\\
-
+The flow past a cylinder is a well-known and studied flow with interesting properties, such as a change of stability of its steady solution at high Reynold's number.
+We will see how our solver resolves this flow to study if we can find unstable solutions and how effective our continuation method is.\\
+\\
 Figure shows the stokes solution to the problem.\\
-Similarly figures to show the solution with full advection at Reynolds numbers respectively.\\
+Similarly figures to show the solution with full advection at Reynolds numbers $Re = 50$, $25$, $12.5$ and $1$ respectively.\\
 At Reynolds numbers higher than our solver starts requiring to use the continuation method multiple times (by default it always first finds the Stokes solution). Eventually it the length of the continuation step goes below tolerance levels and our solver fails.\\
-However according to sources this corresponds to the Reynolds numbers where the solution becomes unstable.\\
-We reduce the Reynold's number by reducing the viscosity. As expected this makes the boundary layer about the cylinder smaller and smaller. Note that we also needed to refine mesh during this process. Likely due to the critical velocity fluctuations on smaller and smaller scales about the cylinder.
+According to [14] $Re = 50$ corresponds to the Reynolds numbers where the solution becomes unstable, suggesting that we can find unstable solutions.\\
+We reduce the Reynold's number by reducing the viscosity. As expected this makes the boundary layer about the cylinder smaller and smaller.\\
+As we performed our tests, we obtained that on a mesh of average triangle edge length $0.5$ we fail even with the continuation method (it goes below tolerance levels). This shows that our continuation method allows us to not only solve the problem more rapidly, by allowing us to use lower resolution meshes, but also extends the range of solvable Reynold's numbers.
+
+\begin{figure}
+  \includegraphics[width=\linewidth]{scR50.png}
+  \caption{Stokes flow past a cylinder obtained by the BDM2-DG1 solver. The mesh used has an average triangle edge length of $0.2$ in this figure. We set $\mu = 0.02$, so this also corresponds to the first solution obtained in the $Re =50$ Navier-Stokes solver. Pressure is $0$, and thus doesn't figure here.}
+\end{figure}
+
+\begin{figure}
+  \includegraphics[width=\linewidth]{nscR50.png}
+  \caption{Navier-Stokes flow past a cylinder for $Re = 50$ obtained by the BDM2-DG1 solver. The mesh used has an average triangle edge length of $0.2$ in this figure. Notice that the boundary layer is getting smaller as $Re$ increases. Pressure is $0$, and thus doesn't figure here.}
+\end{figure}
+
+\begin{figure}
+  \includegraphics[width=\linewidth]{nscR25.png}
+  \caption{Navier-Stokes flow past a cylinder for $Re = 25$ obtained by the BDM2-DG1 solver. The mesh used has an average triangle edge length of $0.2$ in this figure. Notice that the boundary layer is getting smaller as $Re$ increases. Pressure is $0$, and thus doesn't figure here.}
+\end{figure}
 
 \section{Conclusion and Future Improvements}
 
