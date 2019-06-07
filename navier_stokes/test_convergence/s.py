@@ -21,9 +21,19 @@ for it,n in enumerate(Ns):
     W = V * Q
     #u_0 = as_vector([-x*sin(2*pi*x*y),y*sin(2*pi*x*y)])
     #p_0 = sin(x*y)
-    u_0 = as_vector([-sin(2*pi*y)**5*cos(2*pi*y)*sin(2*pi*x)**6,sin(2*pi*x)**5*cos(2*pi*x)*sin(2*pi*y)**6])
-    u_1 = as_vector([-sin(2*pi*y)**5*cos(2*pi*y)*sin(2*pi*x)**6,sin(2*pi*x)**5*cos(2*pi*x)*sin(2*pi*y)**6])
-    p_0 = Constant(0)*sin(2*pi*x)**3*sin(2*pi*y)**3
+    #u_0 = as_vector([-sin(2*pi*y)**5*cos(2*pi*y)*sin(2*pi*x)**6,sin(2*pi*x)**5*cos(2*pi*x)*sin(2*pi*y)**6])
+    #u_1 = as_vector([-sin(2*pi*y)**5*cos(2*pi*y)*sin(2*pi*x)**6,sin(2*pi*x)**5*cos(2*pi*x)*sin(2*pi*y)**6])
+    #p_0 = Constant(0)*sin(2*pi*x)**3*sin(2*pi*y)**3
+    lmbda = 0.5*mu-(1/4*mu**2 + 4*pi**2)**(1/2)
+    u_0 = as_vector([
+    1-exp(lmbda*x)*cos(2*pi*y),
+    lmbda/(2*pi)*exp(lmbda*x)*sin(2*pi*y)
+    ])
+    u_1 = as_vector([
+    1-exp(lmbda*x)*cos(2*pi*y),
+    lmbda/(2*pi)*exp(lmbda*x)*sin(2*pi*y)
+    ])
+    p = 0.5*(1-exp(2*lmbda*x))
     p_x = p_0.dx(0)
     p_y = p_0.dx(1)
     u_xx = u_0.dx(0).dx(0)
