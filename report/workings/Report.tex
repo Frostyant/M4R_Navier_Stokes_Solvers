@@ -63,30 +63,30 @@ For instance let us approximate $f = \sin(x)$ from $0$ to $2 \pi$ using 1D first
 It follows that we first cut up our domain into a mesh. Commonly these meshes are made up of triangles for simplicity, although squares or even curved elements for simulations on a sphere are also used. Then we approximate $u$ and $p$ using the Lagrange element. Hence we get that for instance $u$ is the sum of a set of known piecewise linear functions (as they are determined by the mesh) but with unknown coefficients. The aim of the rest of the method is to determine these unknown coefficients.\\
 For that end we need to find what is called the weak form of the equation. We multiply (3) by an arbitrary function $v$. Hence we get :
 \begin{align*}
-\int_{\omega} -v \cdot \nabla p + \mu v \cdot \nabla^2 u dx = -\int_{\omega} v \cdot F dx
+\int_{\omega} -v \cdot \nabla p + \mu v \cdot \nabla^2 u dx = -\int_{\omega} v \cdot F dx .
 \end{align*}
-Since our domain $\omega$ is cut out into triangles we can cut the integral into triangles and work on each one individually. Hence for each cell $e$ in $\omega$ we get :
+Since our domain $\omega$ is cut out into triangles we can cut the integral into triangles and work on each one individually. Hence for each cell $e$ in $\omega$ we get,
 \begin{align*}
-\int_{e} p \nabla \cdot v + \mu v \cdot \nabla^2 u dx =  -\int_{e} v \cdot F dx
+\int_{e} p \nabla \cdot v + \mu v \cdot \nabla^2 u dx =  -\int_{e} v \cdot F dx .
 \end{align*}
-However since $u$ and $v$ will be approximated by functions which may be discontinuous in their derivatives $\nabla^2$ may not be defined. Hence we need to use integration by parts to get :
+However since $u$ and $v$ will be approximated by functions which may be discontinuous in their derivatives $\nabla^2$ may not be defined. We then proceed by integration by parts,
 \begin{align*}
-\int_{e} p \nabla \cdot v - \mu \nabla v \cdot \nabla u dx = -\int_{e} v \cdot F dx
+\int_{e} p \nabla \cdot v - \mu \nabla v \cdot \nabla u dx = -\int_{e} v \cdot F dx .
 \end{align*}
 Finally multiplying (4) by a similar pressure test function $q$ and adding it to the left hand side of the above we get :
 \begin{align}
-\int_{e} p \nabla \cdot v - \mu \nabla v \cdot \nabla u dx + \int_{e} q \nabla \cdot u dx = -\int_{e} v \cdot F dx
+\int_{e} p \nabla \cdot v - \mu \nabla v \cdot \nabla u dx + \int_{e} q \nabla \cdot u dx = -\int_{e} v \cdot F dx .
 \end{align}
 Now we use the fact that $q$, $v$, $F$, $u$ and $p$ are a sum of known linear functions and coefficients.\\
 Pulling out and removing the coefficients of $v$ we get that :
 \begin{align*}
- \int_{e} \sum_i \sum_j (  p_j \phi_j \nabla  \cdot \Phi_i - \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = -\int_{e} \sum_i \Phi_i \cdot F_i \Phi_i dx
+ \int_{e} \sum_i \sum_j (  p_j \phi_j \nabla  \cdot \Phi_i - \mu \nabla \Phi_i \cdot u_j \nabla \Phi_j +   \phi_i u_j \nabla \Phi_j) dx = -\int_{e} \sum_i \Phi_i \cdot F_i \Phi_i dx .
 \end{align*}
 Combining all the triangles we can eventually turn our problem into a matrix equation of the form :
 \begin{align}
-M x = b
+M x = b ,
 \end{align}
-Where $x$ is a vector of coefficients of $u$ and $p$.\\
+where $x$ is a vector of coefficients of $u$ and $p$.\\
 We can solve this using a variety of linear systems solvers. Note in particular that since the majority of basis functions $\Phi$ and $\phi$ are $0$ in any given triangle the matrix $M$ will be sparse.\\
 While we locally enforced the divergence-free equation by including it in the weak form, the global flow may not be divergence-free. In order to achieve that more complex mathematical tools would be required.\\
 Now apply this to the manufactured solution :
@@ -131,25 +131,25 @@ Additionally we will be able to employ an enhanced Lagrangian preconditioner tha
 \subsection{Newton's Method}
 The Navier-Stokes equations have a non-linear part in the advection term for the velocity component. Hence we will need an algorithm to solve non-linear equations. We will thus describe Newton's method in this section.\\
 \\
-Consider a non-linear equation of the form :
+Consider the non-linear equation of the form :
 $$
-F(x) = 0
+F(x) = 0 ,
 $$
-Where $F$ is a vector function and $x$ is vector of unknowns. Note that $F$ may be non-linear and have constant components.
+where $F$ is a vector function and $x$ is vector of unknowns. Note that $F$ may be non-linear and have constant components.
 For instance we could have $ F = x^T A x + M x - b$, where A and M are constant matrices and b is a constant vector.\\
 We start with a guess $x = x_0$ and then determine the Jacobian of $F(x)$, call it $DF(x)$.\\
 We determine the Jacobian by calculating the Gateaux derivative, defined as follows [12] :
 \begin{align}
-DF_{x_n}(\Delta x) = lim_{t \rightarrow 0^+} \frac{F(x_n+ \epsilon \Delta x) - F(x_n)}{\epsilon}
+DF_{x_n}(\Delta x) = lim_{t \rightarrow 0^+} \frac{F(x_n+ \epsilon \Delta x) - F(x_n)}{\epsilon}.
 \end{align}
 We then use the vector Taylor expansion :
 \begin{align*}
-F(x_{n+1}) = F(x_n) + DF_{x_n}(\Delta x) \Delta x
+F(x_{n+1}) = F(x_n) + DF_{x_n}(\Delta x) \Delta x.
 \end{align*}
 Hence we get the algorithm :
 \begin{align}
-DF_{x_n}(\Delta x) \Delta x = - F(x_n)\\
-x_{n+1} = x_n + \Delta x
+DF_{x_n}(\Delta x) \Delta x = - F(x_n) ,\\
+x_{n+1} = x_n + \Delta x.
 \end{align}
 We solve for $\Delta x$ using $x_n$ and the Taylor expansion approximation and then use this result to determine $x_{n+1}$.
 This is a linear problem which can be solved via an LU Factorization for instance.\\
@@ -161,18 +161,18 @@ Computational cost of an algorithm is an important limitation which we want to l
 We will first describe how preconditioners, such as the Schur Preconditioner work in general. We see this in the book Multilevel Block Factorization Preconditioners [4] on pages 49 to 51.\\
 Take the system :\\
 $$
-Mx = b
+Mx = b ,
 $$
-Where $M$ is a very large matrix, assumed for simplicity to be symmetric, $x$ an unknown vector we need to solve for (in our case this will be a vector of coefficients for both $u$ and $p$) and $b$ a constant vector(containing forcing and boundary conditions for our problem). If $M$ is a symmetric positive definite sparse matrix then $M$ applied to a vector is cheap to compute. Hence we can easily find $r$ the residual :\\
+where $M$ is a very large matrix, assumed for simplicity to be symmetric, $x$ an unknown vector we need to solve for (in our case this will be a vector of coefficients for both $u$ and $p$) and $b$ a constant vector(containing forcing and boundary conditions for our problem). If $M$ is a symmetric positive definite sparse matrix then $M$ applied to a vector is cheap to compute. Hence we can easily find $r$ the residual :\\
 $$
-r = b - Mx
+r = b - Mx .
 $$
 We then use the resulting $r$ in order to provide a correction on our result.\\
 However $M$ may not be well-behaved. In fact in our problem we know it is usually not due it being an elliptic problem.\\
 In this case we use a preconditioning matrix, $P$ to map the system in such a way that $P^{-1}$ is cheap to compute, this operation can easily be parallelized and the condition number, the ratio of largest and smallest eigenvalue which describes the behavior of the system [13], is lowered (usually this implies better numerical behaviour).\\
 We then numerically solve the transformed and hopefully better behaved system :
 $$
-P^{-1}(Mx-b) = 0
+P^{-1}(Mx-b) = 0 .
 $$
 This procedure allows us to transform a computationally ill-behaved matrix equation (unstable, non-sparse, etc.) to an easier one.
 
@@ -208,8 +208,8 @@ This section will explain the solver setup of the Navier-Stokes Equation. First 
 The linear nature of the Stokes equation makes it easier to solve, hence we considered it first.\\
 The steady Stokes equation is, in it's standard strong form :
 \begin{align}
-0 &= -\nabla p + \mu \nabla^2 u + F  \\
-\nabla \cdot u &= 0
+0 &= -\nabla p + \mu \nabla^2 u + F , \\
+\nabla \cdot u &= 0 . \nonumber
 \end{align}
 
 \subsubsection{Weak Stokes Equation}
@@ -218,21 +218,21 @@ We start off by cutting our computational domain $\Omega$ into a set of cells $e
 For this purpose let us introduce two test functions, $w$ in BDM for velocity and $q$ in DG for pressure.
 Let us multiply equation (9) by $v$ and integrate over the domain as seen in the first section.
 \begin{align*}
-\int_\Omega v \cdot F dx &= \int_\Omega (v \cdot \nabla p) dx - \int_\Omega (\mu v \cdot \nabla^2 u) dx
+\int_\Omega v \cdot F dx &= \int_\Omega (v \cdot \nabla p) dx - \int_\Omega (\mu v \cdot \nabla^2 u) dx .
 \end{align*}
 
-Again we can work on each cell $e$ individually and them sum it all up, hence get :
+Again we can work on each cell $e$ individually and them sum it all up.
 \begin{align*}
-\sum_e \int_e v \cdot F dx &= \sum_e (\int_e (v \cdot \nabla p) dx - \int_e (\mu v \cdot \nabla^2 u) dx)
+\sum_e \int_e v \cdot F dx &= \sum_e (\int_e (v \cdot \nabla p) dx - \int_e (\mu v \cdot \nabla^2 u) dx) .
 \end{align*}
-Focusing on the viscosity, or second, term we get via integration by parts :
+Focusing on the viscosity, or second, term we obtain via integration by parts :
 \begin{align*}
-\int_e (v \cdot \nabla^2 u) dx = - \int_e \nabla_h(v) : \nabla_h(u) dx + \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS
+\int_e (v \cdot \nabla^2 u) dx = - \int_e \nabla_h(v) : \nabla_h(u) dx + \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS .
 \end{align*}
 The first term can be summed up to an integral over $\Omega$ and the second one is asymmetrical. We can add a term to make it symmetrical. This helps with numerical stability of the final matrix equation. Numerical stability ensures that if there are errors in the input values of the problem (such as the exact values of an inflow), they lessen as the algorithm progresses. This property is obviously desirable especially when considering experimental information. Most measurement devices have a certain tolerance below which the measured value is uncertain. Additionally some linear solvers take advantage of this structure.\\
 Hence this term becomes :
 \begin{align*}
--  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e( \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial v_i}{\partial x_j}\} dS)
+-  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e( \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial v_i}{\partial x_j}\} dS) .
 \end{align*}
 Our physical velocity field is presumably continuous.
 So $u$ should be continuous in the physical space thus the added term will be $0$ in continuous space. Hence this does not change the equation in physical space as added terms amount to $0$ physically.\\
@@ -245,32 +245,32 @@ Again, any flow studied with this algorithm will have a continuous velocity and 
 As mentioned in the BDM definition section we cannot set the tangential component of a Dirichelet boundary condition in the conventional manner.  So instead we use penalty terms. These push the solution towards respecting the boundary conditions. In practice this means that when considering the edge integrals for facets facing the exterior of the domain, we set $u$ equal to the dirichelet boundary condition there.\\
  Hence our final viscous term becomes :\\
 \begin{align*}
-&-  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e ( \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial v_i}{\partial x_j}\} dS \\
-&- \alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS \ ) + \int_{\partial  \Omega} v_i n_j \frac{\partial(u_i + u^0_i)}{\partial x_j} + (u_i + u^0_i) n_j\frac{\partial v_i}{\partial x_j} ds - \alpha \int_{\partial \Omega} \frac{1}{h} v_i(u_i-u^0_i)ds
+&-  \int_\Omega \nabla_h(v) : \nabla_h(u) dx + \sum_e ( \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS + \int_\Gamma 2 \{ u_i n_j \} \{ \frac{\partial v_i}{\partial x_j}\} dS, \\
+&- \alpha \int_\Gamma \frac{1}{h}  J(v_i) J(u_i) dS \ ) + \int_{\partial  \Omega} v_i n_j \frac{\partial(u_i + u^0_i)}{\partial x_j} + (u_i + u^0_i) n_j\frac{\partial v_i}{\partial x_j} ds - \alpha \int_{\partial \Omega} \frac{1}{h} v_i(u_i-u^0_i)ds .
 \end{align*}
 Where $u^0_i$ are the boundary values.
 We will call this term $\eta_\mu$ for ease of writing. The firedrake coding structure allows us to practically write out the equation above as seen in the appendix.\\
 Back to our original equation we get :
 \begin{align}
-\int_\Omega v \cdot F dx &= \int_\Omega v \cdot \nabla p dx - \eta_\mu
+\int_\Omega v \cdot F dx &= \int_\Omega v \cdot \nabla p dx - \eta_\mu .
 \end{align}
 Let us consider the continuity equation again :
 \begin{align*}
-\nabla \cdot u = 0
+\nabla \cdot u = 0 .
 \end{align*}
 Multiplying by $q$ and integrating we get :
 \begin{align*}
-\int_\Omega q \nabla \cdot u dx = 0
+\int_\Omega q \nabla \cdot u dx = 0 .
 \end{align*}
 This is $0$, so we add this to the weak formulation $(3)$ we obtained, getting one weak formulation which includes both pressure and velocity while also keeping symmetry. As seen in the appendix this is required to the usage of a mixed space in ufl.\\
 We need this since we want to turn the entire system into a single matrix equation which includes all the conditions.\\
-Integrating by parts the pressure term get :
+We integrate the pressure term by parts.
 \begin{align}
-\int_\Omega v \cdot F dx &= \int_\Omega p \ v \cdot n ds - \int_\Omega  p ( \nabla \cdot v) dx + \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu
+\int_\Omega v \cdot F dx &= \int_\Omega p \ v \cdot n ds - \int_\Omega  p ( \nabla \cdot v) dx + \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu .
 \end{align}
 But v is $0$ on all the boundaries, hence get :
 \begin{align}
-\int_\Omega v \cdot F dx &= - \int_\Omega  p ( \nabla \cdot v) dx + \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu
+\int_\Omega v \cdot F dx &= - \int_\Omega  p ( \nabla \cdot v) dx + \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu .
 \end{align}
 
 \subsubsection{Schur Preconditioner}
@@ -290,9 +290,9 @@ p     \\
 \begin{bmatrix}
 b    \\
 0     \\
-\end{bmatrix}
+\end{bmatrix} ,
 $$
-Where $B$ is the discretized divergence operator and $B^T$ the discrete gradient operator. $A$ contains the viscous term.
+where $B$ is the discretized divergence operator and $B^T$ the discrete gradient operator. $A$ contains the viscous term.
 Setting $S = - B A^{-1} B^{T}$, we can factorize the above and get an expression whose inverse is :
 $$
 \begin{bmatrix}
@@ -306,13 +306,13 @@ A^{-1}   & 0\\
 \begin{bmatrix}
 I & 0\\
  - B A^{-1}       & I \\
-\end{bmatrix}
+\end{bmatrix} .
 $$
 Hence, if we can find $A^{-1}$ and $S^{-1}$ we can easily solve the equation. We solve both via a Lu factorization.\\
 We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$ via an Lu Factorization. The Lu factorization is a direct solver, and thus is inefficient. The algorithm would have to be performed in a sequential manner, preventing usage of parallelization. We did mitigate this through the usage of the "mumps" sub-routine. We originally attempted to use ILU, which is more efficient, but this failed. This is because the viscous term makes a less sparse matrix.\\
- However $S^{-1}$, the inverse of the Schur complement is difficult to determine because it is usually dense. However research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (14). Note that this term is 0 if the terms were continuous, as they should be physically. We thus get :
+ However $S^{-1}$, the inverse of the Schur complement is difficult to determine because it is usually dense. However research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to the equation (14). Note that this term is 0 if the terms were continuous, as they should be physically.
 \begin{align}
-\int_\Omega w \cdot F dx &= \int_\Omega \nabla \cdot (p v) dx - \int_\Omega ( p \nabla \cdot (v)) dx - \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu + \int_\Omega \gamma \nabla \cdot u \: \nabla \cdot v dx
+\int_\Omega w \cdot F dx &= \int_\Omega \nabla \cdot (p v) dx - \int_\Omega ( p \nabla \cdot (v)) dx - \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu + \int_\Omega \gamma \nabla \cdot u \: \nabla \cdot v dx .
 \end{align}
 This doesn't change the equation, thus should result in the same solution. However according to the same papers [2 \& 9] we can then approximate $S$ by the pressure mass matrix. Due to the fact that the pressure mass matrix is block diagonal we can easily invert it to find $S^{-1}$
 \\
@@ -326,7 +326,7 @@ This obviously makes our assumption invalid and finding $S^{-1}$ considerably ha
 We now have a discretization of the Stokes equation and an efficient Preconditioner for it.
 Our aim is to solve the steady Navier Stokes equations, hence we will now include it, and thus get for the velocity equation :
 \begin{align*}
-(u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
+(u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F .
 \end{align*}
 Note that this is equation is not linear, hence we will need to use Newton's method.\\
 We will first focus on finding the weak form of the advection term in order to add it to the previously obtained results. Testing however showed that this does not always converge due to the initial guess being outside of the Newton ball of convergence. Hence we will also build a continuation solver avoid that issue.
@@ -335,46 +335,46 @@ We will first focus on finding the weak form of the advection term in order to a
 In order to solve the equation, we need to find the weak form of the advection term, $(u \cdot \nabla) u$, which we will then add to the Stokes weak form.\\
 Similarly to before we therefore take the inner product of the advection term with $q$ and integrate over the domain.
 \begin{align}
-\int_\Omega (u \cdot \nabla)u \cdot v \ dx
+\int_\Omega (u \cdot \nabla)u \cdot v \ dx .
 \end{align}
 Consider the following vector identity :
 \begin{align*}
-\nabla (u \cdot u) = 2 (u \cdot \nabla) u + 2 u \times (\nabla \times u)
+\nabla (u \cdot u) = 2 (u \cdot \nabla) u + 2 u \times (\nabla \times u) .
 \end{align*}
-Hence get :
+Then we proceed to obtain :
 \begin{align}
-\int_\Omega (u \cdot \nabla)u \cdot v \ dx = \frac{1}{2} \int_\Omega \nabla (u^2) \cdot v \ dx - \int_{\Omega} u \times (\nabla \times u) \cdot v \ dx
+\int_\Omega (u \cdot \nabla)u \cdot v \ dx = \frac{1}{2} \int_\Omega \nabla (u^2) \cdot v \ dx - \int_{\Omega} u \times (\nabla \times u) \cdot v \ dx .
 \end{align}
-We can then perform an integration by parts on the first term on the right hand side to get :
+We can then perform an integration by parts on the first term on the right hand side.
 \begin{align}
- \frac{1}{2} \int_\Omega \nabla (u^2) \cdot v \ dx = \frac{1}{2} (\int_{\delta \Omega } u^2 v \cdot n \ ds - \int_\Omega u^2 \nabla \cdot v \ dx)
+ \frac{1}{2} \int_\Omega \nabla (u^2) \cdot v \ dx = \frac{1}{2} (\int_{\delta \Omega } u^2 v \cdot n \ ds - \int_\Omega u^2 \nabla \cdot v \ dx) .
 \end{align}
-Now consider the second term in (17)
+Now consider the second term in (17).
 \begin{align*}
-- \int_{\Omega} u \times (\nabla \times u) \cdot v \ dx &= \int_{\Omega} v \cdot (\nabla \times u) u \ dx   \\
-&=  \int_{\Omega} (\nabla \times u) \cdot (u \times v)  \ dx
+- \int_{\Omega} u \times (\nabla \times u) \cdot v \ dx &= \int_{\Omega} v \cdot (\nabla \times u) u \ dx,  \\
+&=  \int_{\Omega} (\nabla \times u) \cdot (u \times v)  \ dx .
 \end{align*}
 Next we use the results from source [18].\\
 From this we obtain that via integration by parts on each individual element we get :
 \begin{align*}
-\sum_e \int_e u \cdot (\nabla \times (u \times v) \ ) dx - \int_{\Gamma} \frac{1}{2}(\{u\} + sgn(u \cdot n)[u]) \cdot (n \times (u \cdot v) \ ) dS
+\sum_e \int_e u \cdot (\nabla \times (u \times v) \ ) dx - \int_{\Gamma} \frac{1}{2}(\{u\} + sgn(u \cdot n)[u]) \cdot (n \times (u \cdot v) \ ) dS .
 \end{align*}
-Hence get :
+Hence,
 \begin{align}
-&\int_\Omega u \cdot (\nabla \times (u \times v) \ ) dx -  \sum_e \int_{\Gamma} u_{up} \cdot (n \times (u \cdot v) \ ) dS \\
-& u_{up} = \frac{1}{2}((sgn(u \cdot n) + 1)_+ u_+ + (sgn (u \cdot n) +1)_- u_-)
+&\int_\Omega u \cdot (\nabla \times (u \times v) \ ) dx -  \sum_e \int_{\Gamma} u_{up} \cdot (n \times (u \cdot v) \ ) dS, \\
+& u_{up} = \frac{1}{2}((sgn(u \cdot n) + 1)_+ u_+ + (sgn (u \cdot n) +1)_- u_-) .
 \end{align}
 $u_{up}$ is the upwinding term mentioned in the paper.\\
 Note that it is equal to $u^+$ if $n$ is in the "positive" direction, and $u^-$ otherwise. (Reminder : the positive and negative direction are arbitrarily set when creating the mesh. They serve solely as markers for the software)\\
 Note that the second term becomes the following on the computational domain boundary :
 \begin{align*}
-- \int_{\delta \Omega} u_0 \cdot (n \times (u \cdot v) \ ) ds
+- \int_{\delta \Omega} u_0 \cdot (n \times (u \cdot v) \ ) ds .
 \end{align*}
 Hence the weak form of our advection term is :
 \begin{align}
- Adv &= \int_\Omega u \cdot (\nabla \times (u \times v) \ ) dx - \int_{\Gamma} u_{up} \cdot (n \times (u \cdot v) \ ) dS \\
-&- \frac{1}{2} \int_\Omega u^2 \nabla \cdot v \ dx - \int_{\delta \Omega} u_0 \cdot (n \times (u \cdot v) \ ) ds
-+ \frac{1}{2} \int_{\delta \Omega } u^2 v \cdot n \ ds
+ Adv &= \int_\Omega u \cdot (\nabla \times (u \times v) \ ) dx - \int_{\Gamma} u_{up} \cdot (n \times (u \cdot v) \ ) dS , \\
+&- \frac{1}{2} \int_\Omega u^2 \nabla \cdot v \ dx - \int_{\delta \Omega} u_0 \cdot (n \times (u \cdot v) \ ) ds ,
++ \frac{1}{2} \int_{\delta \Omega } u^2 v \cdot n \ ds .
 \end{align}
 We reordered some terms to be in-line with our code.
 
@@ -383,7 +383,7 @@ We reordered some terms to be in-line with our code.
 Given the Navier-Stokes equations we could try to naively solve directly applying the above preconditioning and discretization methods. However at high Reynolds number this approach quickly fails unless the mesh is refined or a better initial guess is given, leading to high computational cost or inability to solve certain problems.\\
 Hence consider the modified equation :
 \begin{align}
-c (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F
+c (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F .
 \end{align}
 As mentioned in the Newton's Method section, the Newton's Method converges only if the initial guess is within a certain ball around the solution. Hence we need to find a method to get our initial guess to be closer to the solution.\\
 We could use the Stokes solution as an initial guess, which we can most likely solve. We then increase $c$ to $1$ and try to solve using the Stokes solution as a guess. \\
@@ -394,16 +394,16 @@ We can speed up this process in two ways.\\
 The first, very simple method, is adapting our step-size to the problem. Rather than starting with a step size of $1$ we can reduce the step size initially if the Reynolds number is high enough. In addition to reducing the step size if the Newton iteration fails, we can increase step size if it succeeds. This should allow us to close in on the optimal step size rapidly. This allows us to reduce the total number of times we try to use the Newton's method.\\
 The second involves approximating the $(u,p)$ at a subsequent step more accurately. Rather than just using the prior value of $(u,p)$, call it $x_c$, we use Taylor expansion. We can consider $x_c$ to be a function of $c$, hence get :
 $$
-x_{c+\Delta c} = x_c + \Delta c \frac{\partial x_c}{\partial c}
+x_{c+\Delta c} = x_c + \Delta c \frac{\partial x_c}{\partial c} .
 $$
 Provided we can find $\frac{\partial x_c}{\partial c}$ this will give us a far more accurate solution.
 To find the derivative of $x_c$ with respect to $c$ we consider :\\
 \begin{align}
-\frac{\partial H (\frac{\partial x_c}{\partial c},c)}{\partial \frac{\partial x_c}{\partial c}}  = - \frac{\partial H}{\partial c}(x_c,c)
+\frac{\partial H (\frac{\partial x_c}{\partial c},c)}{\partial \frac{\partial x_c}{\partial c}}  = - \frac{\partial H}{\partial c}(x_c,c) .
 \end{align}
-Where $H$ is a function of $u$, $c$ and $p$ such that the following is equivalent to (23)
+Where $H$ is a function of $u$, $c$ and $p$ such that the following is equivalent to (23),
 \begin{align*}
-H(u,c) = 0
+H(u,c) = 0 ,
 \end{align*}
 Which we solve via a Newton iteration.\\
 In some circumstances however even with a variable step-size in $c$ we fail to obtain a solution within an acceptable time-frame. In our code if the step-size is below $10^{-3}$ our solver stops and fails. This usually happens for high Reynolds number flows.
@@ -416,23 +416,23 @@ While we are mainly interested in the steady-state solution of the Navier-Stokes
 First we need to write an algorithm which can time-step the unsteady Navier-Stokes equations.\\
 In practice our problem amounts to the following, very generalized, equation :
 \begin{align*}
-H(u) = 0
+H(u) = 0 ,
 \end{align*}
-Where H is some function.\\
+Where H is some vector function.\\
 If we add in the unsteady term we get :
 \begin{align}
-\frac{\partial u}{\partial t} + H(u,p) = 0
+\frac{\partial u}{\partial t} + H(u,p) = 0.
 \end{align}
 Initially we discretized the unsteady term using backwards Euler or the Midpoint rule (effectively adding a forcing term) and then used the solvers from 3.1 and 3.2. However this did not converge, due to the fact that the our initial guess tended to be ourside of the radius of convergence of the Newton's method.\\
 Instead we use Picard's iteration along with the Midpoint rule as described in the following equation :
 \begin{align}
-u^{n+1} - u^n + \Delta t (\frac{1}{2}G(u^n,p^n) + \frac{1}{2} G(u^{n+1},p^{n+1}) + ( u^n \cdot \nabla u^n) ) = 0
+u^{n+1} - u^n + \Delta t (\frac{1}{2}G(u^n,p^n) + \frac{1}{2} G(u^{n+1},p^{n+1}) + ( u^n \cdot \nabla u^n) ) = 0 .
 \end{align}
 Here $G = RHS - LHS $. We applied the midpoint rule to the linear terms of the equation while the non-linear term, the advection term, was evaluated at the previous time step.\\
 Provided the time step is low enough this will converge, regardless of initial guess. However Picard's iterations has a lower order of convergence than Newton's method, and as such will be less accurate for same computational cost [19].\\
 Optionally we could afterwards use the method we described first, Newton's method and Midpoint Rule, to get a more accurate result after a few Picard's iterations. Presumably these would get us whithin the radius of convergence.
 \begin{align}
-u^{n+1} - u^n + \Delta t (\frac{1}{2}F(u^n,p^n) + \frac{1}{2} F(u^{n+1},p^{n+1})) = 0
+u^{n+1} - u^n + \Delta t (\frac{1}{2}F(u^n,p^n) + \frac{1}{2} F(u^{n+1},p^{n+1})) = 0 .
 \end{align}
 
 \subsubsection{Stability Analysis}
@@ -488,12 +488,12 @@ We will study this relatively simple problem as means to demonstrate the ability
 The problem takes place in the annulus between two concentric circles each rotating at a different speed. For our steady case we will consider unit circle rotating at speed $1$ and circle of radius $2$ rotating at speed $3$.
 From [16] we get that the general solution of the tangential velocity and pressure for this problem is of the form :
 \begin{align}
-u_{\phi} = C_1 r + \frac{C_2}{r} \\
-p = \rho \int \frac{u_{\phi}^2}{r} dr + C
+u_{\phi} = C_1 r + \frac{C_2}{r} , \\
+p = \rho \int \frac{u_{\phi}^2}{r} dr + C .
 \end{align}
 From the above boundary conditions are $u_{\phi}(r=1) = 1$, $u_{\phi}(r=2) = 3$. Hence get :
 \begin{align*}
-C_1 = 1 - C_2
+C_1 = 1 - C_2 .
 \end{align*}
 Figures show pressure and velocity in this case.\\
 
@@ -505,8 +505,8 @@ The flow past a cylinder is a well-known and studied flow with interesting prope
 We will see how our solver resolves this flow to study if we can find unstable solutions and how effective our continuation method is.\\
 \\
 Figure shows the stokes solution to the problem.\\
-Similarly figures to show the solution with full advection at Reynolds numbers $Re = 50$, $25$, $12.5$ and $1$ respectively.\\
-At Reynolds numbers higher than our solver starts requiring to use the continuation method multiple times (by default it always first finds the Stokes solution). Eventually it the length of the continuation step goes below tolerance levels and our solver fails.\\
+Similarly figures to show the solution with full advection at Reynolds numbers $Re = 50$, $25$, $12.5$ and $4$ respectively.\\
+At Reynolds numbers higher than our solver starts requiring to use the continuation method multiple times (by default it always first finds the Stokes solution). For instance we required to find the solution at $0 \%$, $25 \%$, $62.5\%$ and $100\%$ advection for $Re =50$, while we only required to find the solution at $0 \%$ and $100 \%$ advection for $Re = 4 $. Eventually the length of the continuation step goes below tolerance levels and our solver fails.\\
 According to [14] $Re = 50$ corresponds to the Reynolds numbers where the solution becomes unstable, suggesting that we can find unstable solutions.\\
 We reduce the Reynold's number by reducing the viscosity. As expected this makes the boundary layer about the cylinder smaller and smaller.\\
 As we performed our tests, we obtained that on a mesh of average triangle edge length $0.5$ we fail even with the continuation method (it goes below tolerance levels). This shows that our continuation method allows us to not only solve the problem more rapidly, by allowing us to use lower resolution meshes, but also extends the range of solvable Reynold's numbers.
