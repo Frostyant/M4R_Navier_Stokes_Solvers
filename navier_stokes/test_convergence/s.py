@@ -23,7 +23,7 @@ for it,n in enumerate(Ns):
     #p_0 = sin(x*y)
     u_0 = as_vector([-sin(2*pi*y)**5*cos(2*pi*y)*sin(2*pi*x)**6,sin(2*pi*x)**5*cos(2*pi*x)*sin(2*pi*y)**6])
     u_1 = as_vector([-sin(2*pi*y)**5*cos(2*pi*y)*sin(2*pi*x)**6,sin(2*pi*x)**5*cos(2*pi*x)*sin(2*pi*y)**6])
-    p_0 = Constant(1)*x*sin(2*pi*x)**3*sin(2*pi*y)**3
+    p_0 = Constant(1)*sin(2*pi*x)**3*sin(2*pi*y)**3
     """
     lmbda = 0.5*mu-(1/4*mu**2 + 4*pi**2)**(1/2)
     u_0 = as_vector([
@@ -66,19 +66,19 @@ def FitLogLine(e0,Ns,coef):
     ls = [10**(c+coef*np.log10(n)) for n in Ns]
     return ls
 
-ls = FitLogLine(errors[0],Ns,2)
-pls = FitLogLine(ep[0],Ns,2)
+ls = FitLogLine(errors[0],Ns,-2)
+pls = FitLogLine(ep[0],Ns,-2)
 
 plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
-plt.loglog(Ns,errors,ls)
+plt.loglog(Ns,errors,Ns,ls)
 plt.title('Stokes Velocity Convergence Graph')
 plt.savefig('stokes_convergence.png')
 
 plt.figure()
 plt.xlabel('o(n)')
 plt.ylabel('L1 Error')
-plt.loglog(Ns,ep,pls)
+plt.loglog(Ns,ep,Ns,pls)
 plt.title('Stokes Pressure Convergence Graph')
 plt.savefig('stokes_pressure_convergence.png')
 
