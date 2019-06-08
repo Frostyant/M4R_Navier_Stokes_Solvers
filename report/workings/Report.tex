@@ -20,7 +20,7 @@
 \section{Abstract}
 The aim of this project is to build on previous research and develop an efficient steady Navier-Stokes solver. Utilizing a Lagragian preconditioner described Patrick et al in \textit{An Augmented Lagrangian Preconditioner For The 3D Stationary Incompressible Navier–Stokes Equation At High Reynolds Number}, the grad-div stabilization method described by Olshanskii et al in \textit{Grad-div stabilization for Stokes equations} and the BDM/DG discretization of the $H_{div}$ space we obtained a working Stokes and Navier-Stokes solver and discussed the derivation of it's weak form.\\
 The primary advantage of the $H_{div}$ space is that the divergence free requirement of the continuity equation is satisfied exactly globally. This allows the Schur Complement to be exactly determined rather than approximated as in Patrick et al's paper.
-We then noticed that at high Reynold's number the Navier-Stokes solver tended to fail. Hence we developed a continuation method which decreases computational cost and extends the Reynold's number for which the solver works.\\
+We then noticed that at high Reynolds number the Navier-Stokes solver tended to fail. Hence we developed a continuation method which decreases computational cost and extends the Reynolds number for which the solver works.\\
 We demonstrated all of the above in various test cases. \\
 Finally we gave a summary of possible future improvements.
 \clearpage
@@ -410,7 +410,7 @@ In some circumstances however even with a variable step-size in $c$ we fail to o
 
 \subsection{Unsteady Navier-Stokes}
 
-While we are mainly interested in the steady-state solution of the Navier-Stokes equation we also may want to consider whether or not the solution is stable. To that end we need to solve a full unsteady Navier-Stokes, including the time derivative. This will be used to determine if small perturbations of the solution die down or blow up. Unfortunately we were unsuccesfull in our attempt at writing the time-stepping method. We will still describe the theory and aims for future research.
+While we are mainly interested in the steady-state solution of the Navier-Stokes equation we also may want to consider whether or not the solution is stable. To that end we need to solve a full unsteady Navier-Stokes, including the time derivative. This will be used to determine if small perturbations of the solution die down or blow up. While there was unsufficient time to complete testing of this section we will still describe the work we did for future research.
 
 \subsubsection{Time Stepping}
 First we need to write an algorithm which can time-step the unsteady Navier-Stokes equations.\\
@@ -443,73 +443,93 @@ Instead we will use a far simpler algorithm.
 We will consider random perturbations and then use the time stepping method above to see if they grow.
 
 \section{Test Cases}
-In this section we will consider various test cases to verify convergence of the algorithm at expected rates and demonstrate its ability to resolve various complex problems in complex non-uniform domains.
+In this section we will consider test cases to verify convergence of the algorithm, convergence rates, the ability to resolve flow problems around complex shapes and whether it can find unstable steady state solutions.\\
+We will start by doing a convergence test on the Stokes solver. Then we will proceed to study the convergence test of the Navier-Stokes solver. Lastly we will consider the flow about a cylinder.
 \subsection{Stokes Convergence}
 
 Once again we will primarily focus on the Stokes equation (9-10) in order to verify that this part of our discretization is working as intended and has the required convergence rate.\\
 We will consider a manufactured solution, an artificial solution we selected in advance. Take $u_x = \sin(2 \pi y) \cos(2 \pi y)*\sin(2 \pi x)^2$, $u_y= -\sin(2 \pi x) \cos(2 \pi x) \sin(2 \pi y)^2$ and $p = \sin(2 \pi x) \sin(2 \pi y)$.\\
 We then adjust the boundary conditions and forcing term appropriately for this solution to hold.\\
  The forcing term thus becomes :$F = \nabla p - \mu \nabla^2 u$.\\
-Figures and show us the convergence graphs in velocity and pressure.\\
-This shows that the preconditioning and discretization holds as expected for the Stokes equation if boundary conditions are $0$.
+Figures 4 and 5 show us the convergence graphs in velocity and pressure.\\
+Both figures indicate a minimum order 2 convergence, as expected given that we used a BDM2-DG1 space. Given the number of variables involved in both spaces for each triangle we want them to have an order 2 convergence as otherwise other spaces would be more appropriate.
 \\
 
 \begin{figure}
   \includegraphics[width=\linewidth]{stokes_convergence_dbc0.png}
-  \caption{DG1-BDM2 Stokes velocity convergence plot of velocity error against resolution. We expected order 2 convergence and obtained order 3 convergence. The super convergence is likely due to the symmetric nature of the test solution and the regulare mesh.}
+  \caption{DG1-BDM2 Stokes velocity convergence plot of velocity error against resolution. The blue curve indicates velocity error, the orange curve is a line of slope $-2$.  We expected order 2 convergence and obtained order 3 convergence. The super convergence is likely due to the symmetric nature of the test solution and the regular mesh.}
 \end{figure}
 
 \begin{figure}
 \includegraphics[width=\linewidth]{stokes_pressure_convergence_dbc0.png}
-  \caption{DG1-BDM2 Stokes pressure convergence plot of pressure error against resolution. We expected order 2 convergence and obtained order 3 convergence. The super convergence is likely due to the symmetric nature of the test solution and the regulare mesh.}
+  \caption{DG1-BDM2 Stokes pressure convergence plot of pressure error against resolution. The blue curve indicates pressure error, the orange curve is a line of slope $-2$.  Initially at low orders of $N$ the convergence isn't quite order 2. However as $N$ grows the order of convergence clearly is 2, indicating that this was just an anomaly due to low resolution.}
 \end{figure}
+
+
 
 \subsection{Navier-Stokes Convergence}
 
 We again use a manufactured solution to determine the convergence rate of our solver.
-We can re-use the first solution in the Stokes convergence test, $u_x = \sin(2 \pi y) \cos(2 \pi y)\sin(2 \pi x)^2$, $u_y= -\sin(2 \pi x) \cos(2 \pi x) \sin(2 \pi y)^2$ and $p = \sin(2 \pi x)^2 \sin(2 \pi y)^2$.\\
+We can re-use the manufactured solution in the Stokes convergence test, $u_x = \sin(2 \pi y)^5 \cos(2 \pi y)\sin(2 \pi x)^6$, $u_y= -\sin(2 \pi x)^5 \cos(2 \pi x) \sin(2 \pi y)^6$ and $p = \sin(2 \pi x)^2 \sin(2 \pi y)^2$.\\
 However the forcing term will now be $F = \nabla p - \mu \nabla^2 u + u \cdot \nabla u$.
 Plugging this into the equations we get that these do indeed solve the Navier-Stokes equations.\\
-Figures and show us the convergence graphs in velocity and pressure.\\
+Figures 5 and 6 show us the convergence graphs in velocity and pressure.\\
+We notice that initially we have the same behaviour as in the Stokes case. However we then see the error stopes decreasing. The cause of this is as of yet unkown and would require further research. We did note that changing the test solution and adjusting forcing we always obtain the same pressure error pattern, see figure 8. This probably should be studied when trying to understand and correct this issue.
 
 \begin{figure}
   \includegraphics[width=\linewidth]{navier_stokes_convergence_dbc0.png}
-  \caption{DG1-BDM2 Navier-Stokes velocity convergence plot of velocity error against resolution. As expected the velocity error decreases with a logarithmic slope of roughly 2, indicating order 2 convergence. We used the direct solver, not applying the continuation solver.}
+  \caption{DG1-BDM2 Navier-Stokes velocity convergence plot of velocity error against resolution.  The blue curve indicates velocity error, the orange curve is a line of slope $-2$.  The velocity error decreases with a logarithmic slope of roughly 2, indicating order 2 convergence, up to $10^{-5}$. The cause for the minimal error has not been found. given We used the direct solver, not applying the continuation solver.}
 \end{figure}
 
 \begin{figure}
 \includegraphics[width=\linewidth]{navier_stokes_pressure_convergence_dbc0.png}
-  \caption{DG1-BDM2 Stokes pressure convergence plot of pressure error against resolution. As expected the pressure error decreases with a logarithmic slope of roughly 2, indicating order 2 convergence. We used the direct solver, not applying the continuation solver.}
+  \caption{DG1-BDM2 Stokes pressure convergence plot of pressure error against resolution. The blue curve indicates pressure error, the orange curve is a line of slope $-2$. The convergence graph here has three phases. Similarly to the Stokes cases, we initially have a lower order convergence due to low number of triangles. Then we have a slope of $2$ as expected. Lastly we have a minimal error, which, as for the velocity, has an unkown cause and thus requires further study. We used the direct solver, not applying the continuation solver.}
 \end{figure}
 
-\subsection{Flow Between Concentric Circles}
-
-We will study this relatively simple problem as means to demonstrate the ability of our solver to work even on non-uniform arbitrary meshes and solve an unsteady problem.\\
-The problem takes place in the annulus between two concentric circles each rotating at a different speed. For our steady case we will consider unit circle rotating at speed $1$ and circle of radius $2$ rotating at speed $3$.
-From [16] we get that the general solution of the tangential velocity and pressure for this problem is of the form :
-\begin{align}
-u_{\phi} = C_1 r + \frac{C_2}{r} , \\
-p = \rho \int \frac{u_{\phi}^2}{r} dr + C .
-\end{align}
-From the above boundary conditions are $u_{\phi}(r=1) = 1$, $u_{\phi}(r=2) = 3$. Hence get :
-\begin{align*}
-C_1 = 1 - C_2 .
-\end{align*}
-Figures show pressure and velocity in this case.\\
-
-Now consider the outer circle initially immobile, but slowly accelerating until it reaches tangential speed of $3$. The velocity solution at different time steps is shown in figures.
+\begin{figure}
+  \includegraphics[width=\linewidth]{ns_fail_exp.png}
+  \caption{Pressure error using the modified base pressure, $p = \sin(2 \pi x)^2 \sin(2 \pi y)^2$, and adjusting forcing accordingly. This pattern seems to be repeated regardless of $p$ or $u$ in our tests provided boundary conditions remain the same (in all cases they are $0$).}
+\end{figure}
 
 \subsection{Flow Past a Cylinder}
 
-The flow past a cylinder is a well-known and studied flow with interesting properties, such as a change of stability of its steady solution at high Reynold's number.
+The flow past a cylinder is a well-known and studied flow with interesting properties, such as a change of stability of its steady solution at high Reynolds number.
+Our solver still converges to an acceptable error for the velocity fields in this problem.
 We will see how our solver resolves this flow to study if we can find unstable solutions and how effective our continuation method is.\\
 \\
-Figure shows the stokes solution to the problem.\\
-Similarly figures to show the solution with full advection at Reynolds numbers $Re = 50$, $25$, $12.5$ and $4$ respectively.\\
-At Reynolds numbers higher than our solver starts requiring to use the continuation method multiple times (by default it always first finds the Stokes solution). For instance we required to find the solution at $0 \%$, $25 \%$, $62.5\%$ and $100\%$ advection for $Re =50$, while we only required to find the solution at $0 \%$ and $100 \%$ advection for $Re = 4 $. Eventually the length of the continuation step goes below tolerance levels and our solver fails.\\
-According to [14] $Re = 50$ corresponds to the Reynolds numbers where the solution becomes unstable, suggesting that we can find unstable solutions.\\
-We reduce the Reynold's number by reducing the viscosity. As expected this makes the boundary layer about the cylinder smaller and smaller.\\
-As we performed our tests, we obtained that on a mesh of average triangle edge length $0.5$ we fail even with the continuation method (it goes below tolerance levels). This shows that our continuation method allows us to not only solve the problem more rapidly, by allowing us to use lower resolution meshes, but also extends the range of solvable Reynold's numbers.
+Figure 9 shows the stokes velocity solution to the problem.\\
+Similarly figures 10, 11 and 12 show the velocity solution with full advection at Reynolds numbers $Re = 50$, $25$, and $1$ respectively.\\
+We reduce the Reynolds number by reducing the viscosity. As expected this makes the boundary layer about the cylinder smaller and smaller.\\
+At Reynolds numbers higher than our solver starts requiring to use the continuation method multiple times (by default it always first finds the Stokes solution). For instance we required to find the solution at $0 \%$, $25 \%$, $62.5\%$ and $100\%$ advection for $Re =50$, while we only required to find the solution at $0 \%$ and $100 \%$ advection for $Re = 4 $.\\
+When setting a high Reynolds number, such as $Re = 500$, the solver fails.
+\begin{lstlisting}
+Reynolds Number =
+500.0
+Advection term is at 100%
+An Exception of type ConvergenceError has occurred. Reducing Step Size.
+Advection term is at 50.0%
+An Exception of type ConvergenceError has occurred. Reducing Step Size.
+Advection term is at 25.0%
+An Exception of type ConvergenceError has occurred. Reducing Step Size.
+Advection term is at 12.5%
+An Exception of type ConvergenceError has occurred. Reducing Step Size.
+Advection term is at 6.25%
+An Exception of type ConvergenceError has occurred. Reducing Step Size.
+Advection term is at 3.125%
+An Exception of type ConvergenceError has occurred. Reducing Step Size.
+Advection term is at 1.5625%
+An Exception of type ConvergenceError has occurred. Reducing Step Size.
+Advection term is at 0.78125%
+An Exception of type ConvergenceError has occurred. Reducing Step Size.
+Advection term is at 0.390625%
+An Exception of type ConvergenceError has occurred. Reducing Step Size.
+Advection term is at 0.1953125%
+An Exception of type ConvergenceError has occurred. Reducing Step Size.
+Too low step size, solver failed
+\end{lstlisting}
+The above output displays when we try this test. We can see the continuation method attempting to solve the problem but failing eventually due to to low step-size.\\
+According to [14] $Re = 50$ corresponds to the Reynolds numbers where the solution becomes unstable, suggesting that we can find unstable solutions and thus the failure described is not due to instability of our solution.\\
+As we performed our tests, we obtained that on a mesh of average triangle edge length $0.5$ with $Re = 48$ we fail in the same manner as for $Re = 500$. We can deduce two things from this. Firstly, it is likely that increasing the accuracy of the mesh would allow the solver to work even on high Reynolds number. Secondly, given that the continuation method is required even though it should only be called when the solver fails to converge whithin parameters, we can deduce that our continuation method allows us to extend the solvable Reynolds numbers for a given mesh accuracy. Depending on interpretation and available ressources this means our continuation method either extends solvable domains or improves speed.
 
 \begin{figure}
   \includegraphics[width=\linewidth]{scR50.png}
@@ -526,22 +546,30 @@ As we performed our tests, we obtained that on a mesh of average triangle edge l
   \caption{Navier-Stokes flow past a cylinder for $Re = 25$ obtained by the BDM2-DG1 solver. The mesh used has an average triangle edge length of $0.2$ in this figure. Notice that the boundary layer is getting smaller as $Re$ increases. Pressure is $0$, and thus doesn't figure here.}
 \end{figure}
 
+\begin{figure}
+  \includegraphics[width=\linewidth]{nscR1.png}
+  \caption{Navier-Stokes flow past a cylinder for $Re = 1$ obtained by the BDM2-DG1 solver. The mesh used has an average triangle edge length of $0.2$ in this figure. Notice that the boundary layer is getting smaller as $Re$ increases. Pressure is $0$, and thus doesn't figure here.}
+\end{figure}
+
+
+
 \section{Conclusion and Future Improvements}
 
 In this project we were interested in applications of the BDM/DG mixed finite element onto the steady Navier-Stokes equations.\\
 After briefly discussing the general finite element method and some introductory definitions and notations we decided to focus on the stokes equation. After assembling the weak form of the equation we then applied a Schur preconditioner to  improve efficiency.\\
 We then assembled a weak form of the Navier-Stokes equation but noted that directly using it wasn't optimal. As such we developed a continuation method with variable step-size to improve the algorithm's speed and expand the number of problems which it can solve.\\
 After this we made a rudimentary time-stepping method to study the stability of any solutions obtained.\\
-Finally we tested all of the above and concluded that our algorithm worked as anticipated.\\
+Finally we tested all of the above and concluded that our algorithm worked as anticipated and accomplished our objectives with the exception that the Navier-Stokes error seems to have a lower bound.\\
 \\
 \\
-However a number of future improvements could be made.
+A number of future improvements could be made.
 These would allow us to reduce computational cost, versatility and accuracy of our method.\\
 \\
+Firstly the cause of the lower bound of the Navier-Stokes solver needs to be found and removed if possible.\\
 We could use a multigrid method using our method as a smoother to get convergence to be less dependent on grid-size, dramatically reducing computational costs. Application of such a method was discussed, unfortunately the tools required for it are not currently compatible with our problem set (specifically Dirichelet boundary conditions).\\
-The variable step-size method is serviceable and can be considerably improved to reduce the total number of iterations and thus computational cost. There are a number of methods which from local conditions of the function could more efficiently determine an appropriate step-size. Our source on the continuation method [17] includes such improvements.\\
-Similarly the time-stepping method was designed exclusively for the stability test. For this purpose it works very well. However various improvements could be made for accuracy and speed. For instance we initially attempted to utilise a Newton iteration rather than a Picards iteration. However as the initial guess wasn't in the ball of convergence this method failed. Adding a few Newton iterations using the picards results as a starting point should give more accurate answers for time-dependent methods.\\
-Additionally the stability itself could be expanded to for instance consider the growth rate of an instability as well as determines unstable modes.\\
+The variable step-size method is serviceable and can be considerably improved to reduce the total number of iterations and thus computational cost. There are a number of methods which from local conditions of the function could more efficiently determine an appropriate step-size. Our source on the continuation method [17] includes descriptions of potential improvements.\\
+Similarly the time-stepping method mentioned was designed exclusively for the stability test. For this purpose it would work very well. However various improvements could be made for accuracy and speed. For instance we initially attempted to utilise a Newton iteration rather than a Picards iteration. However as the initial guess wasn't in the ball of convergence this method failed. Adding a few Newton iterations using the Picard results as a starting point should give more accurate answers for time-dependent methods.\\
+Additionally the stability itself could be expanded to, for instance, consider the growth rate of an instability as well as determines unstable modes.\\
 In some flows we may have multiple solutions or a bifurcation (that is the case for the cylinder flow at high Reynolds number). In this case a deflation method may be usefull. In this method, after finding a solution we "substract" it from the equation and thus seek other solutions.\\
 \\
 
