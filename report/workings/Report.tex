@@ -28,22 +28,22 @@ Finally we gave a summary of possible future improvements.
 \clearpage
 
 \section{Introduction}
-The steady Navier-Stokes equations govern steady state fluid interactions. These may arise due to lack of significant temporal changes of a system. One of the primary motivations of study is whether or not these form stable steady solutions to the full Navier-Stokes equations. In this context this project provides the base flows on which the stability analysis would then be performed. Examples of particular interest of steady flows are pipe flows and flows past a cylinder. The latter for its interesting properties, which display fundamental mechanisms, and its industrial applications [14].\\
+The steady Navier-Stokes equations govern steady state fluid interactions. These may arise due to lack of significant temporal changes of a system. One of the primary motivations of study is whether or not these form stable steady solutions to the full Navier-Stokes equations. In this context this project provides the base flows on which the stability analysis would then be performed. Examples of particular interest of steady flows are pipe flows and flows past a cylinder. The latter has interesting properties, which display fundamental mechanisms, and its industrial applications [14].\\
 We seek to create an efficient solver of the steady Navier-Stokes equations in an arbitrary domain. For this the Finite Element method is particularly suited, and has been used for this purpose in the past [20]. \\
 Recent papers [2,9] have demonstrated the use of a modified Schur preconditioner along with a grad-div stabilization method to be highly efficient. We seek to combine this with a discretization in a globally divergence free [18] space. This allows us to exactly get the Schur complement mentioned in [2], as it will lie in the $H_{div}$ space, rather than approximating it.\\
 \\
-The steady Navier-Stokes equation are as follows :
+The steady Navier-Stokes equations are as follows :
 \begin{align}
 (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F \\
 \nabla \cdot u &= 0
 \end{align}
-First we will describe the classic continuous Galerkin (CG) finite element method, its advantages and disadvantages, hence explaining why we are using a modified method. Next we will explain a number of definitions and tools used in the project and which may be unfamiliar to some readers. Then we will show how to find the weak form of the equations and build different parts of our solvers. Finally we will consider some example cases and test that the algorithm converges to the right result at satisfactory rates.\\
+First we will describe the classic continuous Galerkin (CG) finite element method, its advantages and disadvantages, hence explaining why we are using a modified method. Next we will explain a number of definitions and tools used in the project and which may be unfamiliar to some readers. Then we will show how to find the weak form of the equations and build different parts of our solvers. Finally we will consider some example cases and test whether the algorithm converges to the right result at satisfactory rates.\\
 
 \section{Tools and Definitions}
 A number of well-known methods, algorithms and definitions are used in this report. This section serves to quickly introduce these concepts for latter use. We will first start by explaining the general finite element method, specifically the most commonly used continuous Galerkin method. We then will explain Newton's method for non-linear matrix equations which arise from the finite element discretization of the Navier-Stokes equation. Then we explain the general concept of preconditioners. Lastly we will define the various notations involved in this project.
 
 \subsection{Continuous Gelrkin Finite Elements Method}
-The Finite Element Method (FEM) is a numerical method which approximates the solution to an exact partial differential equation [5]. The property that it works on arbitrary domains, as opposed to the finite difference method which finds the exact solution to an approximated discretized partial differential equation, is one of the reasons it is widely used in research, industry and in this project.\\
+The Finite Element Method (FEM) is a numerical method which approximates the solution to an exact partial differential equation [5]. One of the reasons it is widely used in research, industry and in this project is because it works on arbitrary domains. This is preferable to the finite difference method, which finds exact solutions to an approximated discretized partial differential equation.\\
 We will now consider the case of applying the FEM to the Stokes equations using the more common continuous Galerkin method. We do this to explain how conventionally this problem would have been solved, and how our method will improve on it.\\
 This method in particular is very common in research and industrial problems. As such there are number of courses and books on the subject, such as \textit{Galerkin finite element methods for parabolic problems} [6] if further explanation and theory is required.\\
 \\
@@ -120,7 +120,7 @@ The paper Common and Unusual Finite Elements [7] states that the BDM space on on
 
 However unlike the Lagrange elements we can no longer set a Dirichelet boundary condition's tangential component. Therefore we need to find alternative approaches to enforce these conditions, such as boundary penalty methods as seen in [21] and [22].
 Additionally some operations (such as the weak form of the curl) are undefined in this space. Due to possible discontinuities at the boundaries we have to be careful with all boundary integrals.
-In general the weak form will be far more involved.\\
+In general the weak form will be far more complex.\\
 \\
 
 The discontinuous Galerkin Element space is the space of piecewise linear discontinuous functions. An example applying this space on its own can be found in [8].\\
@@ -186,13 +186,13 @@ $e$ denotes an individual triangle composing the mesh which forms $\Omega$. In t
 $\Gamma$ denotes the boundary of an individual triangle $e$.\\
 \\
 Let us define $a_+$ and $a_-$.\\
-When the mesh is setup we ensure each facet (ie. edge of a triangle) in the mesh has a positive and negative side, and each cell agrees on which is which. We call these terms on facet integrals, as otherwise they have no meaning. Then $a_+$ is the value of $a$ on the positive side $a_-$ on the negative side. The normal usually points from the negative to the positive side. However, when we consider for instance $(n \cdot a)_+$ we consider the whole expression on the "positive side" including the normal, which, with respect to any given cell, always points out of the cell, and hence may point in the opposite direction of the standard normal of the facet.\\
+When the mesh is setup we ensure each facet (ie. edge of a triangle) in the mesh has a positive and negative side, and each cell agrees on which is which. We call these terms on facet integrals. Then $a_+$ is the value of $a$ on the positive side $a_-$ on the negative side. The normal usually points from the negative to the positive side. However, when we consider for instance $(n \cdot a)_+$ we consider the whole expression on the "positive side" including the normal, which, with respect to any given cell, always points out of the cell, and hence may point in the opposite direction of the standard normal of the facet.\\
 It is important to note that the positive and negative side are completely arbitrary. They serve as markers for the method. Obviously these terms do not appear in the continuous finite element spaces.\\
 For facet which are facing the exterior domain we usually consider the equations separately.\\
 \\
 Let $\{ a \} = a_+ + a_-$. \\
 This is a summation term. Due to discontinuities of our space on facet elements integrals over facets from integration by parts on an individual element will not disappear necessarily, hence these terms remain. Additionally, since we cannot use Dirichelet boundary conditions, weak penalty terms will also use this operation.\\
-For integrals over outer facet we explicitly write out the formula for clarity.\\
+For integrals over the outer facets we explicitly write out the formula for clarity.\\
 \\
 Let $J(a) = a_+ - a_-$\\
 This is a jump term. Note that this operation is $0$ in a continuous space, which is where we assume the physical fluid velocity and pressure to be.\\
@@ -226,7 +226,7 @@ Again we can work on each cell $e$ individually and them sum it all up.
 \begin{align*}
 \sum_e \int_e v \cdot F dx &= \sum_e (\int_e (v \cdot \nabla p) dx - \int_e (\mu v \cdot \nabla^2 u) dx) .
 \end{align*}
-Focusing on the viscosity, or second, term we obtain via integration by parts :
+Focusing on the viscosity, or second, term we obtain via integration by parts:
 \begin{align*}
 \int_e (v \cdot \nabla^2 u) dx = - \int_e \nabla_h(v) : \nabla_h(u) dx + \int_\Gamma 2 \{ v_i n_j \} \{ \frac{\partial u_i}{\partial x_j}\} dS .
 \end{align*}
@@ -310,7 +310,7 @@ I & 0\\
 \end{bmatrix} .
 $$
 Hence, if we can find $A^{-1}$ and $S^{-1}$ we can easily solve the equation.\\
-We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$, via an LU Factorization. The LU factorization is a direct solver, and thus is inefficient. The algorithm would have to be performed in a sequential manner, preventing usage of parallelization. We did mitigate this through the usage of the "mumps" sub-routine. We originally attempted to use ILU, which is more efficient, but this failed. This is a consequence of the approximation of the Schur complement we will now describe.\\
+We solve for $A^{-1}$, or to be exact the operation $A^{-1}v$, via an LU factorization. The LU factorization is a direct solver, and thus is inefficient. The algorithm would have to be performed in a sequential manner, preventing usage of parallelization. We did mitigate this through the usage of the "mumps" sub-routine. We originally attempted to use ILU, which is more efficient, but this failed. This is a consequence of the approximation of the Schur complement we will now describe.\\
  $S^{-1}$, the inverse of the Schur complement is difficult to determine because it is usually dense. However research has shown [2 \& 9] that we can solve this issue by using a "grad-div" stabilization method. We add the term $\gamma \nabla \cdot v \: \nabla \cdot w$ to equation (13). Note that this term is 0 if the terms were continuous, as they should be physically.
 \begin{align}
 \int_\Omega w \cdot F dx &= \int_\Omega \nabla \cdot (p v) dx - \int_\Omega ( p \nabla \cdot (v)) dx - \int_\Omega q (\nabla \cdot u) dx  - \eta_\mu + \int_\Omega \gamma \nabla \cdot u \: \nabla \cdot v dx .
@@ -324,7 +324,7 @@ As a result in the CG space as gamma tends to infinity S does not exactly tend t
 This obviously makes our assumption invalid and finding $S^{-1}$ considerably harder.
 
 \subsection{Steady Navier-Stokes}
-We now have a discretization of the Stokes equation and an efficient Preconditioner for it.
+We now have a discretization of the steady Stokes equation and an efficient Preconditioner for it.
 Our aim is to solve the steady Navier-Stokes equations, hence we will now include it, and thus get for the velocity equation :
 \begin{align*}
 (u \cdot \nabla) u &= -\nabla p + \mu \nabla^2 u + F .
@@ -415,7 +415,7 @@ While we are mainly interested in the steady-state solution of the Navier-Stokes
 
 \subsubsection{Time Stepping}
 First we need to write an algorithm which can time-step the unsteady Navier-Stokes equations.\\
-In practice our problem amounts to the following, very generalized, equation :
+In practice our problem amounts to the following, very generalized, equation:
 \begin{align*}
 H(u) = 0 ,
 \end{align*}
@@ -430,7 +430,7 @@ Instead we should use Picard's iteration along with the Midpoint rule as describ
 u^{n+1} - u^n + \Delta t (\frac{1}{2}G(u^n,p^n) + \frac{1}{2} G(u^{n+1},p^{n+1}) + ( u^n \cdot \nabla u^n) ) = 0 .
 \end{align}
 Here G is the vector function representing only the Stokes equation. We applied the midpoint rule to the linear terms of the equation while the non-linear term, the advection term, was evaluated at the previous time step.\\
-Provided the time step is low enough this will converge, regardless of initial guess. However Picards iterations has a lower order of convergence than Newton's method, and as such will be less accurate for same computational cost [19].\\
+Provided the time step is low enough this will converge, regardless of initial guess. However Picards iterations has a lower order of convergence than Newton's method, and as such will be less accurate for the same computational cost [19].\\
 Optionally we could afterwards use the method we described first, Newton's method and Midpoint Rule, to get a more accurate result after a few Picard's iterations. Presumably these would get us within the radius of convergence.
 \begin{align}
 u^{n+1} - u^n + \Delta t (\frac{1}{2}F(u^n,p^n) + \frac{1}{2} F(u^{n+1},p^{n+1})) = 0 .
@@ -473,7 +473,7 @@ Both figures indicate a minimum order 2 convergence, as expected given that we u
 
 \begin{figure}
 \includegraphics[width=\linewidth]{stokes_pressure_convergence_dbc0.png}
-  \caption{DG1-BDM2 Stokes pressure convergence plot of pressure error against resolution. The blue curve indicates pressure error, the orange curve is a line of slope $-2$.  Initially at low orders of $N$ the convergence isn't quite order 2. However as $N$ grows the order of convergence clearly is 2, indicating that this was just an anomaly due to low resolution.}
+  \caption{DG1-BDM2 Stokes pressure convergence plot of pressure error against resolution. The blue curve indicates pressure error, the orange curve is a line of slope $-2$.  Initially at low orders of $N$ the convergence is not exactly order 2. However as $N$ grows the order of convergence clearly is 2, indicating that this was just an anomaly due to low resolution.}
 \end{figure}
 
 
@@ -483,7 +483,7 @@ Both figures indicate a minimum order 2 convergence, as expected given that we u
 We again use a manufactured solution to determine the convergence rate of our solver.
 We can re-use the manufactured solution in the Stokes convergence test, $u_x = \sin(2 \pi y)^5 \cos(2 \pi y)\sin(2 \pi x)^6$, $u_y= -\sin(2 \pi x)^5 \cos(2 \pi x) \sin(2 \pi y)^6$ and $p = \sin(2 \pi x)^2 \sin(2 \pi y)^2$.\\
 However the forcing term will be adjusted. One can find that it will be equivalent to $F = \nabla p - \mu \nabla^2 u + u \cdot \nabla u$.
-Plugging this into the equations we get that these do indeed solve the Navier-Stokes equations.\\
+Plugging this into the equations we find that these do indeed solve the Navier-Stokes equations.\\
 Figures 6 and 7 show us the convergence graphs in velocity and pressure.\\
 We notice that initially we have the same behavior as in the Stokes case. However we then see the error stopes decreasing. The cause of this is as of yet unknown and would require further research. We did note that changing the test solution and adjusting forcing we always obtain the same pressure error pattern, see figure 8. Additionally note that the pressure solution obtained in all cases respected the implied pressure boundary conditions, suggesting that this is not the problem.
 
@@ -511,7 +511,7 @@ We will see how our solver resolves this flow to study if we can find unstable s
 Figure 9 shows the stokes velocity solution to the problem.\\
 Similarly figures 10, 11 and 12 show the velocity solution with full advection at Reynolds numbers $Re = 50$, $25$, and $1$ respectively.\\
 We reduce the Reynolds number by reducing the viscosity. As expected this makes the boundary layer about the cylinder smaller and smaller.\\
-At Higher Reynolds numbers our solver starts requiring to use the continuation method multiple times (by default it always first finds the Stokes solution). For instance we required to find the solution at $0 \%$, $25 \%$, $62.5\%$ and $100\%$ advection for $Re =62.5$, while we only required to find the solution at $0 \%$ and $100 \%$ advection for $Re = 1$.\\
+At higher Reynolds numbers our solver starts requiring to use the continuation method multiple times (by default it always first finds the Stokes solution). For instance we required to find the solution at $0 \%$, $25 \%$, $62.5\%$ and $100\%$ advection for $Re =62.5$, while we only required to find the solution at $0 \%$ and $100 \%$ advection for $Re = 1$.\\
 When setting a high Reynolds number, such as $Re = 500$, the solver fails.
 \begin{lstlisting}
 Reynolds Number =
@@ -544,22 +544,22 @@ As we performed our tests, we obtained that on a mesh of average triangle edge l
 
 \begin{figure}
   \includegraphics[width=\linewidth]{scR50.png}
-  \caption{Stokes flow past a cylinder obtained by the BDM2-DG1 solver. The mesh used has an average triangle edge length of $0.2$ in this figure. We set $\mu = 0.02$, so this also corresponds to the first solution obtained in the $Re =50$ Navier-Stokes solver. Pressure is $0$, and thus doesn't figure here.}
+  \caption{Stokes flow past a cylinder obtained by the BDM2-DG1 solver. The mesh used has an average triangle edge length of $0.2$ in this figure. We set $\mu = 0.02$, so this also corresponds to the first solution obtained in the $Re =50$ Navier-Stokes solver. Pressure is $0$, and thus does not figure here.}
 \end{figure}
 
 \begin{figure}
   \includegraphics[width=\linewidth]{nscR50.png}
-  \caption{Navier-Stokes flow past a cylinder for $Re = 50$ obtained by the BDM2-DG1 solver. The mesh used has an average triangle edge length of $0.2$ in this figure. Notice that the boundary layer is getting smaller as $Re$ increases. Pressure is $0$, and thus doesn't figure here.}
+  \caption{Navier-Stokes flow past a cylinder for $Re = 50$ obtained by the BDM2-DG1 solver. The mesh used has an average triangle edge length of $0.2$ in this figure. Notice that the boundary layer is getting smaller as $Re$ increases. Pressure is $0$, and thus does not figure here.}
 \end{figure}
 
 \begin{figure}
   \includegraphics[width=\linewidth]{nscR25.png}
-  \caption{Navier-Stokes flow past a cylinder for $Re = 25$ obtained by the BDM2-DG1 solver. The mesh used has an average triangle edge length of $0.2$ in this figure. Notice that the boundary layer is getting smaller as $Re$ increases. Pressure is $0$, and thus doesn't figure here.}
+  \caption{Navier-Stokes flow past a cylinder for $Re = 25$ obtained by the BDM2-DG1 solver. The mesh used has an average triangle edge length of $0.2$ in this figure. Notice that the boundary layer is getting smaller as $Re$ increases. Pressure is $0$, and thus does not figure here.}
 \end{figure}
 
 \begin{figure}
   \includegraphics[width=\linewidth]{nscR1.png}
-  \caption{Navier-Stokes flow past a cylinder for $Re = 1$ obtained by the BDM2-DG1 solver. The mesh used has an average triangle edge length of $0.2$ in this figure. Notice that the boundary layer is getting smaller as $Re$ increases. Pressure is $0$, and thus doesn't figure here.}
+  \caption{Navier-Stokes flow past a cylinder for $Re = 1$ obtained by the BDM2-DG1 solver. The mesh used has an average triangle edge length of $0.2$ in this figure. Notice that the boundary layer is getting smaller as $Re$ increases. Pressure is $0$, and thus does not figure here.}
 \end{figure}
 
 
@@ -568,18 +568,18 @@ As we performed our tests, we obtained that on a mesh of average triangle edge l
 
 In this project we were interested in applications of the BDM/DG mixed finite element solver using a modified Schur preconditioner onto the steady Stokes and Navier-Stokes equations.\\
 After briefly discussing the general finite element method and some introductory definitions and notations we decided to focus on the Stokes equation. After assembling the weak form of the equation we then applied a Schur preconditioner to improve efficiency.\\
-We then assembled a weak form of the Navier-Stokes equation but noted that directly using it wasn't optimal. As such we developed a continuation method with variable step-size to improve the algorithm's speed and expand the number of problems which it can solve.\\
+We then assembled a weak form of the Navier-Stokes equation but noted that directly using it was not optimal. As such we developed a continuation method with variable step-size to improve the algorithm's speed and expand the number of problems which it can solve.\\
 After this we described a rudimentary time-stepping method to study the stability of any solutions obtained.\\
 Finally we tested our steady solvers and concluded that our algorithms worked as anticipated and accomplished our objectives with the exception that the Navier-Stokes error seems to have a lower bound.\\
 \\
 \\
 A number of future improvements could be made.
-These would allow us to reduce computational cost, versatility and accuracy of our method.\\
+These would allow us to reduce computational cost and increase the versatility and accuracy of our method.\\
 \\
 The cause of the lower bound of the Navier-Stokes solver should to be found and removed, if possible.\\
 We could use a multigrid method using our solver as a smoother to get convergence to be less dependent on grid-size, dramatically reducing computational costs. Application of such a method was discussed, unfortunately the tools required for it are not currently compatible with our problem set (specifically Dirichelet boundary conditions).\\
 The variable step-size method is serviceable and can be considerably improved to reduce the total number of iterations and thus computational cost. There are a number of methods which, from local conditions of the function, could more efficiently determine an appropriate step-size. Our source on the continuation method [17] includes descriptions of potential improvements.\\
-Similarly the time-stepping method mentioned was designed exclusively for the stability test. For this purpose it would work very well. However various improvements could be made for accuracy and speed. For instance we initially attempted to utilize a Newton iteration rather than a Picards iteration. However as the initial guess wasn't in the ball of convergence this method failed. Adding a few Newton iterations using the Picard results as a starting point should give more accurate answers for time-dependent methods.\\
+Similarly the time-stepping method mentioned was designed exclusively for the stability test. For this purpose it would work very well. However various improvements could be made for accuracy and speed. For instance we initially attempted to utilize a Newton iteration rather than a Picards iteration. However as the initial guess was not in the ball of convergence this method failed. Adding a few Newton iterations using the Picard results as a starting point should give more accurate answers for time-dependent methods.\\
 Additionally the stability test itself could be expanded to, for instance, consider the growth rate of an instability. By artificially removing unstable modes once they have been determined we could also find not only the most unstable mode but all unstable modes.\\
 In some flows we may have multiple solutions or a bifurcation (that is the case for the cylinder flow at high Reynolds number). In this case a deflation method may be useful. In this method, after finding a solution we "substract" it from the equation and thus seek other solutions.\\
 \\
@@ -711,7 +711,8 @@ p = \sin(2 \pi x)^2 \sin(2 \pi y)^2
 
 \section{Citations}
 
-[1] Imperial College London \textit{Firedrake Project} Available from : https://www.firedrakeproject.org [Accessed throughout 2018-2019]\\
+[1] Imperial College London \textit{Firedrake Project} Available from :\\
+ https://www.firedrakeproject.org [Accessed throughout 2018-2019]\\
 
 [2] Patrick E. Farrell, Lawrence Mitchell, Florian Wechsung
 textit{ An Augmented Lagrangian Preconditioner For The 3D Stationary Incompressible Navier–Stokes Equation At High Reynolds Number}
@@ -727,7 +728,8 @@ SIAM J. Sci Comput 28(6)2006\\
 
 [7]  Kirby R.C., Logg A., Rognes M.E., Terrel A.R. (2012) \textit{Common and unusual finite elements}. In: Logg A., Mardal KA., Wells G. (eds) Automated Solution of Differential Equations by the Finite Element Method. Lecture Notes in Computational Science and Engineering, vol 84. Springer, Berlin, Heidelberg\\
 
-[8] Hansbo, Peter \& Larson, Mats. (2003). \textit{Discontinuous Galerkin and the Crouzeix–Raviart element: Application to elasticity}. http://dx.doi.org/10.1051/m2an:2003020. 37. 10.1051/m2an:2003020. \\
+[8] Hansbo, Peter \& Larson, Mats. (2003). \textit{Discontinuous Galerkin and the Crouzeix–Raviart element: Application to elasticity}. \\
+http://dx.doi.org/10.1051/m2an:2003020. 37. 10.1051/m2an:2003020. \\
 
 [9] Olshanskii, Maxim \& Reusken, Arnold. (2004). \textit{Grad-div stabilization for Stokes equations}. Mathematics of Computation - Math. Comput.. 73. 1699-1718. \\
 
@@ -739,7 +741,8 @@ Pages 247-251,
 ISSN 0898-1221,
 https://doi.org/10.1016/S0898-1221(04)90021-1.\\
 
-[11] X Wang, \textit{Convergence of Newton's method and uniqueness of the solution of equations in Banach space}, IMA Journal of Numerical Analysis, Volume 20, Issue 1, January 2000, Pages 123–134, https://doi.org/10.1093/imanum/20.1.123\\
+[11] X Wang, \textit{Convergence of Newton's method and uniqueness of the solution of equations in Banach space}, IMA Journal of Numerical Analysis, Volume 20, Issue 1, January 2000, Pages 123–134,\\
+ https://doi.org/10.1093/imanum/20.1.123\\
 
 [12] Bae, Jong Sook, and Sangsuk Yie. \textit{Range of Gateaux Differentiable Operators and Local Expansions}  Pacific J. Math. 125.2 (1986): 289-300. Web.\\
 
@@ -770,8 +773,8 @@ Journal of Computational Physics,
 Volume 232, Issue 1,
 2013,
 Pages 136-152,
-ISSN 0021-9991,
-https://doi.org/10.1016/j.jcp.2012.07.020.
+ISSN 0021-9991,\\
+https://doi.org/10.1016/j.jcp.2012.07.020.\\
 (http://www.sciencedirect.com/science/article/pii/S0021999112003932)\\
 
 [21] Utku, and Carey. \textit{Boundary Penalty Techniques.} Computer Methods in Applied Mechanics and Engineering 30.1 (1982): 103-18. Web. \\
